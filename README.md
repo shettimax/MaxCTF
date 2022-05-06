@@ -3,6 +3,7 @@ Super vulnerable web application with basic bypasses made with love for informat
 --------------------
 Worth cracking your brain with so much fun on this after installation
 
-just set it up on your localhost and enjoy !IF YOU CHEAT? YOU CHEAT YOURSELF! SHAME ON YOU ! HAHAH...
+just set it up on your localhost and enjoy !
+IF YOU CHEAT? YOU CHEAT YOURSELF! SHAME ON YOU ! HAHAH...
 -------------------------
 #shettimax
