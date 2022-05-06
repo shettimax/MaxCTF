@@ -1,4 +1,5 @@
 <?php
+//shettimax
 ob_start();
 session_start();
 error_reporting(0);
@@ -11,43 +12,6 @@ if(strlen($_SESSION['alogin'])==0)
 header('location:index.php');
 }
 
-?>
-
-<?php 
-// if(isset($_GET['action']) && $_GET['action']=='confirm')
-// {
-//     $id=$_GET['id'];
-//     $walletid=$_GET['wallet_id'];
-//     $amount=$_GET['amount'];
-    
-//     $query = "SELECT * FROM account WHERE label='$walletid'";
-// 	$result = mysqli_query($conn,$query) or die(mysqli_error($conn));
-//     $count = mysqli_num_rows($result);
-// 	if (mysqli_num_rows($result) > 0) 
-// 	{
-//         while($row=mysqli_fetch_array($result))
-//         {
-// 			$balance=$row['balance'];
-// 		}
-//     }
-//     $current_balance=$balance+$amount;
-
-//     $sql="update account set balance='$current_balance' where label='$walletid'";
-//     $check_success=mysqli_query($conn,$sql);
-
-//     if($check_success)
-//     {
-//         mysqli_query($conn,"update topup set status='approved' where id='$id'");
-//     $class="success";
-//     $message="Status Approved ,Balance Updated";
-//     }
-
-// }
-if(isset($_POST['submit']))
-{
-    $walletid=$_POST['walletid'];
-}
-ob_end_flush();
 ?>
 <?php include 'header.php'; ?>
             <div id="layoutSidenav_content">
