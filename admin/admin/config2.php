@@ -1,8 +1,8 @@
 <?php 
 $host = "localhost"; 
-$user = "abunkgnm_cmoney"; 
-$pass = "abunkgnm_cmoney"; 
-$db = "abunkgnm_crypto"; 
+$user = ""; 
+$pass = ""; 
+$db = ""; 
 $conn = mysqli_connect($host, $user, $pass);
 mysqli_select_db($conn,$db);
 
