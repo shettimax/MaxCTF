@@ -1,7 +1,7 @@
 <footer class="py-4 bg-light mt-auto">
 <div class="container-fluid">
 <div class="d-flex align-items-center justify-content-between small">
-    <div class="text-muted">&copy; By<a href="https://t.me/mazangizo"> 💀 MAZANGIZO</a></div>
+    <div class="text-muted">&copy; By<a href="https://t.me/mazangizo"> 💀 SHETTIMAX</a></div>
     
 </div>
 </div>
