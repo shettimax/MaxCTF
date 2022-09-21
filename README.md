@@ -5,7 +5,7 @@ Worth cracking your brain with so much fun on this after installation
 
 just set it up on your localhost and enjoy !
 --
-<img src="ctfoverviewdina.jpeg" width="150" height="150" />
+<img src="ctfoverviewdina.jpeg" width="200" height="200" />
 
 ...
 -------------------------
