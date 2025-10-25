@@ -1,106 +1,103 @@
 <?php
-ob_start();
 session_start();
-include 'confik.php';
-if(strlen($_SESSION['id'])==0)
-    {   
-header('location:login.php');
+include("confik.php");
+
+ini_set('display_errors', 1);
+error_reporting(E_ALL);
+
+if (!isset($_SESSION['id']) || strlen($_SESSION['id']) == 0) {
+    header("location:login.php");
+    exit();
 }
-$ctfid=$_SESSION['id'];
-$query = "SELECT * FROM accounts WHERE ctfid='$ctfid'";
-    $result = mysqli_query($conn,$query) or die(mysqli_error($conn));
-    $count = mysqli_num_rows($result);
-    if (mysqli_num_rows($result) > 0) 
-    {
-        while($row=mysqli_fetch_array($result))
-        {
-            $ctfscore=$row['ctfscore'];
-            $ctfname=$row['ctfname'];
-           
-        }
-    }
 
-    $query = "select * from site order by rand() limit 1";
-    $result = mysqli_query($conn,$query) or die(mysqli_error($conn));
-    $count = mysqli_num_rows($result);
-    if (mysqli_num_rows($result) > 0) 
-    {
-        while($row=mysqli_fetch_array($result))
-        {
-            $name=$row['name'];
-            $bankname=$row['bnkname'];
-            $banknumber=$row['bnkno'];
-           
-        }
-    }
+$ctfid = $_SESSION['ctfid'];
+$ctfname = $_SESSION['ctfname'];
 
-$bugg=$_POST['bugx'];
-        $amount=$_POST['amount'];
-        $severityy=$_POST['severityx'];
-        $date=date('Y-m-d h:m:i');
-if(isset($_POST["go"])) {
-    $target_dir = "admin/proofimages/";
-$target_file = $target_dir . basename($_FILES["proofimage"]["name"]);
-$uploadOk = 1;
-$imageFileType = strtolower(pathinfo($target_file,PATHINFO_EXTENSION));
+$site = mysqli_query($conn, "SELECT * FROM site ORDER BY RAND() LIMIT 1");
+$siterow = mysqli_fetch_array($site);
+$name = $siterow['sitename'];
+$bankname = $siterow['header'];
+$banknumber = $siterow['header2'];
 
-// Check if image file is a actual image or fake image
-if(isset($_POST["go"])) {
-  $check = getimagesize($_FILES["proofimage"]["tmp_name"]);
-  if($check !== false) {
-    echo "Your";
+if (isset($_POST['go'])) {
+    $bug = $_POST['bugx'];
+    $severity = $_POST['severityx'];
+    $amount = $_POST['amount'];
+    $date = date("Y-m-d H:i:s");
+
+    $target_dir = "admin/admin/proofimages/";
+    $target_file = $target_dir . basename($_FILES["proofimage"]["name"]);
     $uploadOk = 1;
-    $query=mysqli_query($conn,"insert into reportx(walletid,amount,proofimage,date,status,bug,severity) values('$ctfid','$amount','$target_file','$date','pending','$bugg','$severityy')");
-  } else {
-    echo "File is not an image.";
-    $uploadOk = 0;
-  }
-}
+    $imageFileType = strtolower(pathinfo($target_file, PATHINFO_EXTENSION));
 
-// Check if file already exists
-if (file_exists($target_file)) {
-  echo "Sorry, file already exists.";
-  $uploadOk = 0;
-}
+    if ($_FILES["proofimage"]["size"] > 500000) {
+        $uploadOk = 0;
+        $_SESSION['error'] = "File too large.";
+    }
 
-// Check file size
-if ($_FILES["proofimage"]["size"] > 500000) {
-  echo "Sorry, your file is too large.";
-  $uploadOk = 0;
-}
+    if (!in_array($imageFileType, ["jpg", "jpeg", "png", "gif"])) {
+        $uploadOk = 0;
+        $_SESSION['error'] = "Invalid file format.";
+    }
 
-// Allow certain file formats
-if($imageFileType != "jpg" && $imageFileType != "png" && $imageFileType != "jpeg"
-&& $imageFileType != "gif" ) {
-  echo "Sorry, only JPG, JPEG, PNG & GIF files are allowed.";
-  $uploadOk = 0;
-}
-
-// Check if $uploadOk is set to 0 by an error
-if ($uploadOk == 0) {
-  echo "Sorry, your file was not uploaded.";
-// if everything is ok, try to upload file
-} else {
-  if (move_uploaded_file($_FILES["proofimage"]["tmp_name"], $target_file)) {
-    echo " POC has been uploaded.";
-  } else {
-    echo "Sorry, there was an error uploading your file.";
-  }
-}
-
-        if($check !== false)
-        {
-            $_SESSION['success']="Admin Will Review!";
-        }
-        else
-        {
-            $_SESSION['error']="Request Not submitted";
+    if ($uploadOk == 1) {
+        if (move_uploaded_file($_FILES["proofimage"]["tmp_name"], $target_file)) {
+            $sql = "INSERT INTO reportx (walletid, amount, proofimage, date, status, bug, severity) 
+                    VALUES ('$ctfid', '$amount', '$target_file', '$date', 'pending', '$bug', '$severity')";
+            if (mysqli_query($conn, $sql)) {
+                $_SESSION['success'] = "Submitted! Admin will review.";
+            } else {
+                $_SESSION['error'] = "Insert failed: " . mysqli_error($conn);
+            }
+        } else {
+            $_SESSION['error'] = "File upload failed.";
         }
     }
-    ob_end_flush();
+}
 ?>
-<?php include 'header2.php';
+
+<!-- SweetAlert2 + alert.css -->
+<link rel="stylesheet" href="css/alert.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<?php 
+if (isset($_SESSION['error'])) {
 ?>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    Swal.fire({
+        title: 'Error',
+        text: "<?php echo $_SESSION['error']; ?>",
+        icon: 'error',
+        background: '#0f0f0f',
+        color: '#ff0033',
+        confirmButtonColor: '#ff0033'
+    });
+});
+</script>
+<?php 
+unset($_SESSION['error']);
+} else if (isset($_SESSION['success'])) {
+?>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    Swal.fire({
+        title: 'Success',
+        text: "<?php echo $_SESSION['success']; ?>",
+        icon: 'success',
+        background: '#0f0f0f',
+        color: '#00ff99',
+        confirmButtonColor: '#00ff99'
+    });
+});
+</script>
+<?php 
+unset($_SESSION['success']);
+} 
+?>
+
+<?php include 'header2.php'; ?>
+<!-- Your form and page content continues below -->
 <div class="row tall-row">
             <div class="col-lg-12">
                 <h1>lbh'yy trg gjragl cbvagf</h1>
@@ -170,6 +167,7 @@ if ($uploadOk == 0) {
                             <div class="form-group">
                                 <div class="col-lg-10 col-lg-offset-2">
                                     <button type="reset" class="btn btn-default">Reset</button>
+                                    <button type="button" class="btn btn-default" onclick="window.location.href='profile.php'">Go Back</button>
                                     <button type="submit" name="go" class="btn btn-primary">Submit</button>
                                 </div>
                             </div>

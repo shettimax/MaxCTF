@@ -1,42 +1,60 @@
 <?php
 ob_start();
 session_start();
-
 include 'confik.php';
 
-if(isset($_SESSION['id']))
-{
-if(strlen($_SESSION['id'])!=0)
-	{	
-header('location:profile.php');
+if (isset($_SESSION['id']) && strlen($_SESSION['id']) != 0) {
+    header('location:profile.php');
 }
-}
-    
-if (isset($_POST['login']))
-{
-	$username = $_POST['ctfid'];
-    $password = $_POST['ctfpassword'];	
-    //$password=md5($password);
-    $query = "SELECT * FROM accounts WHERE ctfid='$username' and ctfpassword='$password'";
-	$result = mysqli_query($conn,$query) or die(mysqli_error($conn));
-	$count = mysqli_num_rows($result);
-	if (mysqli_num_rows($result) > 0) 
-	{
-		while($row=mysqli_fetch_array($result))
-        {
-            $ctfid=$row['ctfid'];
+
+if (isset($_POST['login'])) {
+    // Sanitize inputs
+    $username = mysqli_real_escape_string($conn, trim($_POST['ctfid']));
+    $raw_password = trim($_POST['ctfpassword']);
+    $password = sha1($raw_password); // hash after trimming
+
+    $query = "SELECT * FROM accounts WHERE ctfid='$username' AND ctfpassword='$password'";
+    $result = mysqli_query($conn, $query) or die(mysqli_error($conn));
+    $count = mysqli_num_rows($result);
+
+    if ($count > 0) {
+        while ($row = mysqli_fetch_array($result)) {
+            $ctfid = $row['ctfid'];
+            $ctfname = $row['ctfname'];
         }
-        $_SESSION['id']=$ctfid;
-        $queryzi=mysqli_query($conn,"update accounts set farko='1' where ctfid='$ctfid'");
-		header('Location:profile.php');
-	}
-    else{
-		$_SESSION['error']="Invalid Details";
+
+        $_SESSION['id'] = $ctfid;
+        $_SESSION['ctfid'] = $ctfid;
+        $_SESSION['ctfname'] = $ctfname;
+
+        // Only set 'farko' if it's currently NULL
+mysqli_query($conn, "UPDATE accounts SET farko='1' WHERE ctfid='$ctfid' AND farko IS NULL");
+
+// Always reward login with 5 points
+mysqli_query($conn, "UPDATE accounts SET ctfscore = ctfscore + 5 WHERE ctfid='$ctfid'");
+        header('Location:profile.php');
+    } else {
+        echo "<link rel='stylesheet' href='css/alert.css'>
+        <script src='https://cdn.jsdelivr.net/npm/sweetalert2@11'></script>
+        <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            Swal.fire({
+                title: 'Access Denied',
+                text: 'Invalid CTF ID or Password',
+                icon: 'error',
+                background: '#0f0f0f',
+                color: '#ff0033',
+                confirmButtonColor: '#ff0033',
+                confirmButtonText: 'Try Again'
+            });
+        });
+        </script>";
     }
 }
 
 ob_end_flush();
 ?>
+
 <?php include 'header2.php';
 ?>
 <div class="row tall-row">

@@ -1,37 +1,36 @@
 <?php 
 ob_start();
 error_reporting(0);
+session_start();
 include 'confik.php';
-if(isset($_POST['signup']))
-{
-    
-$ctfid=$_POST['ctfid'];
-$ctfid=trim($ctfid);
 
-$ctfemail=$_POST['ctfemail'];
-$ctfname=$_POST['ctfname'];
-$ctfpassword=$_POST['ctfemail'];
-$ctfskillset=$_POST['ctfskillset'];
-$gender=$_POST['gender'];
-if($ctfpassword!=$ctfemail)
-{
-    $_SESSION['password_match']="Oops.. Password Mismatch";
-}
-else
-{
-$joined=date('Y-m-d');
+if (isset($_POST['signup'])) {
+    $ctfid = trim($_POST['ctfid']);
+    $ctfemail = $_POST['ctfemail'];
+    $ctfname = $_POST['ctfname'];
+    $ctfpassword = $_POST['ctfpassword'];
+    $retype = $_POST['retype'];
+    $ctfskillset = $_POST['ctfskillset'];
+    $gender = $_POST['gender'];
 
+    if (empty($ctfemail)) {
+        $_SESSION['error'] = "Email required. Please fill it in.";
+    } elseif ($ctfpassword !== $retype) {
+        $_SESSION['password_match'] = "Oops.. Password Mismatch";
+    } elseif (strlen($ctfpassword) > 20) {
+        $_SESSION['password_match'] = "Oops.. Password too long (max 20 characters)";
+    } else {
+        $joined = date('Y-m-d');
+        $ctfpassword = sha1($ctfpassword); // hash password using SHA1
 
-$query=mysqli_query($conn,"insert into accounts(ctfid,ctfname,ctfscore,joined,ctfskillset,gender,ctfemail,ctfpassword) values('$ctfid','$ctfname','20','$joined','$ctfskillset','$gender','$ctfemail','$ctfpassword','')");
-if($query)
-{
-    $_SESSION['success']="$ctfskillset Kindly Go&Login";
-}
-else
-{
-    $_SESSION['error']="Not Registered Try Again";
-}
-}
+        $query = mysqli_query($conn, "INSERT INTO accounts (ctfid, ctfname, ctfscore, joined, ctfskillset, gender, ctfemail, ctfpassword) VALUES ('$ctfid', '$ctfname', '20', '$joined', '$ctfskillset', '$gender', '$ctfemail', '$ctfpassword')");
+
+        if ($query) {
+            $_SESSION['success'] = "$ctfskillset Kindly Go&Login";
+        } else {
+            $_SESSION['error'] = "Not Registered Try Again";
+        }
+    }
 }
 ob_end_flush();
 ?>
@@ -111,10 +110,26 @@ echo $csc.''.$ran.''.$mon.''.$mon1;
                                 <label for="inputPassword" class="col-lg-2 control-label">DATUM</label>
                                 <div class="col-lg-10">
                                     <input required name="ctfname" class="form-control" id="inputPassword" placeholder="your cybername" type="text">
-                                    <!--<input required name="ctfemail" class="form-control" id="inputPassword" placeholder="your email" type="text">-->
+                                    <!--<input required name="ctfemail" class="form-control" id="inputPassword" placeholder="your email" type="email">-->
                                     
                                 </div>
                             </div>
+<div class="form-group">
+    <label for="inputPassword" class="col-lg-2 control-label">PASSWORD</label>
+    <div class="col-lg-10">
+        <input required name="ctfpassword" class="form-control" id="inputPassword" type="password" placeholder="set your password" maxlength="20">
+    </div>
+</div>
+
+<!-- RETYPE -->
+<div class="form-group">
+    <label for="inputRetype" class="col-lg-2 control-label">RETYPE</label>
+    <div class="col-lg-10">
+        <input required name="retype" class="form-control" id="inputRetype" type="password" placeholder="retype password" maxlength="20">
+    </div>
+</div>
+
+
                            <div class="form-group">
                                 <label for="select" class="col-lg-2 control-label">Skillset</label>
                                 <div class="col-lg-10">
@@ -165,35 +180,58 @@ echo $csc.''.$ran.''.$mon.''.$mon1;
             <div class="circle3"></div>
         </div>
     </div>
-<script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
-    <?php 
-    if($_SESSION['password_match'])
-    {
-    ?>
-    <script>
-swal("", "<?php echo $_SESSION['password_match'];?>!", "warning");
-    </script>
-    <?php 
-    unset($_SESSION['password_match']);
-    } 
-    else if($_SESSION['success'])
-    {
-    ?>
-    <script>
-swal("Success", "<?php echo $_SESSION['success'];?>!", "success");
-    </script>
-    <?php 
-    unset($_SESSION['success']);
-    } 
-    else if($_SESSION['error'])
-    {
-    ?>
-    <script>
-swal("Taken", "<?php echo $_SESSION['error'];?>!", "error");
-    </script>
-    <?php 
-    unset($_SESSION['error']);
-    } 
-    ?>
+<!-- SweetAlert2 -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<?php 
+if (isset($_SESSION['password_match'])) {
+?>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    Swal.fire({
+        title: 'Oops!',
+        text: "<?php echo $_SESSION['password_match']; ?>",
+        icon: 'warning',
+        background: '#0f0f0f',
+        color: '#ff0033',
+        confirmButtonColor: '#ff0033'
+    });
+});
+</script>
+<?php 
+unset($_SESSION['password_match']);
+} elseif (isset($_SESSION['success'])) {
+?>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    Swal.fire({
+        title: 'Nice!',
+        text: "<?php echo $_SESSION['success']; ?>",
+        icon: 'success',
+        background: '#0f0f0f',
+        color: '#00ff99',
+        confirmButtonColor: '#00ff99'
+    });
+});
+</script>
+<?php 
+unset($_SESSION['success']);
+} elseif (isset($_SESSION['error'])) {
+?>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    Swal.fire({
+        title: 'Error',
+        text: "<?php echo $_SESSION['error']; ?>",
+        icon: 'error',
+        background: '#0f0f0f',
+        color: '#ff0033',
+        confirmButtonColor: '#ff0033'
+    });
+});
+</script>
+<?php 
+unset($_SESSION['error']);
+} 
+?>
             <?php include 'footer.php';
 ?>

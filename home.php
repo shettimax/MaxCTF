@@ -173,7 +173,7 @@ $rowcount=mysqli_num_rows($queryxxi);
                                         ?>
                         <tr>
                             <td>></td>
-                            <td><?php echo htmlentities($ctfid);?></td>
+                            <td><a href="whoiswho.php?ctfid=<?php echo urlencode($ctfid); ?>" title="click to see userinfo"><?php echo htmlentities($ctfid); ?></a></td>
                             <td><?php echo htmlentities($ctfname);?></td>
                             <td><?php echo htmlentities($joined);?></td>
                             <td><?php echo htmlentities($ctfscore);?></td>

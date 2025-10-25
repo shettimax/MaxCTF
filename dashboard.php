@@ -2,63 +2,92 @@
 ob_start();
 session_start();
 include 'confik.php';
-if(strlen($_SESSION['id'])==1)
-	{	
-header('location:index.php');
+
+if (!isset($_SESSION['id']) || empty($_SESSION['id'])) {
+    header('Location: login.php');
+    exit;
 }
-$ctfid=$_SESSION['id'];
-$query = "SELECT * FROM accounts";
-	$result = mysqli_query($conn,$query) or die(mysqli_error($conn));
-    $count = mysqli_num_rows($result);
-	if (mysqli_num_rows($result) > 0) 
-	{
-        while($row=mysqli_fetch_array($result))
-        {
-			$ctfid=$row['ctfid']; //main balance
-			$ctfname=$row['ctfname']; //fetch colmn username  so2 echo l8r
-			$ctfscore=$row['ctfscore']; //join 1st n last name of user
-			$joined=$row['joined']; // registration date
-			$ctfskillset=$row['ctfskillset'];
-			$gender=$row['gender']; //user investment/package
-			$ctfemail=$row['ctfemail']; //referal earnings
-           
-		}
-	}
-	ob_end_flush();
+
+$ctfid = $_SESSION['id'];
+$query = mysqli_query($conn, "SELECT * FROM accounts WHERE ctfid='$ctfid'");
+$data = mysqli_fetch_assoc($query);
+
+$ctfname = $data['ctfname'];
+$ctfscore = $data['ctfscore'];
+$joined = $data['joined'];
+$ctfskillset = $data['ctfskillset'];
+$gender = $data['gender'];
+$ctfemail = $data['ctfemail'];
+ob_end_flush();
 ?>
-<?php include 'header2.php';?>
+
+<?php include 'header2.php'; ?>
+
 <div class="col-md-4">
-                <h3>Tabs</h3>
-                <ul class="nav nav-tabs">
-                    <li class="active"><a aria-expanded="true" href="index.html#home" data-toggle="tab">Home</a></li>
-                    <li class=""><a aria-expanded="false" href="index.html#profile" data-toggle="tab">Profile</a></li>
-                    <li class="dropdown">
-                        <a aria-expanded="false" class="dropdown-toggle" data-toggle="dropdown" href="index.html#">Miscell.. <span class="caret"></span>
-                        </a>
-                        <ul class="dropdown-menu">
-                            <li><a href="index.html#dropdown1" data-toggle="tab">Leadership Board</a></li>
-                            <li class="divider"></li>
-                            <li><a href="index.html#dropdown2" data-toggle="tab">Submit Report</a></li>
-                            <li class="divider"></li>
-                            <li><a href="logout.php" data-toggle="tab"><b>./exit</b></a></li>
-                        </ul>
-                    </li>
-                </ul>
-                <div id="myTabContent" class="tab-content">
-                    <div class="tab-pane fade active in" id="home">
-                        <p>welcome <?php echo $ctfskillset; ?>, <?php echo $ctfname; ?>.</p>
-                    </div>
-                    <div class="tab-pane fade" id="profile">
-                        <p><img src="http://shettima.xtgem.com/images/ion.png" width="50" height="50" alt="hehe" caption="user"/> <br>>> <?php echo $ctfname; ?> (<?php echo $gender; ?>)
-<br>>> <?php echo $ctfid; ?> (<?php echo $ctfskillset; ?>) <br>joined: <u><?php echo $joined; ?></u> <br>>> <u><?php echo $ctfemail; ?></u></p>
-                    </div>
-                    <div class="tab-pane fade" id="dropdown1">
-                        <p>yourscore: <?php echo $ctfscore; ?>points <br>click <a href="leadershipboard.php">here</a> to see fullboard</p>
-                    </div>
-                    <div class="tab-pane fade" id="dropdown2">
-                        <p>need more points? capture some flags & submit <a href="profile.php">here</a> <br>^_^ or crack cmVwb3J0ZXI= (.php) <br>points shall be rewarded once moderators verify it.</p>
-                    </div>
-                </div>
-            </div>
+    <h3>MAXCTF Dashboard</h3>
+    <ul class="nav nav-tabs">
+        <li class="active"><a href="#home" data-toggle="tab">Home</a></li>
+        <li><a href="#profile" data-toggle="tab">Profile</a></li>
+        <li class="dropdown">
+            <a class="dropdown-toggle" data-toggle="dropdown" href="#">More <span class="caret"></span></a>
+            <ul class="dropdown-menu">
+                <li><a href="#dropdown1" data-toggle="tab">Leaderboard</a></li>
+                <li class="divider"></li>
+                <li><a href="#dropdown2" data-toggle="tab">Submit Report</a></li>
+                <li class="divider"></li>
+                <li><a href="logout.php"><b>./exit</b></a></li>
+            </ul>
+        </li>
+    </ul>
+
+    <div id="myTabContent" class="tab-content">
+        <div class="tab-pane fade active in" id="home">
+            <p><strong>👋 Welcome back, <?php echo strtoupper($ctfname); ?>!</strong><br>
+<?php
+$quoteQuery = mysqli_query($conn, "SELECT quote FROM quotes ORDER BY RAND() LIMIT 1");
+$quoteRow = mysqli_fetch_assoc($quoteQuery);
+if ($quoteRow) {
+    echo "<p class='text-center'><code>“" . htmlentities($quoteRow['quote']) . "”</code></p>";
+}
+?>
+
+    </div>
+
+        <div class="tab-pane fade" id="profile">
+            <p><img src="http://shettima.xtgem.com/images/ion.png" width="50" height="50" alt="user" /><br>
+            > <?php echo $ctfname; ?> (<?php echo $gender; ?>)<br>
+            > <?php echo $ctfid; ?> (<?php echo $ctfskillset; ?>)<br>
+            > Joined: <u><?php echo $joined; ?></u><br>
+            > Email: <u><?php echo $ctfemail; ?></u></p>
         </div>
-&nbsp; <?php include 'footer.php';?>
+
+        <div class="tab-pane fade" id="dropdown1">
+            <p>Your Score: <strong><?php echo $ctfscore; ?> pts</strong><br>
+            Top 3 Hackers:</p>
+            <?php
+            $top = mysqli_query($conn, "SELECT ctfid, ctfscore FROM accounts ORDER BY ctfscore DESC LIMIT 3");
+            while ($row = mysqli_fetch_assoc($top)) {
+                echo "<p><strong>" . htmlentities($row['ctfid']) . "</strong>: " . htmlentities($row['ctfscore']) . " pts</p>";
+            }
+            ?>
+            <p>See full board <a href="leadershipboard.php">here</a></p>
+        </div>
+
+        <div class="tab-pane fade" id="dropdown2">
+            <p>Need more points? Capture flags & submit <a href="profile.php">here</a><br>
+            Or crack <code>cmVwb3J0ZXI=</code> (.php)<br>
+            Points will be rewarded once verified.</p>
+            <h5>📡 Recent Flag Submissions</h5>
+            <ul class="list-group">
+            <?php
+            $feed = mysqli_query($conn, "SELECT walletid, bug, severity, amount, status FROM reportx ORDER BY id DESC LIMIT 5");
+            while ($row = mysqli_fetch_assoc($feed)) {
+                $tag = ($row['status'] === 'approved') ? '✔' : '✖';
+                echo "<li class='list-group-item'>[$tag] " . htmlentities($row['walletid']) . " flagged <em>" . htmlentities($row['bug']) . "</em> (" . htmlentities($row['severity']) . ") — <span class='badge'>" . htmlentities($row['amount']) . " pts</span></li>";
+            }
+            ?>
+            </ul>
+        </div>
+    </div><hr>
+</div>
+<?php include 'footer.php'; ?>

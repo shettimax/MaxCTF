@@ -7,6 +7,8 @@
 
     <title>MAXCTF</title>
     <link href="css/hacker.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/alert.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link rel="icon" type="image/x-icon" href="favi.ico">
 
     <style>
