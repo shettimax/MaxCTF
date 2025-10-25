@@ -61,7 +61,7 @@ include("header2.php");
                       </div>";
             }
         } else {
-            echo "<p>No badges found.</p>";
+            echo "<p>No badges found !.</p>";
         }
         ?>
     </div>
