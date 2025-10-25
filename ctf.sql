@@ -1,5 +1,5 @@
 -- phpMyAdmin SQL Dump
--- shettimax@yahoo.com
+-- shettimax@yahoo.com or
 -- version 4.8.5
 -- https://www.phpmyadmin.net/
 --
