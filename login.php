@@ -27,7 +27,7 @@ if (isset($_POST['login'])) {
         $_SESSION['ctfid'] = $ctfid;
         $_SESSION['ctfname'] = $ctfname;
 
-        // Only set 'farko' if it's currently NULL
+        // Only set 'farko' if it's currently NULL wato empty
 mysqli_query($conn, "UPDATE accounts SET farko='1' WHERE ctfid='$ctfid' AND farko IS NULL");
 
 // Always reward login with 5 points
