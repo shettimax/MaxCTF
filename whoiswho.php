@@ -57,7 +57,7 @@ if (!$user) {
 <body>
 
 <div class="alert alert-dismissible alert-success">
-    <h4><u>WHOAMI:</u></h4><a href="home.php" class="close" style="text-decoration:none;">BACK</a>
+    <h4><u>WHOAMI;</u></h4><a href="home.php" class="close" style="text-decoration:none;">BACK</a>
     <hr>
     <img src="static.webp" width="110" height="110"><br>
     <h2><?php echo htmlentities($user['ctfname']); ?></h2>
