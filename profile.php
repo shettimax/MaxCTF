@@ -20,7 +20,7 @@ ob_end_flush();
 
 <?php include 'header2.php'; ?>
 
-<!-- Terminal-style challenge message -->
+<!-- Terminal-styled challenge message -->
 <div class="terminal-scroll">
 almost there buddy!
 you wanna lead the scoreboard huh?
