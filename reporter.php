@@ -56,7 +56,7 @@ if (isset($_POST['go'])) {
 }
 ?>
 
-<!-- SweetAlert2 + alert.css -->
+<!-- combo SweetAlert2 + alert.css -->
 <link rel="stylesheet" href="css/alert.css">
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
