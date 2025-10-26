@@ -1,6 +1,6 @@
 <?php 
 ob_start();
-error_reporting(0);
+error_reporting(1);
 session_start();
 include 'confik.php';
 
