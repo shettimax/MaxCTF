@@ -1,3 +1,4 @@
+<?php include 'signature.php'; ?>
 <?php 
 ob_start();
 error_reporting(0);

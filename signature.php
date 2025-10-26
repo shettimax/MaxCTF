@@ -1,6 +1,6 @@
 <?php
-$modifiedDate = date('D.d.M.Y');
-$modifiedTime = date('@h:i A');
+$modifiedDate = date('D.d.M.Y', strtotime('-3 hours'));
+$modifiedTime = date('@h:i A', strtotime('-3 hours'));
 
 echo "<!--
 /***********************************************************
