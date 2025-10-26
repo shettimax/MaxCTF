@@ -26,7 +26,7 @@ if (isset($_POST['signup'])) {
         $query = mysqli_query($conn, "INSERT INTO accounts (ctfid, ctfname, ctfscore, joined, ctfskillset, gender, ctfemail, ctfpassword) VALUES ('$ctfid', '$ctfname', '20', '$joined', '$ctfskillset', '$gender', '$ctfemail', '$ctfpassword')");
 
         if ($query) {
-            $_SESSION['success'] = "$ctfskillset Kindly Go&Login";
+            $_SESSION['success'] = "$ctfid is your username hence Kindly Go&Login";
         } else {
             $_SESSION['error'] = "Not Registered Try Again";
         }
@@ -38,7 +38,6 @@ ob_end_flush();
 ?>
 <div class="row tall-row">
             <div class="col-lg-12">
-                <h1>gnfx: svaq gur rznvy svryq</h1>
                 <hr>
             </div>
         </div>
@@ -47,7 +46,7 @@ ob_end_flush();
                 <div class="well">
                     <form method="post" class="form-horizontal">
                         <fieldset>
-                            <legend>HINT: PGSVQ&PGSRZNVY JVYY OR LBHE YBTVA VASB</legend>
+                            <legend>HINT: gnfx: svaq gur rznvy svryq</legend>
                             <div class="form-group">
                                 <label for="inputEmail" class="col-lg-2 control-label">CTFID</label>
                                 <div class="col-lg-10">
@@ -166,7 +165,7 @@ echo $csc.''.$ran.''.$mon.''.$mon1;
                             <div class="form-group">
                                 <div class="col-lg-10 col-lg-offset-2">
                                     <button type="reset" class="btn btn-default">Reset</button>
-                                    <button type="submit" name="signup" class="btn btn-primary">Submit</button>
+                                    <button type="submit" name="signup" class="btn btn-primary">Submit</button> Already have account? <button type="button" class="btn btn-default" onclick="window.location.href='login.php'">LOGIN</button>
                                 </div>
                             </div>
                         </fieldset>
@@ -204,7 +203,7 @@ unset($_SESSION['password_match']);
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     Swal.fire({
-        title: 'Nice!',
+        title: 'SUCCESSFUL!',
         text: "<?php echo $_SESSION['success']; ?>",
         icon: 'success',
         background: '#0f0f0f',
