@@ -29,7 +29,7 @@
 
 <body>
 
-    <a href="#"><img style="position: absolute; top: 0; left: 0; border: 0;z-index:1001;" src="img/forkv.png" alt=""></a>
+    <a href="#"><img style="position: absolute; top: 0; left: 0; border: 0;z-index:1001;" src="img/forkvi.png" alt=""></a>
 
     <nav class="navbar navbar-default navbar-static-top">
         <div class="container">
@@ -68,12 +68,17 @@
     <div class="container">
 
         <!-- Jumbotron -->
-        <div class="jumbotron">
-            <h1>DEMO CTF APP</h1>
-            <p>_</p>
-            <p>NO PURCHASE NECESSARY TO ENTER OR WIN.</p>
-            <p>
-                <a class="btn btn-lg btn-primary" href="#" role="button">Good Luck »</a>
-                <a class="btn btn-primary" href="#">^_^</a>
-            </p>
-        </div>
+        <?php
+$currentPage = basename($_SERVER['PHP_SELF']);
+if ($currentPage !== 'dashboard.php') {
+?>
+    <div class="jumbotron">
+        <h1><?php echo $suna; ?></h1>
+        <p><?php echo $header; ?> </p>
+        <p><?php echo $header2; ?></p>
+        <p>
+            <!-- <a class="btn btn-lg btn-primary" href="https://t.me/mazangizo" role="button">👈🏿Back</a> -->x
+        </p>
+    </div>
+<?php } ?>
+

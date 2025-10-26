@@ -5,7 +5,7 @@ include 'confik.php';
 // Award 5 points if user is logged in, means they have time to follow flows to have logout
 if (isset($_SESSION['ctfid'])) {
     $ctfid = mysqli_real_escape_string($conn, $_SESSION['ctfid']);
-    mysqli_query($conn, "UPDATE accounts SET ctfscore = ctfscore + 5 WHERE ctfid='$ctfid'");
+    mysqli_query($conn, "UPDATE accounts SET ctfscore = ctfscore + 6 WHERE ctfid='$ctfid'");
 }
 
 // Clear session

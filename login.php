@@ -68,12 +68,12 @@ ob_end_flush();
                 <div class="well">
                     <form method="post" class="form-horizontal">
                         <fieldset>
-                            <legend>HINT: pgsvq&pgsrznvy lbh ert jvgu</legend>
+                            <legend>HINT: pgsvq&pgscnffjbeq lbh ert jvgu</legend>
                             <div class="form-group">
                                 <label for="inputPassword" class="col-lg-2 control-label">DATUM</label>
                                 <div class="col-lg-10">
                                     <input required name="ctfid" class="form-control" id="inputPassword" placeholder="your ctfid" type="text">
-                                    <input required name="ctfpassword" class="form-control" id="inputPassword" placeholder="your ctfemail" type="password">
+                                    <input required name="ctfpassword" class="form-control" id="inputPassword" placeholder="your ctfpassword">
                                     
                                 </div>
                             </div>
