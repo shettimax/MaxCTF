@@ -2,7 +2,6 @@
 <div class="row tall-row">
     <div class="col-md-12 text-center">
         <p>
-            <hr>
             Created by <a href="https://t.me/mazangizo">0x6d617a616e67697a6f</a>. 2020–<?php echo date("Y"); ?><br>
             <small>Powered by <strong>MAXCTF</strong></small>™
         </p>
