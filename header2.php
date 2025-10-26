@@ -44,20 +44,10 @@
             </div>
             <div id="navbar" class="navbar-collapse collapse">
                 <ul class="nav navbar-nav navbar-right">
-                    <li class="dropdown">
-                        <a xhref="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">CLICK ME!!!<span class="caret"></span> </a>
-                        <!-- <ul class="dropdown-menu" role="menu">
-                            <li><a href="index.html#">Ooh a link</a></li>
-                            <li><a href="index.html#">Two links?! Oh boy</a></li>
-                            <li><a href="index.html#">Now you're being ridiculous</a></li>
-                            <li class="divider"></li>
-                            <li class="dropdown-header">Much Wow</li>
-                            <li><a href="index.html#">So link</a></li>
-                            <li><a href="index.html#">Many internet</a></li>
-                        </ul> -->
+                    <li class="dropdown">.
                     </li>
                     <li>
-                        <a href="https://reddit.com/r/itsaunixsystem" target="_blank">H4x0rs Only</a>
+                        <a href="https://reddit.com/r/itsaunixsystem" target="_blank"><img src="img/donate.png" width="50" height="35" alt="Donor Badge" style="margin-bottom:5px;"></a>
                     </li>
                 </ul>
             </div>
