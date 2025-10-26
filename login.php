@@ -30,8 +30,8 @@ if (isset($_POST['login'])) {
         // Only set 'farko' if it's currently NULL wato empty
 mysqli_query($conn, "UPDATE accounts SET farko='1' WHERE ctfid='$ctfid' AND farko IS NULL");
 
-// Always reward login with 5 points
-mysqli_query($conn, "UPDATE accounts SET ctfscore = ctfscore + 5 WHERE ctfid='$ctfid'");
+// Always reward login with points (3)
+mysqli_query($conn, "UPDATE accounts SET ctfscore = ctfscore + 3 WHERE ctfid='$ctfid'");
         header('Location:profile.php');
     } else {
         echo "<link rel='stylesheet' href='css/alert.css'>
