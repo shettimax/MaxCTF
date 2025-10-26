@@ -60,7 +60,9 @@
         <!-- Jumbotron -->
         <?php
 $currentPage = basename($_SERVER['PHP_SELF']);
-if ($currentPage !== 'dashboard.php') {
+$allowedPages = ['dashboard.php', 'profile.php', 'reg.php', 'login.php']; // Add more as needed
+
+if (!in_array($currentPage, $allowedPages)) {
 ?>
     <div class="jumbotron">
         <h1><?php echo $suna; ?></h1>
