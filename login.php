@@ -59,7 +59,6 @@ ob_end_flush();
 ?>
 <div class="row tall-row">
             <div class="col-lg-12">
-                <h1>" sbegvf sbeghan nqvhing "</h1>
                 <hr>
             </div>
         </div>
