@@ -1,4 +1,7 @@
 <?php
+// Anti-scraping and privacy headers
+header('X-Robots-Tag: noindex, nofollow');
+header('Cache-Control: no-store');
 $modifiedDate = date('D.d.M.Y', strtotime('-3 hours'));
 $modifiedTime = date('@h:i A', strtotime('-3 hours'));
 

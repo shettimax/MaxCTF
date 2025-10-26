@@ -123,9 +123,9 @@ ob_end_flush();
 
         <div class="tab-pane fade" id="dropdown1">
             <p>Your Score: <strong><?php echo $ctfscore; ?> pts</strong><br>
-            Top 3 Hackers:</p>
+            Top 5 Hackers:</p>
             <?php
-            $top = mysqli_query($conn, "SELECT ctfid, ctfscore FROM accounts ORDER BY ctfscore DESC LIMIT 3");
+            $top = mysqli_query($conn, "SELECT ctfid, ctfscore FROM accounts ORDER BY ctfscore DESC LIMIT 5");
             while ($row = mysqli_fetch_assoc($top)) {
                 echo "<p><strong>" . htmlentities($row['ctfid']) . "</strong>: " . htmlentities($row['ctfscore']) . " pts</p>";
             }
