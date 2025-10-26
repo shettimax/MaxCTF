@@ -53,7 +53,7 @@ ob_end_flush();
     <h3>MAXCTF Dashboard</h3>
     <ul class="nav nav-tabs">
         <li class="active"><a href="#home" data-toggle="tab">Home</a></li>
-        <li><a href="#profile" data-toggle="tab">Profile</a></li>
+        <li><a href="#profile" data-toggle="tab">Progress</a></li>
         <li class="dropdown">
             <a class="dropdown-toggle" data-toggle="dropdown" href="#">More <span class="caret"></span></a>
             <ul class="dropdown-menu">
@@ -74,47 +74,50 @@ ob_end_flush();
         <img src="static.webp" width="110" height="110">
         <h2><?php echo htmlentities($ctfname); ?></h2>
         <hr>
-        <p>
-            CTFID:<strong> <?php echo htmlentities($ctfid); ?></strong><br>
-            Joined:<strong> <?php echo htmlentities($joined); ?></strong> As a<strong> <?php echo htmlentities($ctfskillset); ?></strong><br>
-            Email:<strong> <?php echo htmlentities($ctfemail); ?></strong> CTFScore:<strong><?php echo htmlentities($ctfscore); ?></strong>
-            <br>
-        </p>
-        <div class="badge-preview">
-    <h5>🎖️ Badge</h5>
-    <img src="badges/<?php echo $currentBadge['id']; ?>.png" alt="Badge" title="earned not given" width="100">
-    <p><strong><?php echo $currentBadge['title']; ?></strong> — <?php echo $currentBadge['vibe']; ?></p>
-
-    <?php if ($nextBadge): ?>
-        <p>Next Badge: <strong><?php echo $nextBadge['title']; ?></strong> @<?php echo $nextBadge['required_score']; ?> pts</p>
-        <div style="background:#eee;width:100%;height:20px;border-radius:10px;overflow:hidden;">
-            <div style="width:<?php echo $progress; ?>%;height:100%;background:#4caf50;"></div>
-        </div>
-        <p><?php echo $ctfscore; ?> / <?php echo $nextBadge['required_score']; ?> → <?php echo $progress; ?>% complete</p>
-    <?php else: ?>
-        <p>🎉 You've reached the highest badge: <strong><?php echo $currentBadge['title']; ?></strong>!</p>
-    <?php endif; ?>
-</div>
-
-        <hr>
-        <?php
+        <p><?php
         $quoteQuery = mysqli_query($conn, "SELECT quote FROM quotes ORDER BY RAND() LIMIT 1");
         $quoteRow = mysqli_fetch_assoc($quoteQuery);
         if ($quoteRow) {
             echo "<p class='text-center'><code>“" . htmlentities($quoteRow['quote']) . "”</code></p>";
         }
         ?>
+        </p>
+        <div class="badge-preview">
+    <h5>🎖️Rank</h5>
+    <p><strong><?php echo $currentBadge['title']; ?></strong> — <?php echo $currentBadge['vibe']; ?></p>
+
+    
+</div>
+
+        <hr>
     </div>
 </div>
 
 
         <div class="tab-pane fade" id="profile">
-            <p><img src="http://shettima.xtgem.com/images/ion.png" width="50" height="50" alt="user" /><br>
-            > <?php echo $ctfname; ?> (<?php echo $gender; ?>)<br>
-            > <?php echo $ctfid; ?> (<?php echo $ctfskillset; ?>)<br>
-            > Joined: <u><?php echo $joined; ?></u><br>
-            > Email: <u><?php echo $ctfemail; ?></u></p>
+    <div class="alert alert-dismissible alert-info">
+        <a href="#" class="close" style="text-decoration:none;">*</a>
+        <hr>
+        <p>
+        </p>
+        <div class="badge-preview">
+            <h5>🎖️ CurrentBadge</h5>
+            <img src="badges/<?php echo $currentBadge['id']; ?>.png" alt="Badge" title="earned not given" width="100">
+            <p><strong><?php echo $currentBadge['title']; ?></strong> — <?php echo $currentBadge['vibe']; ?></p>
+
+            <?php if ($nextBadge): ?>
+                <p>Next Badge: <strong><?php echo $nextBadge['title']; ?></strong> @<?php echo $nextBadge['required_score']; ?> pts</p>
+                <div style="background:#eee;width:100%;height:20px;border-radius:10px;overflow:hidden;">
+                    <div style="width:<?php echo $progress; ?>%;height:100%;background:#4caf50;"></div>
+                </div>
+                <p><?php echo $ctfscore; ?> / <?php echo $nextBadge['required_score']; ?> → <?php echo $progress; ?>% complete</p>
+            <?php else: ?>
+                <p>🎉 You've reached the highest badge: <strong><?php echo $currentBadge['title']; ?></strong>!</p>
+            <?php endif; ?>
         </div>
+    </div>
+</div>
+
 
         <div class="tab-pane fade" id="dropdown1">
             <p>Your Score: <strong><?php echo $ctfscore; ?> pts</strong><br>
@@ -132,17 +135,33 @@ ob_end_flush();
             <p>Need more points? Capture flags & submit <a href="profile.php">here</a><br>
             Or crack <code>cmVwb3J0ZXI=</code> (.php)<br>
             Points will be rewarded once verified.</p>
-            <h5>📡 Recent Flag Submissions</h5>
+            <h5>📡 [<b>RECENT FLAG SUBMISSIONS</b>]</h5>
             <ul class="list-group">
             <?php
-            $feed = mysqli_query($conn, "SELECT walletid, bug, severity, amount, status FROM reportx ORDER BY id DESC LIMIT 5");
+            $feed = mysqli_query($conn, "SELECT date, bug, severity, amount, status FROM reportx WHERE walletid='$ctfid' ORDER BY date DESC LIMIT 5");
             while ($row = mysqli_fetch_assoc($feed)) {
                 $tag = ($row['status'] === 'approved') ? '✔' : '✖';
-                echo "<li class='list-group-item'>[$tag] " . htmlentities($row['walletid']) . " flagged <em>" . htmlentities($row['bug']) . "</em> (" . htmlentities($row['severity']) . ") — <span class='badge'>" . htmlentities($row['amount']) . " pts</span></li>";
+                echo "<li class='list-group-item'>[$tag] " . htmlentities($row['date']) . " flagged <em>" . htmlentities($row['bug']) . "</em> (" . htmlentities($row['severity']) . ") — <span class='badge'>" . htmlentities($row['amount']) . " pts</span></li>";
             }
             ?>
             </ul>
         </div>
     </div><hr>
+</div>
+<div class="alert alert-dismissible alert-success">
+    <h4><u>.</u></h4><a href="#" class="close" style="text-decoration:none;">#</a>
+    <hr>
+    <p>
+            CTFID:<strong> <?php echo htmlentities($ctfid); ?></strong><br>
+            Joined:<strong> <?php echo htmlentities($joined); ?></strong><br>
+            Gender:<strong> <?php echo htmlentities($gender); ?></strong><br>
+            Email:<strong> <?php echo htmlentities($ctfemail); ?></strong><br>
+            Skillset:<strong> <?php echo htmlentities($ctfskillset); ?></strong><br>
+            CTFScore:<strong> <?php echo htmlentities($ctfscore); ?></strong>
+    </p>
+    <div class="badge-preview">
+        <h5>🎖️<b>RANK</b></h5>
+        <img src="badges/<?php echo $currentBadge['id']; ?>.png" width="110" alt="Badge" title="<?php echo $currentBadge['vibe']; ?>">
+    </div>
 </div>
 <?php include 'footer.php'; ?>
