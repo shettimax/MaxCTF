@@ -114,7 +114,7 @@ ob_end_flush();
                 </div>
                 <p><?php echo $ctfscore; ?> / <?php echo $nextBadge['required_score']; ?> → <?php echo $progress; ?>% complete</p>
             <?php else: ?>
-                <p>🎉 You've reached the highest badge: <strong><?php echo $currentBadge['title']; ?></strong>!</p>
+                <p style="color:#6B8E23;">🎉Congratulations <b><?php echo htmlentities($ctfname); ?></b> You've reached the highest badge: <strong><?php echo $currentBadge['title']; ?></strong>!</p>
             <?php endif; ?>
         </div>
     </div>
