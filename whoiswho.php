@@ -8,6 +8,7 @@ if (!isset($_GET['ctfid'])) {
     exit();
 }
 
+//Get the ctf person
 $ctfid = mysqli_real_escape_string($conn, $_GET['ctfid']);
 $query = mysqli_query($conn, "SELECT * FROM accounts WHERE ctfid = '$ctfid'");
 $user = mysqli_fetch_assoc($query);

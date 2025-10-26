@@ -73,7 +73,7 @@ ob_end_flush();
                                 <label for="inputPassword" class="col-lg-2 control-label">DATUM</label>
                                 <div class="col-lg-10">
                                     <input required name="ctfid" class="form-control" id="inputPassword" placeholder="your ctfid" type="text">
-                                    <input required name="ctfpassword" class="form-control" id="inputPassword" placeholder="your ctfpassword">
+                                    <input required name="ctfpassword" class="form-control" id="inputPassword" placeholder="your ctfpassword" type="password">
                                     
                                 </div>
                             </div>
