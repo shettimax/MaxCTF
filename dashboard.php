@@ -140,7 +140,7 @@ if (file_exists($badgePath)) {
                 echo "<p><strong>" . htmlentities($row['ctfid']) . "</strong>: " . htmlentities($row['ctfscore']) . " pts</p>";
             }
             ?>
-            <p>See full board <a href="leadershipboard.php">here</a></p>
+            <p>See full board <a href="rankprogression.php">here</a></p>
         </div>
 
         <div class="tab-pane fade" id="dropdown2">
