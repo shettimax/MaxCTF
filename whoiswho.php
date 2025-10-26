@@ -70,7 +70,7 @@ $currentBadge = mysqli_fetch_assoc($currentBadgeQuery);
 <div class="alert alert-dismissible alert-success">
     <h4><u>WHOAMI;</u></h4><a href="home.php" class="close" style="text-decoration:none;">BACK</a>
     <hr>
-    <img src="static.webp" width="110" height="110"><br>
+    <img src="img/profile/1.png" width="110" height="110"><br>
     <h2><?php echo htmlentities($user['ctfname']); ?></h2>
     <p>
         CTFID:<strong> <?php echo htmlentities($user['ctfid']); ?></strong><br>
