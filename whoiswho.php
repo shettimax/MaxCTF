@@ -16,6 +16,16 @@ if (!$user) {
     echo "<div class='alert alert-danger'>User not found.</div>";
     exit();
 }
+
+// Get current badge
+$ctfscore = (int)$user['ctfscore'];
+$currentBadgeQuery = mysqli_query($conn, "
+    SELECT * FROM badges 
+    WHERE required_score <= $ctfscore 
+    ORDER BY required_score DESC 
+    LIMIT 1
+");
+$currentBadge = mysqli_fetch_assoc($currentBadgeQuery);
 ?>
 
 <!DOCTYPE html>
@@ -65,11 +75,11 @@ if (!$user) {
         CTFID:<strong> <?php echo htmlentities($user['ctfid']); ?></strong><br>
         Joined:<strong> <?php echo htmlentities($user['joined']); ?></strong><br>
         CTFScore:<strong> <?php echo htmlentities($user['ctfscore']); ?></strong><br>
-        Skillset:<strong> <?php echo htmlentities($user['ctfskillset']); ?></strong><br>
+        Skillset:<strong> <?php echo htmlentities($currentBadge['title']); ?></strong><br>
     </p>
     <div class="badge-preview">
         <h5>🎖️ Badge</h5>
-        <img src="badges/<?php echo $user['badge_id']; ?>.png" alt="Badge">
+        <img src="badges/<?php echo $currentBadge['id']; ?>.png" alt="Badge" title="<?php echo $currentBadge['vibe']; ?>">
     </div>
 </div>
 
