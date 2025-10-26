@@ -1,5 +1,7 @@
 <?php
 ob_start();
+ini_set('display_errors', 0);
+error_reporting(E_ALL);
 session_start();
 include 'confik.php';
 
@@ -72,7 +74,7 @@ ob_end_flush();
         <a href="#" class="close" style="text-decoration:none;">*</a>
         <hr>
         <img src="static.webp" width="110" height="110">
-        <h2><?php echo htmlentities($ctfname); ?></h2>
+        <h2 style="color:#080808;"><?php echo htmlentities($ctfname); ?></h2>
         <hr>
         <p><?php
         $quoteQuery = mysqli_query($conn, "SELECT quote FROM quotes ORDER BY RAND() LIMIT 1");
@@ -83,8 +85,8 @@ ob_end_flush();
         ?>
         </p>
         <div class="badge-preview">
-    <h5>⭐RANK</h5>
-    <p><strong><?php echo $currentBadge['title']; ?></strong> — <i><?php echo $currentBadge['vibe']; ?></i></p>
+    <h5 style="color:#00ff99;">⭐RANK</h5>
+    <p><strong><?php echo $currentBadge['title']; ?></strong></p>
 
     
 </div>
@@ -103,7 +105,7 @@ ob_end_flush();
         <div class="badge-preview">
             <h5>🎖️[CURRENTBADGE]</h5>
             <img src="badges/<?php echo $currentBadge['id']; ?>.png" alt="Badge" title="earned not given" width="100">
-            <p><strong><?php echo $currentBadge['title']; ?></strong> — <?php echo $currentBadge['vibe']; ?></p>
+            <p style="color:#080808;"><strong><?php echo $currentBadge['title']; ?></strong> — <?php echo $currentBadge['vibe']; ?></p>
 
             <?php if ($nextBadge): ?>
                 <p>Next Badge: <strong style="opacity:0.12;"><?php echo $nextBadge['title']; ?></strong> @<?php echo $nextBadge['required_score']; ?> pts</p>
@@ -152,18 +154,24 @@ ob_end_flush();
     <h4>⭐</h4><a href="#" class="close" style="text-decoration:none;">#</a>
     <hr>
     <p>
-            CTFID:<strong> <?php echo htmlentities($ctfid); ?></strong><br>
-            Joined:<strong> <?php echo htmlentities($joined); ?></strong> <i>As a</i> <strong><?php echo htmlentities($ctfskillset); ?></strong><br>
-            Gender:<strong> <?php echo htmlentities($gender); ?></strong><br>
-            Email:<strong> <?php echo htmlentities($ctfemail); ?></strong><br>
-            Skillset:<strong> <?php echo htmlentities ($currentBadge['title']); ?></strong><br>
-            CTFScore:<strong> <?php echo htmlentities($ctfscore); ?></strong>pts
+            <span style="color:#00ff99;">CTFID:</span>
+                <strong> &nbsp;&nbsp;&nbsp;<?php echo htmlentities($ctfid); ?></strong><br>
+            <span style="color:#00ff99;">Joined:</span>
+            <strong> &nbsp;&nbsp;<?php echo htmlentities($joined); ?></strong> <i style="color:#00ff99;">As a</i> <strong><?php echo htmlentities($ctfskillset); ?></strong><br>
+            <span style="color:#00ff99;">Gender:</span>
+            <strong> &nbsp;&nbsp;<?php echo htmlentities($gender); ?></strong><br>
+            <span style="color:#00ff99;">Email:</span>
+            <strong> &nbsp;&nbsp;&nbsp;<?php echo htmlentities($ctfemail); ?></strong><br>
+            <span style="color:#00ff99;">Skillset:</span>
+            <strong> <?php echo htmlentities ($currentBadge['title']); ?></strong><br>
+            <span style="color:#00ff99;">CTFScore:</span>
+            <strong> <?php echo htmlentities($ctfscore); ?></strong>pts
     </p>
     <hr>
     <div class="badge-preview">
-        <h5>🎖️<b>BADGE</b></h5>
-        <img src="badges/<?php echo $currentBadge['id']; ?>.png" width="110" alt="Badge" title="<?php echo $currentBadge['vibe']; ?>"> 
-        <b><?php echo $currentBadge['vibe']; ?></b>
+        <h5 style="color:#00ff99;">🎖️<b>BADGE</b></h5>
+        <img src="badges/<?php echo $currentBadge['id']; ?>.png" width="110" alt="Badge" title="<?php echo $currentBadge['title']; ?>"> 
+        |<b><?php echo $currentBadge['vibe']; ?></b>
     </div>
 </div>
 <?php include 'footer.php'; ?>
