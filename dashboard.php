@@ -104,7 +104,17 @@ ob_end_flush();
         </p>
         <div class="badge-preview">
             <h5>🎖️[CURRENTBADGE]</h5>
-            <img src="badges/<?php echo $currentBadge['id']; ?>.png" alt="Badge" title="earned not given" width="100">
+            <?php
+$badgePath = "badges/" . $currentBadge['id'] . ".png"; // or .jpg if needed
+if (file_exists($badgePath)) {
+    $imageData = base64_encode(file_get_contents($badgePath));
+    $mimeType = mime_content_type($badgePath);
+    echo '<img src="data:' . $mimeType . ';base64,' . $imageData . '" width="100" alt="Badge" title="earned not given">';
+} else {
+    echo '<img src="favi.ico" width="100" alt="Locked Badge">';
+}
+?>
+
             <p style="color:#080808;"><strong><?php echo $currentBadge['title']; ?></strong> — <?php echo $currentBadge['vibe']; ?></p>
 
             <?php if ($nextBadge): ?>
@@ -170,7 +180,17 @@ ob_end_flush();
     <hr>
     <div class="badge-preview">
         <h5 style="color:#00ff99;">🎖️<b>BADGE</b></h5>
-        <img src="badges/<?php echo $currentBadge['id']; ?>.png" width="110" alt="Badge" title="<?php echo $currentBadge['title']; ?>"> 
+        <?php
+$badgePath = "badges/" . $currentBadge['id'] . ".png"; // or .jpg if needed
+if (file_exists($badgePath)) {
+    $imageData = base64_encode(file_get_contents($badgePath));
+    $mimeType = mime_content_type($badgePath);
+    echo '<img src="data:' . $mimeType . ';base64,' . $imageData . '" width="110" alt="Badge" title="' . htmlentities($currentBadge['title']) . '">';
+} else {
+    echo '<img src="favi.ico" width="110" alt="Locked Badge">';
+}
+?>
+ 
         |<b><?php echo $currentBadge['vibe']; ?></b>
     </div>
 </div>
