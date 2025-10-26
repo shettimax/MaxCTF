@@ -1,10 +1,9 @@
 -- phpMyAdmin SQL Dump
--- shettimax@yahoo.com
 -- version 4.8.5
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1:3306
--- Generation Time: Oct 25, 2025 at 01:24 PM
+-- Generation Time: Oct 26, 2025 at 02:32 PM
 -- Server version: 5.7.44
 -- PHP Version: 5.6.40-81+ubuntu20.04.1+deb.sury.org+1
 
@@ -74,8 +73,8 @@ INSERT INTO `accounts` (`id`, `ctfid`, `ctfname`, `ctfscore`, `joined`, `ctfskil
 (1, 'CTFBB812170105', 'max', 60, '2020-12-17', 'noob', 'male', 'max@yahoo.com', 'max@yahoo.com', '1'),
 (2, 'CTFJU312160519', '1337M4X', 21, '2020-12-16', 'noob', 'male', 'blckx@yahoo.com', 'blckx@yahoo.com', '1'),
 (3, 'MXS4F96TOK0', 'Shettimax', 200, '2020-12-16', '1337', 'male', 'shettimax@yahooo.com', 'shettimax@yahooo.com', '1'),
-(4, 'CTFXN410251144', 'KingCobra', 20, '2025-10-25', 'noob', 'male', 'xw@x.x', '95fef0b03489c26d510bc36ecceef32d8a60bc69', NULL),
-(5, 'CTFYX710251150', '0xvince', 35, '2025-10-25', 'noob', 'male', '', '9b50d1f90e62bf2b07ce4a2c12ae735ccb4c3d05', '1');
+(4, 'CTFXN410251144', 'KingCobra', 66, '2025-10-25', 'noob', 'male', 'xw@x.x', '95fef0b03489c26d510bc36ecceef32d8a60bc69', '1'),
+(5, 'CTFYX710251150', '0xvince', 10033, '2025-10-25', 'N00B', 'male', '0xvince@1337.co', '9b50d1f90e62bf2b07ce4a2c12ae735ccb4c3d05', '1');
 
 -- --------------------------------------------------------
 
@@ -106,34 +105,35 @@ INSERT INTO `admin` (`id`, `username`, `email`, `password`) VALUES
 CREATE TABLE `badges` (
   `id` int(11) NOT NULL,
   `title` varchar(50) NOT NULL,
-  `vibe` varchar(255) NOT NULL
+  `vibe` varchar(255) NOT NULL,
+  `required_score` int(11) NOT NULL DEFAULT '0'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 --
 -- Dumping data for table `badges`
 --
 
-INSERT INTO `badges` (`id`, `title`, `vibe`) VALUES
-(1, 'n00b', 'Just getting started'),
-(2, 'WebInitiate', 'Learning the ropes'),
-(3, 'ByteSpinner', 'Crafting basic payloads'),
-(4, 'Weaver', 'Showing promise'),
-(5, 'Lurker', 'Gaining traction'),
-(6, 'Explorer', 'Starting to stand out'),
-(7, 'Phantom', 'Skilled and stealthy'),
-(8, 'Architect', 'Designing clever payloads'),
-(9, 'SignalBender', 'Master of manipulation'),
-(10, '1337', 'Recognized expert'),
-(11, 'WebStrategist', 'Tactical and precise'),
-(12, 'CyberArtisan', 'Payloads with flair'),
-(13, 'ShadowCoder', 'Operating in the dark'),
-(14, 'Exploit Engineer', 'Building advanced tools'),
-(15, '1337Phantom', 'Nearly undetectable'),
-(16, '1337Prodigy', 'Legendary status'),
-(17, 'WebDominator', 'Controls the digital battlefield'),
-(18, 'SignalOverlord', 'Commands the flow'),
-(19, 'Exploit Sovereign', 'Supreme payload mastery'),
-(20, 'C.O.H.S', 'Chief of Hacking Staff');
+INSERT INTO `badges` (`id`, `title`, `vibe`, `required_score`) VALUES
+(1, 'n00b', 'Just getting started', 0),
+(2, 'WebInitiate', 'Learning the ropes', 500),
+(3, 'ByteSpinner', 'Crafting basic payloads', 1000),
+(4, 'Weaver', 'Showing promise', 1500),
+(5, 'Lurker', 'Gaining traction', 2000),
+(6, 'Explorer', 'Starting to stand out', 2500),
+(7, 'Phantom', 'Skilled and stealthy', 3000),
+(8, 'Architect', 'Designing clever payloads', 3500),
+(9, 'SignalBender', 'Master of manipulation', 4000),
+(10, '1337', 'Recognized expert', 4500),
+(11, 'WebStrategist', 'Tactical and precise', 5000),
+(12, 'CyberArtisan', 'Payloads with flair', 5500),
+(13, 'ShadowCoder', 'Operating in the dark', 6000),
+(14, 'Exploit Engineer', 'Building advanced tools', 6500),
+(15, '1337Phantom', 'Nearly undetectable', 7000),
+(16, '1337Prodigy', 'Legendary status', 7500),
+(17, 'WebDominator', 'Controls the digital battlefield', 8000),
+(18, 'SignalOverlord', 'Commands the flow', 8500),
+(19, 'Exploit Sovereign', 'Supreme payload mastery', 9000),
+(20, 'C.O.H.S', 'Chief of Hacking Staff', 10000);
 
 -- --------------------------------------------------------
 
@@ -310,7 +310,9 @@ INSERT INTO `reportx` (`id`, `walletid`, `amount`, `proofimage`, `date`, `status
 (1, 'MXS4F96TOK0', '20', 'admin/proofimages/mclcnew1.png', '2020-12-19 03:12:33', 'approved', 'XSS', 'MEDIUM'),
 (2, 'CTFBB812170105', '20', 'admin/proofimages/Screenshot from 2025-10-20 16-36-30.png', '2025-10-23 12:10:27', 'approved', 'XSS', 'LOW'),
 (3, 'CTFBB137987489', '100', 'proof.jpg', '2025-10-23 13:14', 'approved', 'XSS', 'high'),
-(4, 'CTFBB812170105', '20', 'admin/admin/proofimages/vatar1337.png', '2025-10-23 14:30:06', 'approved', 'XSS', 'FIRM');
+(4, 'CTFBB812170105', '20', 'admin/admin/proofimages/vatar1337.png', '2025-10-23 14:30:06', 'approved', 'XSS', 'FIRM'),
+(5, 'CTFXN410251144', '20', 'admin/admin/proofimages/vatar1337.png', '2025-10-23 14:30:06', 'approved', 'XSS', 'FIRM'),
+(6, 'CTFXN410251144', '30', 'admin/admin/proofimages/vatar1337.png', '2025-10-24 14:30:06', 'approved', 'XSS', 'FIRM');
 
 -- --------------------------------------------------------
 
@@ -373,7 +375,7 @@ CREATE TABLE `skillsets` (
 --
 
 INSERT INTO `skillsets` (`id`, `skillset`) VALUES
-(1, 'noob'),
+(1, 'N00B'),
 (2, '1337');
 
 -- --------------------------------------------------------
@@ -533,7 +535,7 @@ ALTER TABLE `quotes`
 -- AUTO_INCREMENT for table `reportx`
 --
 ALTER TABLE `reportx`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `severities`
