@@ -2,7 +2,7 @@
 session_start();
 include("confik.php");
 
-ini_set('display_errors', 1);
+ini_set('display_errors', 0);
 error_reporting(E_ALL);
 
 if (!isset($_SESSION['id']) || strlen($_SESSION['id']) == 0) {
