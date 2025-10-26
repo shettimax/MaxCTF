@@ -43,7 +43,7 @@ include("header2.php");
     </style>
 </head>
 <body>
-    <h1>🏅Earned/Unlocked Badges</h1>
+    <h1 style="color:#00ff99;">🏅Earned/Unlocked Badges</h1>
     <div class="badge-grid">
     <?php
     $ctfid = $_SESSION['id'];
