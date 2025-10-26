@@ -54,11 +54,21 @@ include("header2.php");
                 $id = $row['id'];
                 $title = $row['title'];
                 $vibe = $row['vibe'];
-                echo "<div class='badge-card'>
-                        <img src='badges/$id.png' alt='Badge $id'>
-                        <h4>$title</h4>
-                        <p>$vibe</p>
-                      </div>";
+                echo "<div class='badge-card'>";
+
+$badgePath = "badges/$id.png";
+if (file_exists($badgePath)) {
+    $imageData = base64_encode(file_get_contents($badgePath));
+    $mimeType = mime_content_type($badgePath);
+    echo "<img src='data:$mimeType;base64,$imageData' alt='Badge $id'>";
+} else {
+    echo "<img src='assets/locked.png' alt='Locked Badge'>";
+}
+
+echo "<h4>" . htmlentities($title) . "</h4>";
+echo "<p>" . htmlentities($vibe) . "</p>";
+echo "</div>";
+
             }
         } else {
             echo "<p>No badges found !.</p>";
