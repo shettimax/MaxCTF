@@ -13,14 +13,14 @@
             <div class="col-lg-12">
                 <div class="alert alert-dismissible alert-warning">
                     <button type="button" class="close">*</button>
-                    <h4><u>About us</u></h4>
+                    <h4 style="color:#00ff99;"><u>About us</u></h4>
                     <p><?php echo $about; ?><br><a href="https://www.google.com/search?q=what+is+ctf+in+cyber+security&oq=what+is+ctf+in+c&aqs=chrome.0.0l2j69i57j0l3j69i60l2.5438j1j7&sourceid=chrome&ie=UTF-8" class="alert-link">read-more</a>.</p>
                 </div>
 
 <!-- Rules -->
-        <div class="row tall-row">
+        <b><div class="row tall-row">
             <div class="col-lg-12">
-                <h1>! Rules</h1>
+                <h1 style="color:#00ff99;">! Rules</h1>
                 <hr>
             </div>
         </div>
@@ -52,12 +52,12 @@
                     #Good Luck!
                 </div>
             </div>
-        </div>
+        </div></b>
 
         <!-- List Groups for infotab -->
         <div class="row tall-row">
             <div class="col-lg-12">
-                <h1>Info-Tab</h1>
+                <h1 style="color:#00ff99;">Info-Tab</h1>
                 <hr>
             </div>
         </div>
@@ -140,7 +140,7 @@ $rowcount=mysqli_num_rows($queryxxi);
         <!-- Tables for top5 -->
         <div class="row tall-row">
             <div class="col-lg-12">
-                <h1>T<img src="http://shettima.xtgem.com/images/ion.png" width="37" height="37"/>p5 Solvers</h1>
+                <h1 style="color:#00ff99;">T<img src="http://shettima.xtgem.com/images/ion.png" width="37" height="37"/>p5 Solvers</h1>
                 <hr>
             </div>
         </div>
@@ -148,7 +148,7 @@ $rowcount=mysqli_num_rows($queryxxi);
             <div class="col-lg-12">
                 <table class="table table-striped table-hover ">
                     <thead>
-                        <tr>
+                        <tr style="color:#964B00;">
                             <th>#</th>
                             <th>CTFID</th>
                             <th>CTFNAME</th>
@@ -214,7 +214,7 @@ $rowcount=mysqli_num_rows($queryxxi);
         <!-- Dialogged disclaimer -->
         <div class="row tall-row">
             <div class="col-lg-12">
-                <h1>Disclaimer</h1>
+                <h1 style="color:#00ff99;">Disclaimer</h1>
                 <hr>
             </div>
         </div>

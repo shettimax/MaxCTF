@@ -166,13 +166,13 @@ if (file_exists($badgePath)) {
     <p>
             <span style="color:#00ff99;">CTFID:</span>
                 <strong> &nbsp;&nbsp;&nbsp;<?php echo htmlentities($ctfid); ?></strong><br>
-            <span style="color:#00ff99;">Joined:</span>
+            <span style="color:#00ff99;">JOINED:</span>
             <strong> &nbsp;&nbsp;<?php echo htmlentities($joined); ?></strong> <i style="color:#00ff99;">As a</i> <strong><?php echo htmlentities($ctfskillset); ?></strong><br>
-            <span style="color:#00ff99;">Gender:</span>
+            <span style="color:#00ff99;">GENDER:</span>
             <strong> &nbsp;&nbsp;<?php echo htmlentities($gender); ?></strong><br>
-            <span style="color:#00ff99;">Email:</span>
+            <span style="color:#00ff99;">EMAIL:</span>
             <strong> &nbsp;&nbsp;&nbsp;<?php echo htmlentities($ctfemail); ?></strong><br>
-            <span style="color:#00ff99;">Skillset:</span>
+            <span style="color:#00ff99;">SKILLSET:</span>
             <strong> <?php echo htmlentities ($currentBadge['title']); ?></strong><br>
             <span style="color:#00ff99;">CTFScore:</span>
             <strong> <?php echo htmlentities($ctfscore); ?></strong>pts
