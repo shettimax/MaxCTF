@@ -73,7 +73,7 @@ ob_end_flush();
     <div class="alert alert-dismissible alert-success">
         <a href="#" class="close text-none">*</a>
         <hr>
-        <img src="static.webp" width="110" height="110">
+        <img src="static.webp" class="img-100" height="110">
         <h2 class="text-dark"><?php echo htmlentities($ctfname); ?></h2>
         <hr>
         <p><?php
@@ -109,9 +109,9 @@ $badgePath = "badges/" . $currentBadge['id'] . ".png"; // or .jpg if needed
 if (file_exists($badgePath)) {
     $imageData = base64_encode(file_get_contents($badgePath));
     $mimeType = mime_content_type($badgePath);
-    echo '<img src="data:' . $mimeType . ';base64,' . $imageData . '" width="100" alt="Badge" title="earned not given">';
+    echo '<img src="data:' . $mimeType . ';base64,' . $imageData . '" class="img-100" alt="Badge" title="earned not given">';
 } else {
-    echo '<img src="favi.ico" width="100" alt="Locked Badge">';
+    echo '<img src="favi.ico" class="img-100" alt="Locked Badge">';
 }
 ?>
 
@@ -185,9 +185,9 @@ $badgePath = "badges/" . $currentBadge['id'] . ".png"; // or .jpg if needed
 if (file_exists($badgePath)) {
     $imageData = base64_encode(file_get_contents($badgePath));
     $mimeType = mime_content_type($badgePath);
-    echo '<img src="data:' . $mimeType . ';base64,' . $imageData . '" width="110" alt="Badge" title="' . htmlentities($currentBadge['title']) . '">';
+    echo '<img src="data:' . $mimeType . ';base64,' . $imageData . '" class="img-100" alt="Badge" title="' . htmlentities($currentBadge['title']) . '">';
 } else {
-    echo '<img src="favi.ico" width="110" alt="Locked Badge">';
+    echo '<img src="favi.ico" class="img-100" alt="Locked Badge">';
 }
 ?>
  
