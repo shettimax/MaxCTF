@@ -76,9 +76,9 @@ $currentBadge = mysqli_fetch_assoc($currentBadgeQuery);
     <h2 style="color:#080808;"><?php echo htmlentities($user['ctfname']); ?></h2>
     <p>
         <span style="color:#00ff99;">CTFID:</span>
-            <strong> &nbsp;&nbsp;&nbsp;<?php echo htmlentities($user['ctfid']); ?></strong><br>
+            <strong> <?php echo htmlentities($user['ctfid']); ?></strong><br>
         <span style="color:#00ff99;">Joined:</span>
-            <strong> &nbsp;&nbsp;<?php echo htmlentities($user['joined']); ?></strong><br>
+            <strong> <?php echo htmlentities($user['joined']); ?></strong><br>
         <span style="color:#00ff99;">CTFScore:</span>
             <strong> <?php echo htmlentities($user['ctfscore']); ?></strong>pts<br>
         <span style="color:#00ff99;">Rank:</span>
