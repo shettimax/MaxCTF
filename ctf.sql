@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1:3306
--- Generation Time: Oct 26, 2025 at 02:32 PM
+-- Generation Time: Oct 27, 2025 at 11:11 AM
 -- Server version: 5.7.44
 -- PHP Version: 5.6.40-81+ubuntu20.04.1+deb.sury.org+1
 
@@ -73,8 +73,10 @@ INSERT INTO `accounts` (`id`, `ctfid`, `ctfname`, `ctfscore`, `joined`, `ctfskil
 (1, 'CTFBB812170105', 'max', 60, '2020-12-17', 'noob', 'male', 'max@yahoo.com', 'max@yahoo.com', '1'),
 (2, 'CTFJU312160519', '1337M4X', 21, '2020-12-16', 'noob', 'male', 'blckx@yahoo.com', 'blckx@yahoo.com', '1'),
 (3, 'MXS4F96TOK0', 'Shettimax', 200, '2020-12-16', '1337', 'male', 'shettimax@yahooo.com', 'shettimax@yahooo.com', '1'),
-(4, 'CTFXN410251144', 'KingCobra', 66, '2025-10-25', 'noob', 'male', 'xw@x.x', '95fef0b03489c26d510bc36ecceef32d8a60bc69', '1'),
-(5, 'CTFYX710251150', '0xvince', 10033, '2025-10-25', 'N00B', 'male', '0xvince@1337.co', '9b50d1f90e62bf2b07ce4a2c12ae735ccb4c3d05', '1');
+(4, 'CTFXN410251144', 'KingCobra', 81, '2025-10-25', 'noob', 'male', 'xw@x.x', '95fef0b03489c26d510bc36ecceef32d8a60bc69', '1'),
+(5, 'CTFYX710251150', '0xvince', 10036, '2025-10-25', 'N00B', 'male', '0xvince@1337.co', '9b50d1f90e62bf2b07ce4a2c12ae735ccb4c3d05', '1'),
+(6, 'CTFQL010260216', 'XL0V3R', 1018, '2025-10-26', '1337', 'MALE', 'XL0V3R@1337.co', '0eb9ea0bef58bbe654059ac7e27f67c2e8eb9240', '1'),
+(10, 'CTFHO910260316', 'kiralina', 821, '2025-10-26', 'N00B', 'FEMALE', 'kira@1337.co', '0eb9ea0bef58bbe654059ac7e27f67c2e8eb9240', '1');
 
 -- --------------------------------------------------------
 
@@ -312,7 +314,9 @@ INSERT INTO `reportx` (`id`, `walletid`, `amount`, `proofimage`, `date`, `status
 (3, 'CTFBB137987489', '100', 'proof.jpg', '2025-10-23 13:14', 'approved', 'XSS', 'high'),
 (4, 'CTFBB812170105', '20', 'admin/admin/proofimages/vatar1337.png', '2025-10-23 14:30:06', 'approved', 'XSS', 'FIRM'),
 (5, 'CTFXN410251144', '20', 'admin/admin/proofimages/vatar1337.png', '2025-10-23 14:30:06', 'approved', 'XSS', 'FIRM'),
-(6, 'CTFXN410251144', '30', 'admin/admin/proofimages/vatar1337.png', '2025-10-24 14:30:06', 'approved', 'XSS', 'FIRM');
+(6, 'CTFXN410251144', '30', 'admin/admin/proofimages/vatar1337.png', '2025-10-24 14:30:06', 'approved', 'XSS', 'FIRM'),
+(7, 'CTFHO910260316', '20', 'admin/proofimages/mclcnew1.png', '2020-12-19 03:12:33', 'approved', 'XSS', 'MEDIUM'),
+(8, 'CTFHO910260316', '20', 'admin/admin/proofimages/vatar1337.png', '2025-10-23 14:30:06', 'approved', 'XSS', 'FIRM');
 
 -- --------------------------------------------------------
 
@@ -416,7 +420,6 @@ ALTER TABLE `accounts`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `ctfid` (`ctfid`),
   ADD UNIQUE KEY `ctfname` (`ctfname`),
-  ADD UNIQUE KEY `ctfpassword` (`ctfpassword`),
   ADD UNIQUE KEY `ctfemail` (`ctfemail`);
 
 --
@@ -499,7 +502,7 @@ ALTER TABLE `1f86700588aed0390dd27c383b7fc963`
 -- AUTO_INCREMENT for table `accounts`
 --
 ALTER TABLE `accounts`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
 -- AUTO_INCREMENT for table `admin`
@@ -535,7 +538,7 @@ ALTER TABLE `quotes`
 -- AUTO_INCREMENT for table `reportx`
 --
 ALTER TABLE `reportx`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT for table `severities`
