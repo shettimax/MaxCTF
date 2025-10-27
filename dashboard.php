@@ -191,7 +191,7 @@ if (file_exists($badgePath)) {
 }
 ?>
  
-        |<b><?php echo $currentBadge['vibe']; ?></b>
+        |<b style="color:#52593b;"><?php echo $currentBadge['vibe']; ?></b>
     </div>
 </div>
 <?php include 'footer.php'; ?>
