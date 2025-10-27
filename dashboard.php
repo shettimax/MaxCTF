@@ -34,7 +34,7 @@ $nextBadgeQuery = mysqli_query($conn, "
 ");
 $nextBadge = mysqli_fetch_assoc($nextBadgeQuery);
 
-// Progress calculation
+// Progress calculation kinda illogical
 $progress = 0;
 if ($nextBadge) {
     $start = $currentBadge['required_score'];
