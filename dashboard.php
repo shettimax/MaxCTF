@@ -145,7 +145,7 @@ if (file_exists($badgePath)) {
 
         <div class="tab-pane fade" id="dropdown2">
             <p>Need more points? Capture flags & submit <a href="profile.php">here</a><br>
-            Or crack <code>cmVwb3J0ZXI=</code>.php<br>
+            Or goto <code>cmVwb3J0ZXI=</code>.php<br>
             Points will be rewarded once verified.</p>
             <h5 style="color:#00ff99;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[<b>RECENT FLAG SUBMISSIONS</b>]</h5>
             <ul class="list-group">
