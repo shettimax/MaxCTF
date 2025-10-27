@@ -62,7 +62,7 @@
         <!-- Jumbotron -->
         <?php
 $currentPage = basename($_SERVER['PHP_SELF']);
-$allowedPages = ['dashboard.php', 'profile.php', 'reg.php', 'login.php']; // Add more as needed
+$allowedPages = ['dashboard.php', 'profile.php', 'reg.php', 'login.php', 'whoiswho.php']; // Add more as needed
 
 if (!in_array($currentPage, $allowedPages)) {
 ?>

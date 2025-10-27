@@ -70,7 +70,7 @@ $currentBadge = mysqli_fetch_assoc($currentBadgeQuery);
 <body>
 
 <div class="alert alert-dismissible alert-success">
-    <h4><?php echo htmlentities($currentBadge['vibe']); ?></h4><a href="home.php" class="close" style="text-decoration:none;">BACK</a>
+    <a href="home.php" class="close" style="text-decoration:none;">BACK</a>
     <hr>
     <img src="img/profile/1.png" width="110" height="110"><br>
     <h2 style="color:#080808;"><?php echo htmlentities($user['ctfname']); ?></h2>
