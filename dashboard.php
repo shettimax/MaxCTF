@@ -71,10 +71,10 @@ ob_end_flush();
     <div id="myTabContent" class="tab-content">
         <div class="tab-pane fade active in" id="home">
     <div class="alert alert-dismissible alert-success">
-        <a href="#" class="close" style="text-decoration:none;">*</a>
+        <a href="#" class="close text-none">*</a>
         <hr>
         <img src="static.webp" width="110" height="110">
-        <h2 style="color:#080808;"><?php echo htmlentities($ctfname); ?></h2>
+        <h2 class="text-dark"><?php echo htmlentities($ctfname); ?></h2>
         <hr>
         <p><?php
         $quoteQuery = mysqli_query($conn, "SELECT quote FROM quotes ORDER BY RAND() LIMIT 1");
@@ -98,7 +98,7 @@ ob_end_flush();
 
         <div class="tab-pane fade" id="profile">
     <div class="alert alert-dismissible alert-info">
-        <a href="#" class="close" style="text-decoration:none;">*</a>
+        <a href="#" class="close text-none">*</a>
         <hr>
         <p>
         </p>
@@ -118,9 +118,9 @@ if (file_exists($badgePath)) {
             <p style="color:#080808;"><strong><?php echo $currentBadge['title']; ?></strong> — <?php echo $currentBadge['vibe']; ?></p>
 
             <?php if ($nextBadge): ?>
-                <p>Next Badge: <strong style="opacity:0.12;"><?php echo $nextBadge['title']; ?></strong> @<?php echo $nextBadge['required_score']; ?> pts</p>
-                <div style="background:#eee;width:100%;height:20px;border-radius:10px;overflow:hidden;">
-                    <div style="width:<?php echo $progress; ?>%;height:100%;background:#4caf50;"></div>
+                <p>Next Badge: <strong class="text-muted"><?php echo $nextBadge['title']; ?></strong> @<?php echo $nextBadge['required_score']; ?> pts</p>
+                <div class="progress-bg full-width rounded-bar">
+                    <div class="progress-fill" style="width:<?php echo $progress; ?>%;"></div>
                 </div>
                 <p><?php echo $ctfscore; ?> / <?php echo $nextBadge['required_score']; ?> → <?php echo $progress; ?>% complete</p>
             <?php else: ?>
@@ -191,7 +191,7 @@ if (file_exists($badgePath)) {
 }
 ?>
  
-        |<b style="color:#52593b;"><?php echo $currentBadge['vibe']; ?></b>
+        |<b class="badge-title"><?php echo $currentBadge['vibe']; ?></b>
     </div>
 </div>
 <?php include 'footer.php'; ?>

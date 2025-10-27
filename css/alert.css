@@ -139,3 +139,58 @@
   color: #000;
   font-weight: bold;
 }
+/* Typography and text */
+.text-dark {
+  color: #080808;
+}
+
+.text-green {
+  color: #00ff99;
+}
+
+.text-olive {
+  color: #6B8E23;
+}
+
+.text-muted {
+  opacity: 0.5;
+}
+
+.text-none {
+  text-decoration: none;
+}
+
+/* Layout and spacing */
+.full-width {
+  width: 100%;
+}
+
+.rounded-bar {
+  border-radius: 10px;
+  overflow: hidden;
+  height: 20px;
+}
+
+/* Progress bar */
+.progress-bg {
+  background-color: #eee;
+}
+
+.progress-fill {
+  background-color: #4caf50;
+  height: 100%;
+}
+
+/* Badge styling */
+.badge-title {
+  color: #52593b;
+}
+
+/* Image sizing */
+.img-100 {
+  width: 100px;
+}
+
+.img-110 {
+  width: 110px;
+}
