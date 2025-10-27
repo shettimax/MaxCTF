@@ -32,7 +32,7 @@ if (isset($_POST['go'])) {
 
     if ($_FILES["proofimage"]["size"] > 500000) {
         $uploadOk = 0;
-        $_SESSION['error'] = "File too large.";
+        $_SESSION['error'] = "File too large. Max allowed size is 500KB.";
     }
 
     if (!in_array($imageFileType, ["jpg", "jpeg", "png", "gif"])) {

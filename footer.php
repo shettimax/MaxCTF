@@ -2,7 +2,7 @@
 <div class="row tall-row">
     <div class="col-md-12 text-center">
         <p>
-            Created by <a href="https://t.me/mazangizo">0x6d617a616e67697a6f</a>. 2020–<?php echo date("Y"); ?><br>
+            Developed by <a href="https://t.me/mazangizo" style="color:#2f4f4f;"><b>0x6d617a616e67697a6f</b></a>|2020–<?php echo date("Y"); ?><br>
             <small>Powered by <strong style="color:#00ff99;">MAXCTF</strong></small>™
         </p>
         <small style="opacity:0.5;">ba ruwanmu da kowa</small>
