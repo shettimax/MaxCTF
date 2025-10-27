@@ -167,7 +167,7 @@ if (file_exists($badgePath)) {
             <span style="color:#00ff99;">CTFID:</span>
                 <strong> &nbsp;&nbsp;&nbsp;<?php echo htmlentities($ctfid); ?></strong><br>
             <span style="color:#00ff99;">JOINED:</span>
-            <strong> &nbsp;&nbsp;<?php echo htmlentities($joined); ?></strong> <i style="color:#00ff99;">As a</i> <strong><?php echo htmlentities($ctfskillset); ?></strong><br>
+            <strong> &nbsp;&nbsp;<?php echo htmlentities($joined); ?></strong> <i class="text-green">As a</i> <strong><?php echo htmlentities($ctfskillset); ?></strong><br>
             <span style="color:#00ff99;">GENDER:</span>
             <strong> &nbsp;&nbsp;<?php echo htmlentities($gender); ?></strong><br>
             <span style="color:#00ff99;">EMAIL:</span>
