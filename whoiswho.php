@@ -70,19 +70,33 @@ $currentBadge = mysqli_fetch_assoc($currentBadgeQuery);
 <body>
 
 <div class="alert alert-dismissible alert-success">
-    <h4><u>WHOAMI;</u></h4><a href="home.php" class="close" style="text-decoration:none;">BACK</a>
+    <h4><?php echo htmlentities($currentBadge['vibe']); ?></h4><a href="home.php" class="close" style="text-decoration:none;">BACK</a>
     <hr>
     <img src="img/profile/1.png" width="110" height="110"><br>
-    <h2><?php echo htmlentities($user['ctfname']); ?></h2>
+    <h2 style="color:#080808;"><?php echo htmlentities($user['ctfname']); ?></h2>
     <p>
-        CTFID:<strong> <?php echo htmlentities($user['ctfid']); ?></strong><br>
-        Joined:<strong> <?php echo htmlentities($user['joined']); ?></strong><br>
-        CTFScore:<strong> <?php echo htmlentities($user['ctfscore']); ?></strong><br>
-        Skillset:<strong> <?php echo htmlentities($currentBadge['title']); ?></strong><br>
+        <span style="color:#00ff99;">CTFID:</span>
+            <strong> &nbsp;&nbsp;&nbsp;<?php echo htmlentities($user['ctfid']); ?></strong><br>
+        <span style="color:#00ff99;">Joined:</span>
+            <strong> &nbsp;&nbsp;<?php echo htmlentities($user['joined']); ?></strong><br>
+        <span style="color:#00ff99;">CTFScore:</span>
+            <strong> <?php echo htmlentities($user['ctfscore']); ?></strong>pts<br>
+        <span style="color:#00ff99;">Rank:</span>
+            <strong> &nbsp;&nbsp;&nbsp;&nbsp;<?php echo htmlentities($currentBadge['title']); ?></strong><br>
     </p>
     <div class="badge-preview">
         <h5>🎖️ Badge</h5>
-        <img src="badges/<?php echo $currentBadge['id']; ?>.png" alt="Badge" title="<?php echo $currentBadge['vibe']; ?>">
+        <?php
+$badgePath = "badges/" . $currentBadge['id'] . ".png";
+if (file_exists($badgePath)) {
+    $imageData = base64_encode(file_get_contents($badgePath));
+    $mimeType = mime_content_type($badgePath);
+    echo '<img src="data:' . $mimeType . ';base64,' . $imageData . '" alt="Badge" title="' . htmlentities($currentBadge['vibe']) . '">';
+} else {
+    echo '<img src="favi.ico" alt="Badge Missing">';
+}
+?>
+
     </div>
 </div>
 
