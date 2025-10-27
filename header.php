@@ -11,11 +11,11 @@ $querysite = "SELECT * FROM site";
     {
         while($row=mysqli_fetch_array($result))
         {
-            $header=$row['header']; //main balance
-            $header2=$row['header2']; //main balance
-            $disclaimer=$row['disclaimer']; //fetch colmn username  so2 echo l8r
-            $about=$row['about']; //join 1st n last name of user
-            $suna=$row['sitename']; //join 1st n last name of user
+            $header=$row['header']; //mainheadsys
+            $header2=$row['header2']; //fetch header na biyu
+            $disclaimer=$row['disclaimer']; //fetch discliamer info
+            $about=$row['about']; //fetch aboutinfo
+            $suna=$row['sitename']; //fetch sitname
            
         }
     }
