@@ -96,7 +96,7 @@ $rowcount=mysqli_num_rows($queryx);
                 <ul class="list-group">
                     <li class="list-group-item">
                         <span class="badge">WYFIWWS</span>
-                        Bugs
+                        *
                     </li>
                     <li class="list-group-item">
                         <span class="badge">40+</span>
@@ -119,6 +119,15 @@ $rowcount=mysqli_num_rows($queryxxi);
 ?>
                         <span class="badge"><?php echo $rowcount; ?></span>
                         Flags-found
+                    </li>
+                    <li class="list-group-item">
+                        <?php 
+include_once 'config.php';
+$query1xxi =mysqli_query($conn,"SELECT id from badges");
+$rowcount=mysqli_num_rows($query1xxi);
+?>
+                        <span class="badge"><?php echo $rowcount; ?></span>
+                        Badges
                     </li>
                 </ul>
             </div>
@@ -211,7 +220,7 @@ $rowcount=mysqli_num_rows($queryxxi);
         <!-- Dialogged disclaimer -->
         <div class="row tall-row">
             <div class="col-lg-12">
-                <h1><span class="text-green">Disclaimer</span></h1>
+                <h1><span class="text-green">Quotes</span></h1>
                 <hr>
             </div>
         </div>
@@ -222,10 +231,17 @@ $rowcount=mysqli_num_rows($queryxxi);
                         <div class="modal-content">
                             <div class="modal-header">
                                 <button type="button" class="close" data-dismiss="modal" aria-hidden="true"></button>
-                                <h4 class="modal-title">[!] <u>HEADS UP</u> [!]</h4>
+                                <h4 class="modal-title">[!] <u>inspirations.txt</u> [!]</h4>
                             </div>
                             <div class="modal-body">
-                                <p><?php echo $disclaimer; ?></p>
+                                <?php
+    // Fetch a random quote from the database
+    $quoteQuery = mysqli_query($conn, "SELECT quote FROM quotes ORDER BY RAND() LIMIT 1");
+    $quoteRow = mysqli_fetch_assoc($quoteQuery);
+    if ($quoteRow) {
+        echo "<p class='text-center'><em>“" . htmlentities($quoteRow['quote']) . "”</em></p>";
+    }
+    ?>
                             </div>
                             <div class="modal-footer">
                                 <button type="button" class="btn btn-default" data-dismiss="modal">QURNSU4=</button>
