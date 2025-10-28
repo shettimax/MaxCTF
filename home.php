@@ -48,7 +48,7 @@
                     Focus on your CTF targets!
                 </div>
                 <div class="well well-lg">
-                    MAXCTF is a platform dedicated to ethical learning, cybersecurity awareness, and creative problem-solving through Capture The Flag (CTF) challenges. We do not promote, encourage, or condone any form of illegal activity, unauthorized access, or hacking without explicit written permission.
+                    --
                 </div>
             </div>
         </div></b>
