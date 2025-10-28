@@ -115,7 +115,7 @@ if (file_exists($badgePath)) {
 }
 ?>
 
-            <p style="color:#080808;"><strong><?php echo $currentBadge['title']; ?></strong> — <?php echo $currentBadge['vibe']; ?></p>
+            <p style="color:#080808;"><strong><?php echo $currentBadge['title']; ?></strong> => <?php echo $currentBadge['vibe']; ?></p>
 
             <?php if ($nextBadge): ?>
                 <p>Next Badge: <strong class="text-muted"><?php echo $nextBadge['title']; ?></strong> @<?php echo $nextBadge['required_score']; ?> pts</p>
@@ -164,22 +164,22 @@ if (file_exists($badgePath)) {
     <h4>⭐</h4><a href="#" class="close" style="text-decoration:none;">#</a>
     <hr>
     <p>
-            <span style="color:#00ff99;">CTFID:</span>
+            <span class="text-green">CTFID:</span>
                 <strong> &nbsp;&nbsp;&nbsp;<?php echo htmlentities($ctfid); ?></strong><br>
-            <span style="color:#00ff99;">JOINED:</span>
+            <span class="text-green">JOINED:</span>
             <strong> &nbsp;&nbsp;<?php echo htmlentities($joined); ?></strong> <i class="text-green">As a</i> <strong><?php echo htmlentities($ctfskillset); ?></strong><br>
-            <span style="color:#00ff99;">GENDER:</span>
+            <span class="text-green">GENDER:</span>
             <strong> &nbsp;&nbsp;<?php echo htmlentities($gender); ?></strong><br>
-            <span style="color:#00ff99;">EMAIL:</span>
+            <span class="text-green">EMAIL:</span>
             <strong> &nbsp;&nbsp;&nbsp;<?php echo htmlentities($ctfemail); ?></strong><br>
-            <span style="color:#00ff99;">SKILLSET:</span>
+            <span class="text-green">SKILLSET:</span>
             <strong> <?php echo htmlentities ($currentBadge['title']); ?></strong><br>
-            <span style="color:#00ff99;">CTFScore:</span>
+            <span class="text-green">CTFScore:</span>
             <strong> <?php echo htmlentities($ctfscore); ?></strong>pts
     </p>
     <hr>
     <div class="badge-preview">
-        <h5 style="color:#00ff99;">🎖️<b>BADGE</b></h5>
+        <h5 class="text-green">🎖️<b>BADGE</b></h5>
         <?php
 $badgePath = "badges/" . $currentBadge['id'] . ".png"; // or .jpg if needed
 if (file_exists($badgePath)) {
