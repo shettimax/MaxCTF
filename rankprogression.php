@@ -44,12 +44,19 @@ include("header2.php");
 </head>
 <body>
     <h1 style="color:#00ff99;">🏅Earned/Unlocked Badges</h1>
+    <hr>
+    <p><a href="javascript:history.back()" style="color:#0f0;">← Go Back</a></p>
     <div class="badge-grid">
     <?php
+    $ctfscore = 0; // default for guests
+
+if (!empty($_SESSION['id'])) {
     $ctfid = $_SESSION['id'];
     $userQuery = mysqli_query($conn, "SELECT ctfscore FROM accounts WHERE ctfid='$ctfid'");
     $userData = mysqli_fetch_assoc($userQuery);
     $ctfscore = $userData['ctfscore'];
+}
+
 
     $sql = "SELECT id, title, vibe, required_score FROM badges ORDER BY id ASC";
     $result = mysqli_query($conn, $sql);
@@ -79,7 +86,7 @@ include("header2.php");
                 // Locked badge
                 $progress = round(($ctfscore / $required) * 100);
                 echo "<i class='fa fa-lock fa-3x' style='color:#0f0;margin-bottom:10px;'></i>";
-                echo "<h4 style='opacity:0.04;'>$title</h4>";
+                echo "<h4 style='opacity:0.03;'>$title</h4>";
                 echo "<p style='opacity:0.03;'>$vibe</p>";
                 echo "<div style='background:#222;width:100%;height:10px;border-radius:5px;overflow:hidden;'>
                         <div style='width:$progress%;height:100%;background:#0f0;'></div>
@@ -94,7 +101,7 @@ include("header2.php");
     }
     ?>
 </div>
-
+    <p><a href="javascript:history.back()" style="color:#0f0;">← Go Back</a></p>
 </body>
 </html>
 <?php include 'footer.php';

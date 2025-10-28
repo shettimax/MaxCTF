@@ -30,9 +30,6 @@
 </head>
 
 <body>
-
-    <a href="#"><img style="position: absolute; top: 0; left: 0; border: 0;z-index:1001;" src="img/forkvi.png" alt=""></a>
-
     <nav class="navbar navbar-default navbar-static-top">
         <div class="container">
             <div class="navbar-header">
@@ -71,7 +68,7 @@ if (!in_array($currentPage, $allowedPages)) {
         <p><?php echo $header; ?> </p>
         <p><?php echo $header2; ?></p>
         <p>
-            <!-- <a class="btn btn-lg btn-primary" href="https://t.me/mazangizo" role="button">👈🏿Back</a> -->x
+            <!-- <a class="btn btn-lg btn-primary" href="https://t.me/mazangizo" role="button">👈🏿Back</a> -->
         </p>
     </div>
 <?php } ?>

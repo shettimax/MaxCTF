@@ -45,6 +45,7 @@ include("header2.php");
 <body>
     <h1>🏅CTF Badges</h1>
     <hr>
+    <p><a href="javascript:history.back()" style="color:#0f0;">← Go Back</a></p>
     <div class="badge-grid">
         <?php
         $sql = "SELECT id, title, vibe FROM badges ORDER BY id ASC";
@@ -76,6 +77,7 @@ echo "</div>";
         }
         ?>
     </div>
+    <p><a href="javascript:history.back()" style="color:#0f0;">← Go Back</a></p>
 </body>
 </html>
 <?php include 'footer.php';

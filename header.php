@@ -87,7 +87,6 @@ ob_end_flush();
         <div class="jumbotron">
             <h1><?php echo $suna; ?></h1>
             <p><?php echo $header; ?> </p>
-            <p><?php echo $header2; ?></p>
             <p>
                 <a class="btn btn-lg btn-primary" href="https://t.me/mazangizo" role="button">Contact »</a>
             </p>
