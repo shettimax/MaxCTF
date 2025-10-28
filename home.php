@@ -19,7 +19,7 @@
 <!-- Rules -->
         <b><div class="row tall-row">
             <div class="col-lg-12">
-                <h1 style="color:#00ff99;">! Rules</h1>
+                <h1><span class="text-green">! Rules</h1></span>
                 <hr>
             </div>
         </div>
@@ -56,7 +56,7 @@
         <!-- List Groups for infotab -->
         <div class="row tall-row">
             <div class="col-lg-12">
-                <h1 style="color:#00ff99;">Info-Tab</h1>
+                <h1><span class="text-green">Info-Tab</h1></span>
                 <hr>
             </div>
         </div>
@@ -124,39 +124,20 @@ $rowcount=mysqli_num_rows($queryxxi);
             </div>
             <div class="col-lg-4">
                 <div class="list-group">
-                    <a xhref="index.php#" class="list-group-item">
-                        <span class="text-green">HACKTIVITY</span>
-                       <?php
-$feed = mysqli_query($conn, "
-    SELECT walletid, bug, severity, amount, status, date
-    FROM reportx r1
-    WHERE date = (
-        SELECT MAX(date)
-        FROM reportx r2
-        WHERE r2.walletid = r1.walletid
-    )
-    ORDER BY date DESC
-    LIMIT 5
-");
-
-while ($row = mysqli_fetch_assoc($feed)) {
-    $tag = ($row['status'] === 'approved') ? '✔' : '✖';
-    echo "<li class='list-group-item'>[$tag] " . htmlentities($row['walletid']) . " flagged <em>" . htmlentities($row['bug']) . "</em> (" . htmlentities($row['severity']) . ") — <span class='badge'>" . htmlentities($row['amount']) . " pts</span></li>";
-}
-?>
-                    </a>
-                    <a xhref="index.php#" class="list-group-item">
-                        <h4 class="list-group-item-heading"><u></u></h4>
-                        <p class="list-group-item-text"></p>
-                    </a>
-                </div>
+  <span class="text-green">HACKTIVITY</span>
+  <div class="terminal-feed">
+    <ul class="list-group" id="hacktivity-feed">
+      <!-- Feed will be loaded here via JS -->
+    </ul>
+  </div>
+</div>
             </div>
         </div>
 
         <!-- Tables for top5 -->
         <div class="row tall-row">
             <div class="col-lg-12">
-                <h1 style="color:#00ff99;">T<img src="http://shettima.xtgem.com/images/ion.png" width="37" height="37"/>p5 Solvers</h1>
+                <h1><span class="text-green">T<img src="http://shettima.xtgem.com/images/ion.png" width="37" height="37"/>p5 Solvers</h1></span>
                 <hr>
             </div>
         </div>
@@ -230,7 +211,7 @@ while ($row = mysqli_fetch_assoc($feed)) {
         <!-- Dialogged disclaimer -->
         <div class="row tall-row">
             <div class="col-lg-12">
-                <h1 style="color:#00ff99;">Disclaimer</h1>
+                <h1><span class="text-green">Disclaimer</span></h1>
                 <hr>
             </div>
         </div>
