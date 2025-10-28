@@ -63,9 +63,9 @@ ob_end_flush();
             </div>
             <div id="navbar" class="navbar-collapse collapse">
                 <ul class="nav navbar-nav navbar-right">
-    <li><a href="reg.php"><span class="text-green">SIGNUP</span></a></li>
-    <li><a href="login.php"><span class="text-green">LOGIN</span></a></li>
-    <li><a href="rankprogression.php"><span class="text-green">BADGES</span></a></li>
+    <li><a href="reg"><span class="text-green">SIGNUP</span></a></li>
+    <li><a href="login"><span class="text-green">LOGIN</span></a></li>
+    <li><a href="rankprogression"><span class="text-green">BADGES</span></a></li>
     <li>
         <a href="https://reddit.com/r/itsaunixsystem" target="_blank">
             <img src="img/donate.png" width="50" height="35" alt="Donor Badge" style="margin-bottom:5px;">
@@ -92,7 +92,7 @@ if (!in_array($currentPage, $allowedPages)) {
             <p><?php echo $header; ?> </p>
             <p><?php echo $header2; ?></p>
             <p>
-                <a class="btn btn-lg btn-primary" href="home.php" role="button">proceed to site»</a>
+                <a class="btn btn-lg btn-primary" href="home" role="button">proceed to site»</a>
             </p>
         </div>
 <?php } ?>

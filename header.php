@@ -53,9 +53,6 @@ ob_end_flush();
 </head>
 
 <body>
-
-    <a href="#"><img style="position: absolute; top: 0; left: 0; border: 0;z-index:1001;" src="img/mfork.png" alt=""></a>
-
     <nav class="navbar navbar-default navbar-static-top">
         <div class="container">
             <div class="navbar-header">
@@ -65,17 +62,19 @@ ob_end_flush();
                     <span class="icon-bar"></span>
                     <span class="icon-bar"></span>
                 </button>
-                <a class="navbar-brand" href="index.html#">1337@n00bs ~ $</a>
             </div>
             <div id="navbar" class="navbar-collapse collapse">
                 <ul class="nav navbar-nav navbar-right">
-                    <li class="dropdown">
-                        <a xhref="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">CLICK ME!!!<span class="caret"></span> </a>
-                    </li>
-                    <li>
-                        <a href="https://reddit.com/r/itsaunixsystem" target="_blank">H4x0rs Only</a>
-                    </li>
-                </ul>
+    <li><a href="reg"><span class="text-green">SIGNUP</span></a></li>
+    <li><a href="login"><span class="text-green">LOGIN</span></a></li>
+    <li><a href="rankprogression"><span class="text-green">BADGES</span></a></li>
+    <li>
+        <a href="https://reddit.com/r/itsaunixsystem" target="_blank">
+            <img src="img/donate.png" width="50" height="35" alt="Donor Badge" style="margin-bottom:5px;">
+        </a>
+    </li>
+</ul>
+
             </div>
         </div>
     </nav>

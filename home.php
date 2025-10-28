@@ -243,9 +243,6 @@ $rowcount=mysqli_num_rows($query1xxi);
     }
     ?>
                             </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-default" data-dismiss="modal">QURNSU4=</button>
-                            </div>
                         </div>
                     </div>
                 </div>
