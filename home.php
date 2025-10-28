@@ -1,7 +1,6 @@
 <?php include 'header.php';
 ?>
 
-        
         <!-- Aboutus -->
         <div class="row tall-row">
             <div class="col-lg-12">
@@ -49,7 +48,7 @@
                     Focus on your CTF targets!
                 </div>
                 <div class="well well-lg">
-                    #Good Luck!
+                    MAXCTF is a platform dedicated to ethical learning, cybersecurity awareness, and creative problem-solving through Capture The Flag (CTF) challenges. We do not promote, encourage, or condone any form of illegal activity, unauthorized access, or hacking without explicit written permission.
                 </div>
             </div>
         </div></b>
@@ -126,12 +125,29 @@ $rowcount=mysqli_num_rows($queryxxi);
             <div class="col-lg-4">
                 <div class="list-group">
                     <a xhref="index.php#" class="list-group-item">
-                        <h4 class="list-group-item-heading"><u>CTF Preparedness</u></h4>
-                        <p class="list-group-item-text">If you’ve never experienced a CTF event before, don’t get frustrated or give up, because the key to any type of hacking is patience.</p>
+                        <span class="text-green">HACKTIVITY</span>
+                       <?php
+$feed = mysqli_query($conn, "
+    SELECT walletid, bug, severity, amount, status, date
+    FROM reportx r1
+    WHERE date = (
+        SELECT MAX(date)
+        FROM reportx r2
+        WHERE r2.walletid = r1.walletid
+    )
+    ORDER BY date DESC
+    LIMIT 5
+");
+
+while ($row = mysqli_fetch_assoc($feed)) {
+    $tag = ($row['status'] === 'approved') ? '✔' : '✖';
+    echo "<li class='list-group-item'>[$tag] " . htmlentities($row['walletid']) . " flagged <em>" . htmlentities($row['bug']) . "</em> (" . htmlentities($row['severity']) . ") — <span class='badge'>" . htmlentities($row['amount']) . " pts</span></li>";
+}
+?>
                     </a>
                     <a xhref="index.php#" class="list-group-item">
-                        <h4 class="list-group-item-heading"><u>What is WWSIWYF?</u></h4>
-                        <p class="list-group-item-text">what you found is what we see. ^_^</p>
+                        <h4 class="list-group-item-heading"><u></u></h4>
+                        <p class="list-group-item-text"></p>
                     </a>
                 </div>
             </div>
@@ -148,7 +164,7 @@ $rowcount=mysqli_num_rows($queryxxi);
             <div class="col-lg-12">
                 <table class="table table-striped table-hover ">
                     <thead>
-                        <tr style="color:#964B00;">
+                        <tr class="table-header-hacker">
                             <th>#</th>
                             <th>CTFID</th>
                             <th>CTFNAME</th>
@@ -231,7 +247,7 @@ $rowcount=mysqli_num_rows($queryxxi);
                                 <p><?php echo $disclaimer; ?></p>
                             </div>
                             <div class="modal-footer">
-                                by: <button type="button" class="btn btn-default" data-dismiss="modal">YWRtaW4=</button>
+                                <button type="button" class="btn btn-default" data-dismiss="modal">QURNSU4=</button>
                             </div>
                         </div>
                     </div>

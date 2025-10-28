@@ -146,6 +146,7 @@
 
 .text-green {
   color: #00ff99;
+  font-weight: bold;
 }
 
 .text-olive {
@@ -193,4 +194,10 @@
 
 .img-110 {
   width: 110px;
+}
+.table-header-hacker {
+  color: #964B00;
+  font-weight: bold;
+  font-family: 'Courier New', monospace;
+  text-shadow: 0 0 3px #964B00;
 }

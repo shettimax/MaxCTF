@@ -44,6 +44,7 @@ include("header2.php");
 </head>
 <body>
     <h1>🏅CTF Badges</h1>
+    <hr>
     <div class="badge-grid">
         <?php
         $sql = "SELECT id, title, vibe FROM badges ORDER BY id ASC";
