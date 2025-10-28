@@ -32,6 +32,7 @@ ob_end_flush();
     <meta name="description" content="Basic QUESTs for you" />
     <title>MAX CTF</title>
     <link href="css/hacker.css" rel="stylesheet">
+    <link href="css/alert.css" rel="stylesheet">
 
     <style>
     .tall-row {
