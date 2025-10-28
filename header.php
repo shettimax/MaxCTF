@@ -1,5 +1,6 @@
-<?php include 'signature.php'; ?>
-<?php 
+<?php
+session_start(); 
+include 'signature.php';
 ob_start();
 error_reporting(0);
 include 'confik.php';
@@ -65,15 +66,23 @@ ob_end_flush();
             </div>
             <div id="navbar" class="navbar-collapse collapse">
                 <ul class="nav navbar-nav navbar-right">
-    <li><a href="reg"><span class="text-green">SIGNUP</span></a></li>
-    <li><a href="login"><span class="text-green">LOGIN</span></a></li>
-    <li><a href="rankprogression"><span class="text-green">BADGES</span></a></li>
+<?php
+session_start(); // Make sure this is called before any output
+if (isset($_SESSION['id']) && strlen($_SESSION['id']) > 0 && isset($_SESSION['ctfname'])) {
+    echo '<li><a href="dashboard"><span class="text-green">' . htmlentities($_SESSION['ctfname']) . '</span></a></li>';
+} else {
+    echo '<li><a href="reg"><span class="text-green">SIGNUP</span></a></li>';
+    echo '<li><a href="login"><span class="text-green">LOGIN</span></a></li>';
+    echo '<li><a href="rankprogression"><span class="text-green">BADGES</span></a></li>';
+}
+?>
     <li>
         <a href="https://reddit.com/r/itsaunixsystem" target="_blank">
             <img src="img/donate.png" width="50" height="35" alt="Donor Badge" style="margin-bottom:5px;">
         </a>
     </li>
 </ul>
+
 
             </div>
         </div>

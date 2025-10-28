@@ -52,7 +52,7 @@ ob_end_flush();
 <?php include 'header2.php'; ?>
 
 <div class="col-md-4">
-    <h3>MAXCTF Dashboard</h3>
+    <h3>MAXCTF</h3>
     <ul class="nav nav-tabs">
         <li class="active"><a href="#home" data-toggle="tab">Home</a></li>
         <li><a href="#profile" data-toggle="tab">Progress</a></li>
