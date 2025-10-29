@@ -209,11 +209,18 @@ document.addEventListener('DOMContentLoaded', function() {
         icon: 'success',
         background: '#0f0f0f',
         color: '#00ff99',
-        confirmButtonColor: '#00ff99'
+        confirmButtonColor: '#00ff99',
+        timer: 9000,
+        timerProgressBar: true,
+        didClose: () => {
+            window.location.href = 'dashboard.php';
+        }
     });
 });
 </script>
 <?php 
+// Optional: auto-login by setting session
+$_SESSION['id'] = $ctfid;
 unset($_SESSION['success']);
 } elseif (isset($_SESSION['error'])) {
 ?>
