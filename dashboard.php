@@ -65,7 +65,7 @@ ob_end_flush();
                 <li class="divider"></li>
                <li><a href="#challenges" data-toggle="tab">Challenges</a></li>
     <li class="divider"></li>
-                <li><a href="logout.php"><b>./exit</b></a></li>
+                <li><a href="logout"><b>./exit</b></a></li>
             </ul>
         </li>
     </ul>
