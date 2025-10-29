@@ -108,7 +108,7 @@ unset($_SESSION['success']);
                 <div class="well">
                     <form method="post" enctype="multipart/form-data" class="form-horizontal">
                         <fieldset>
-                            <legend>HINT: GUVF GBB VF N PUNYYRATR</legend>
+                            <legend class="text-green">GUVF GBB VF N PUNYYRATR</legend>
                             <div class="form-group">
                                 <label for="inputEmail" class="col-lg-2 control-label">CTFID</label>
                                 <div class="col-lg-10">
