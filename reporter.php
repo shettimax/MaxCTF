@@ -100,7 +100,6 @@ unset($_SESSION['success']);
 <!-- Your form and page content continues below -->
 <div class="row tall-row">
             <div class="col-lg-12">
-                <h1>lbh'yy trg gjragl cbvagf</h1>
                 <hr>
             </div>
         </div>
