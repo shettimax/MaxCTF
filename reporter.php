@@ -158,7 +158,7 @@ unset($_SESSION['success']);
                                     </select>
                                     <div class="checkbox">
                                         <label>
-                                            <input required type="checkbox"> i agree & accept rules stated <a href="disclaimer.php">here</a>
+                                            <input required type="checkbox"> i agree & accept rules stated
                                         </label>
                                         <input name="amount" value="20" type="hidden">
                                     </div>
