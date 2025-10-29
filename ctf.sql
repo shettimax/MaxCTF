@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1:3306
--- Generation Time: Oct 27, 2025 at 11:11 AM
+-- Generation Time: Oct 29, 2025 at 03:16 AM
 -- Server version: 5.7.44
 -- PHP Version: 5.6.40-81+ubuntu20.04.1+deb.sury.org+1
 
@@ -19,7 +19,7 @@ SET time_zone = "+00:00";
 /*!40101 SET NAMES utf8mb4 */;
 
 --
--- Database: `ctf`
+-- Database: `ctf2`
 --
 
 -- --------------------------------------------------------
@@ -70,13 +70,14 @@ CREATE TABLE `accounts` (
 --
 
 INSERT INTO `accounts` (`id`, `ctfid`, `ctfname`, `ctfscore`, `joined`, `ctfskillset`, `gender`, `ctfemail`, `ctfpassword`, `farko`) VALUES
-(1, 'CTFBB812170105', 'max', 60, '2020-12-17', 'noob', 'male', 'max@yahoo.com', 'max@yahoo.com', '1'),
-(2, 'CTFJU312160519', '1337M4X', 21, '2020-12-16', 'noob', 'male', 'blckx@yahoo.com', 'blckx@yahoo.com', '1'),
-(3, 'MXS4F96TOK0', 'Shettimax', 200, '2020-12-16', '1337', 'male', 'shettimax@yahooo.com', 'shettimax@yahooo.com', '1'),
-(4, 'CTFXN410251144', 'KingCobra', 81, '2025-10-25', 'noob', 'male', 'xw@x.x', '95fef0b03489c26d510bc36ecceef32d8a60bc69', '1'),
-(5, 'CTFYX710251150', '0xvince', 10036, '2025-10-25', 'N00B', 'male', '0xvince@1337.co', '9b50d1f90e62bf2b07ce4a2c12ae735ccb4c3d05', '1'),
-(6, 'CTFQL010260216', 'XL0V3R', 1018, '2025-10-26', '1337', 'MALE', 'XL0V3R@1337.co', '0eb9ea0bef58bbe654059ac7e27f67c2e8eb9240', '1'),
-(10, 'CTFHO910260316', 'kiralina', 821, '2025-10-26', 'N00B', 'FEMALE', 'kira@1337.co', '0eb9ea0bef58bbe654059ac7e27f67c2e8eb9240', '1');
+(1, 'CTFM4X1337', 'Al0new0lf', 106, '2019-12-17', 'noob', 'male', 'shettimax@1337.co', '0eb9ea0bef58bbe654059ac7e27f67c2e8eb9240', '1'),
+(2, 'BL4KXPL6', 'BXP6', 500, '2020-02-16', 'noob', 'male', 'black@1337.co', '0eb9ea0bef58bbe654059ac7e27f67c2e8eb9240', '1'),
+(3, 'M4Z4NG33Z0', 'MZGZ', 1000, '2021-12-16', '1337', 'male', 'mzgz@1337.co', '0eb9ea0bef58bbe654059ac7e27f67c2e8eb9240', '1'),
+(4, 'C0BR47A73', 'KingCobra', 1500, '2022-10-25', 'noob', 'male', 'cobra@1337.co', '0eb9ea0bef58bbe654059ac7e27f67c2e8eb9240', '1'),
+(5, 'CTFXG33W4', '0xvince', 2000, '2023-11-05', 'N00B', 'male', '0xvince@1337.co', '0eb9ea0bef58bbe654059ac7e27f67c2e8eb9240', '1'),
+(6, 'CTF3XL0V44', 'XL0V3R', 2500, '2024-09-16', '1337', 'MALE', 'XL0V3R@1337.co', '0eb9ea0bef58bbe654059ac7e27f67c2e8eb9240', '1'),
+(10, 'CTFHO910260316', 'kiralina', 3033, '2025-10-26', 'N00B', 'FEMALE', 'kira@1337.co', '0eb9ea0bef58bbe654059ac7e27f67c2e8eb9240', '1'),
+(11, 'CTFHO60316', 'DMP', 3569, '2025-10-27', 'N00B', 'FEMALE', 'dudu@1337.co', '0eb9ea0bef58bbe654059ac7e27f67c2e8eb9240', '1');
 
 -- --------------------------------------------------------
 
@@ -116,7 +117,7 @@ CREATE TABLE `badges` (
 --
 
 INSERT INTO `badges` (`id`, `title`, `vibe`, `required_score`) VALUES
-(1, 'n00b', 'Just getting started', 0),
+(1, 'n00b', 'Just getting started', 1),
 (2, 'WebInitiate', 'Learning the ropes', 500),
 (3, 'ByteSpinner', 'Crafting basic payloads', 1000),
 (4, 'Weaver', 'Showing promise', 1500),
@@ -157,8 +158,13 @@ INSERT INTO `bugs` (`id`, `bug`) VALUES
 (2, 'XSS'),
 (3, 'LFI'),
 (4, 'RFI'),
-(5, 'FILEUPLOAD'),
-(6, 'NOT HERE');
+(5, 'OSCMD'),
+(6, 'UPLOADer'),
+(7, 'CLICKJACK'),
+(8, 'SESSIONs'),
+(9, 'DIRBRUTE'),
+(10, 'XMLPARSER'),
+(11, 'NOT HERE');
 
 -- --------------------------------------------------------
 
@@ -316,7 +322,10 @@ INSERT INTO `reportx` (`id`, `walletid`, `amount`, `proofimage`, `date`, `status
 (5, 'CTFXN410251144', '20', 'admin/admin/proofimages/vatar1337.png', '2025-10-23 14:30:06', 'approved', 'XSS', 'FIRM'),
 (6, 'CTFXN410251144', '30', 'admin/admin/proofimages/vatar1337.png', '2025-10-24 14:30:06', 'approved', 'XSS', 'FIRM'),
 (7, 'CTFHO910260316', '20', 'admin/proofimages/mclcnew1.png', '2020-12-19 03:12:33', 'approved', 'XSS', 'MEDIUM'),
-(8, 'CTFHO910260316', '20', 'admin/admin/proofimages/vatar1337.png', '2025-10-23 14:30:06', 'approved', 'XSS', 'FIRM');
+(8, 'CTFHO910260316', '20', 'admin/admin/proofimages/vatar1337.png', '2025-10-23 14:30:06', 'approved', 'XSS', 'FIRM'),
+(9, 'CTFHO910260316', '0', 'admin/proofimages/Screenshot from 2025-10-20 16-36-30.png', '2025-10-23 12:10:27', 'pending', 'XSS', 'LOW'),
+(10, 'CTFM4X1333337', '15', 'admin/proofimages/Screenshot from 2025-10-20 16-36-30.png', '2025-10-23 12:10:27', 'pending', 'LFI', 'LOW'),
+(11, 'M4Z4NG33Z0', '20', 'admin/proofimages/mclcnew1.png', '2020-12-19 03:12:33', 'approved', 'XSS', 'MEDIUM');
 
 -- --------------------------------------------------------
 
@@ -351,9 +360,9 @@ CREATE TABLE `site` (
   `id` int(11) NOT NULL,
   `sitename` varchar(100) NOT NULL,
   `header` varchar(300) NOT NULL,
-  `header2` varchar(100) NOT NULL,
+  `header2` varchar(1500) NOT NULL,
   `about` varchar(5000) NOT NULL,
-  `disclaimer` varchar(400) NOT NULL
+  `disclaimer` varchar(1500) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 --
@@ -361,7 +370,7 @@ CREATE TABLE `site` (
 --
 
 INSERT INTO `site` (`id`, `sitename`, `header`, `header2`, `about`, `disclaimer`) VALUES
-(1, 'MAX CTF', 'A place for H4X0RS. Inspired by the classic green on black terminal style.', 'Tk8gUFVSQ0hBU0UgTkVDRVNTQVJZ<br>VE8gRU5URVIgT1IgV0lO', 'MAXCTF is built for curious minds stepping into the world of Capture The Flag (CTF) hacking. Whether you\'re a total beginner or just exploring cybersecurity, this platform introduces the basics and gives you the confidence to participate. CTFs are competitive hacking events often hosted at infosec conferences like BSides, DEF CON, and local meetups. They feature challenges across web exploitation, reverse engineering, cryptography, forensics, and more — each designed to test your problem-solving skills and creativity.', 'We do not promote, encourage, support or excite any illegal activity or hacking without written permission in general. We want you to think outside the box by solving daily ctf challenges. If you plan to use the information for illegal purposes, please leave this website now. We cannot be held responsible for any misuse of your boosted knowlegde.');
+(1, 'M4XCTF™', 'A place for H4X0RS. Inspired by the classic green on black terminal style.', 'MAXCTF and its creators cannot be held liable for any misuse, misinterpretation, or unauthorized application of the content provided. Stay ethical. Stay curious. Hack responsibly.', 'MAXCTF is built for curious minds stepping into the world of Capture The Flag (CTF) hacking. Whether you\'re a total beginner or just exploring cybersecurity, this platform introduces the basics and gives you the confidence to participate. CTFs are competitive hacking events often hosted at infosec conferences like BSides, DEF CON, and local meetups. They feature challenges across web exploitation, reverse engineering, cryptography, forensics, and more — each designed to test your problem-solving skills and creativity.', 'Our mission is to inspire critical thinking and technical growth by presenting real-world scenarios in a safe, controlled environment. If you intend to misuse the knowledge gained here for unlawful purposes, we respectfully ask that you leave this site immediately.\r\n\r\nMAXCTF and its creators cannot be held liable for any misuse, misinterpretation, or unauthorized application of the content provided. Stay ethical. Stay curious. Hack responsibly.');
 
 -- --------------------------------------------------------
 
@@ -502,7 +511,7 @@ ALTER TABLE `1f86700588aed0390dd27c383b7fc963`
 -- AUTO_INCREMENT for table `accounts`
 --
 ALTER TABLE `accounts`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
 
 --
 -- AUTO_INCREMENT for table `admin`
@@ -514,7 +523,7 @@ ALTER TABLE `admin`
 -- AUTO_INCREMENT for table `bugs`
 --
 ALTER TABLE `bugs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
 
 --
 -- AUTO_INCREMENT for table `ctfs`
@@ -538,7 +547,7 @@ ALTER TABLE `quotes`
 -- AUTO_INCREMENT for table `reportx`
 --
 ALTER TABLE `reportx`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
 
 --
 -- AUTO_INCREMENT for table `severities`
