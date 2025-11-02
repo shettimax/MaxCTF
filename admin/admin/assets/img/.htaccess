@@ -1,4 +1,0 @@
-# .htaccess in your images directory
-RewriteEngine on
-RewriteCond &#37;{REQUEST_URI} ^\\.(gif|jpe?g|png)$ [NC]
-RewriteRule .? - [F,L]

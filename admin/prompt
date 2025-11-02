@@ -1,0 +1,19 @@
+/admin2
+├── config.php
+├── index.php          → login
+├── dashboard.php      → overview
+├── flags.php          → approve flags
+├── ctflog.php         → flag history
+├── userz.php          → user list
+├── badges.php         → badge manager
+├── challenges.php     → challenge manager
+├── targets.php        → target manager
+├── modpanel.php       → mod-only flag view
+├── analytics.php      → flag stats
+├── logout.php
+│
+├── ajax.php           → backend flag approval
+├── header.php         → nav + sidebar
+├── footer.php         → scripts + closing tags
+├── footer2.php        → alt footer
+

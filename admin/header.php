@@ -1,0 +1,39 @@
+<?php
+session_start();
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>CTF Admin 💀</title>
+    <link href="css/hacker.css" rel="stylesheet" />
+    <link href="css/alert.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+</head>
+<body class="sb-nav-fixed" style="background-color: #000; color: #00ff99;">
+<nav class="navbar navbar-expand navbar-dark bg-dark">
+    <a class="navbar-brand text-green" href="dashboard.php">CTFBACKBOX 💀</a>
+    <ul class="navbar-nav ml-auto">
+        <li class="nav-item"><a class="nav-link text-green" href="logout.php"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+    </ul>
+</nav>
+<div id="layoutSidenav">
+<div id="layoutSidenav_nav">
+<nav class="sb-sidenav accordion sb-sidenav-dark" id="sidenavAccordion">
+    <div class="sb-sidenav-menu">
+        <div class="nav">
+            <a class="nav-link text-green" href="dashboard.php"><i class="fas fa-terminal"></i> Dashboard</a>
+            <a class="nav-link text-green" href="flags.php"><i class="fas fa-bug"></i> Flags</a>
+            <a class="nav-link text-green" href="ctflog.php"><i class="fas fa-history"></i> Flag History</a>
+            <a class="nav-link text-green" href="userz.php"><i class="fas fa-users"></i> Users</a>
+            <a class="nav-link text-green" href="badges.php"><i class="fas fa-award"></i> Badges</a>
+            <a class="nav-link text-green" href="challenges.php"><i class="fas fa-puzzle-piece"></i> Challenges</a>
+            <a class="nav-link text-green" href="targets.php"><i class="fas fa-crosshairs"></i> Targets</a>
+            <a class="nav-link text-green" href="modpanel.php"><i class="fas fa-user-shield"></i> Mod Panel</a>
+            <a class="nav-link text-green" href="analytics.php"><i class="fas fa-chart-bar"></i> Analytics</a>
+        </div>
+    </div>
+</nav>
+</div>
+<div id="layoutSidenav_content">
