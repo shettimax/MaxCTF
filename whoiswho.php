@@ -99,6 +99,9 @@ if (file_exists($badgePath)) {
 
     </div>
 </div>
+<p>
+    <a href="javascript:history.back()" style="color:#0f0;">← Go Back</a>
+</p>
 
 </body>
 </html>

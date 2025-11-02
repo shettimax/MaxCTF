@@ -203,3 +203,6 @@
 .terminal-feed {
   scroll-behavior: smooth;
 }
+body {
+  padding-top: 70px; /* adjust based on navbar height */
+}

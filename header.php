@@ -54,7 +54,7 @@ ob_end_flush();
 </head>
 
 <body>
-    <nav class="navbar navbar-default navbar-static-top">
+    <nav class="navbar navbar-default navbar-fixed-top">
         <div class="container">
             <div class="navbar-header">
                 <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
@@ -87,10 +87,7 @@ if (isset($_SESSION['id']) && strlen($_SESSION['id']) > 0 && isset($_SESSION['ct
             </div>
         </div>
     </nav>
-
-
     <div class="container">
-
         <!-- Jumbotron -->
         <div class="jumbotron">
             <h1><?php echo $suna; ?></h1>
