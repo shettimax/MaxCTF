@@ -5,7 +5,6 @@ include("confik.php");
 ini_set('display_errors', 0);
 error_reporting(E_ALL);
 
-// Session check
 if (!isset($_SESSION['id']) || strlen($_SESSION['id']) == 0) {
     header("location:login.php");
     exit();
@@ -14,27 +13,13 @@ if (!isset($_SESSION['id']) || strlen($_SESSION['id']) == 0) {
 $ctfid = $_SESSION['ctfid'];
 $ctfname = $_SESSION['ctfname'];
 
-// CSRF token generation
-if (empty($_SESSION['csrf_token'])) {
-    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-}
-
-// Random site info
 $site = mysqli_query($conn, "SELECT * FROM site ORDER BY RAND() LIMIT 1");
 $siterow = mysqli_fetch_array($site);
 $name = $siterow['sitename'];
 $bankname = $siterow['header'];
 $banknumber = $siterow['header2'];
 
-// Handle form submission
 if (isset($_POST['go'])) {
-    // CSRF token validation
-    if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
-        $_SESSION['error'] = "Invalid CSRF token.";
-        header("Location: ctfreporter.php");
-        exit();
-    }
-
     $bug = $_POST['bugx'];
     $severity = $_POST['severityx'];
     $amount = $_POST['amount'];
@@ -43,35 +28,20 @@ if (isset($_POST['go'])) {
     $date = date("Y-m-d H:i:s");
 
     $target_dir = "admin/proofimages/";
-    $timestamp = time();
-    $extension = strtolower(pathinfo($_FILES["proofimage"]["name"], PATHINFO_EXTENSION));
-    $filename = $ctfid . "_" . $timestamp . "." . $extension;
-    $target_file = $target_dir . $filename;
+    $target_file = $target_dir . basename($_FILES["proofimage"]["name"]);
     $uploadOk = 1;
+    $imageFileType = strtolower(pathinfo($target_file, PATHINFO_EXTENSION));
 
-    // Size check
     if ($_FILES["proofimage"]["size"] > 500000) {
         $uploadOk = 0;
         $_SESSION['error'] = "File too large. Max allowed size is 500KB.";
     }
 
-    // Extension check
-    if (!in_array($extension, ["jpg", "jpeg", "png", "gif"])) {
+    if (!in_array($imageFileType, ["jpg", "jpeg", "png", "gif"])) {
         $uploadOk = 0;
-        $_SESSION['error'] = "Invalid file extension.";
+        $_SESSION['error'] = "Invalid file format.";
     }
 
-    // MIME type check
-    $finfo = finfo_open(FILEINFO_MIME_TYPE);
-    $mimeType = finfo_file($finfo, $_FILES["proofimage"]["tmp_name"]);
-    finfo_close($finfo);
-    $allowedMimeTypes = ["image/jpeg", "image/png", "image/gif"];
-    if (!in_array($mimeType, $allowedMimeTypes)) {
-        $uploadOk = 0;
-        $_SESSION['error'] = "Invalid MIME type: $mimeType";
-    }
-
-    // Upload and insert
     if ($uploadOk == 1) {
         if (move_uploaded_file($_FILES["proofimage"]["tmp_name"], $target_file)) {
             $sql = "INSERT INTO reportx (walletid, amount, proofimage, date, status, bug, severity, notes) 
@@ -97,8 +67,6 @@ if (isset($_POST['go'])) {
       <form method="post" enctype="multipart/form-data" class="form-horizontal">
         <fieldset>
           <legend class="text-green">GUVF GBB VF N PUNYYRATR</legend>
-
-          <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
 
           <div class="form-group">
             <label class="col-lg-2 control-label">CTFID</label>

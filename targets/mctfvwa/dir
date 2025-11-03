@@ -1,0 +1,44 @@
+mctfvwa/
+│
+├── index.php          # Main lab entry point
+│
+├── auth/              # Login bypass, brute force, session flaws
+├── csrf/              # CSRF attack simulations
+├── idor/              # Insecure Direct Object Reference labs
+├── logic/             # Business logic flaws (e.g. price tampering)
+├── sqli/              # SQL Injection challenges
+├── upload/            # File upload vulnerabilities
+└── xss/               # Reflected & Stored XSS
+
+
+
+
+
+
+
+mctfvwa/
+│
+├── index.php                  # Entry point to the lab (session-aware)
+│
+├── xss/
+│   ├── reflected.php          # Reflected XSS challenge
+│   └── stored.php             # Stored XSS challenge
+│
+├── sqli/
+│   └── classic.php            # Basic SQL Injection challenge
+│
+├── upload/
+│   └── upload.php             # File upload vulnerability
+│
+├── idor/
+│   └── view.php               # IDOR challenge
+│
+├── csrf/
+│   └── transfer.php           # CSRF challenge
+│
+├── auth/
+│   └── bypass.php             # Login bypass challenge
+│
+└── logic/
+    └── price.php              # Price manipulation logic flaw
+
