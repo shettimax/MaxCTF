@@ -133,7 +133,7 @@ while($row = mysqli_fetch_array($get)){
 </div>
 </div>
 </main>
-<?php include 'footer2.php'; ?>
+<?php include 'footer.php'; ?>
 
 <!-- Scripts -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>

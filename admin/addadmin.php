@@ -22,12 +22,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (mysqli_query($conn, $insert)) {
             $creator = $_SESSION['alogin'];
             mysqli_query($conn, "INSERT INTO auditlog (admin, action) VALUES ('$creator','Created new admin $username')");
-            $message = "✅ Admin '$username' added successfully.";
+            $message = "success";
         } else {
-            $message = "❌ Error: " . mysqli_error($conn);
+            $message = "error";
         }
     } else {
-        $message = "⚠️ Please fill in all required fields.";
+        $message = "incomplete";
     }
 }
 ?>
@@ -41,10 +41,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <li class="breadcrumb-item"><a href="dashboard.php">Dashboard</a></li>
         <li class="breadcrumb-item active">Add Admin</li>
     </ol>
-
-    <?php if ($message): ?>
-        <div class="alert alert-info"><?php echo $message; ?></div>
-    <?php endif; ?>
 
     <div class="card mb-4">
         <div class="card-header text-green">Admin Credentials</div>
@@ -76,3 +72,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </div>
 </main>
 <?php include 'footer.php'; ?>
+
+<!-- SweetAlert2 -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<?php if ($message === "success"): ?>
+<script>
+Swal.fire({
+    toast: true,
+    position: 'top-end',
+    icon: 'success',
+    title: 'Admin added successfully',
+    showConfirmButton: false,
+    timer: 2000,
+    timerProgressBar: true
+});
+</script>
+<?php elseif ($message === "error"): ?>
+<script>
+Swal.fire({
+    toast: true,
+    position: 'top-end',
+    icon: 'error',
+    title: 'Error adding admin',
+    text: 'Something went wrong.',
+    showConfirmButton: false,
+    timer: 3000,
+    timerProgressBar: true
+});
+</script>
+<?php elseif ($message === "incomplete"): ?>
+<script>
+Swal.fire({
+    toast: true,
+    position: 'top-end',
+    icon: 'warning',
+    title: 'Missing fields',
+    text: 'Please fill in all required fields.',
+    showConfirmButton: false,
+    timer: 3000,
+    timerProgressBar: true
+});
+</script>
+<?php endif; ?>

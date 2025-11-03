@@ -1,5 +1,29 @@
 <?php
 session_start();
+include 'config.php';
+
+// 🔐 Redirect if not logged in
+if (!isset($_SESSION['alogin']) || empty($_SESSION['alogin'])) {
+    header('location:index.php');
+    exit;
+}
+
+// ⏱️ Session timeout: 30 minutes
+$timeout = 1800; // seconds
+if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity']) > $timeout) {
+    $expiredUser = $_SESSION['alogin'];
+    session_unset();
+    session_destroy();
+    header("Location: index.php?timeout=1");
+    exit;
+}
+$_SESSION['last_activity'] = time();
+
+// 🧠 Optional: Role-based access (uncomment if needed)
+// if ($_SESSION['role'] !== 'admin' && $_SESSION['role'] !== 'superadmin') {
+//     header('location:unauthorized.php');
+//     exit;
+// }
 ?>
 <!DOCTYPE html>
 <html lang="en">
