@@ -54,10 +54,10 @@ ob_end_flush();
 <div class="col-md-4">
     <h3>MAXCTF</h3>
     <ul class="nav nav-tabs">
-        <li class="active"><a href="#home" data-toggle="tab">Home</a></li>
-        <li><a href="#profile" data-toggle="tab">Progress</a></li>
+        <li class="active"><a href="#home" data-toggle="tab">H0ME</a></li>
+        <li><a href="#profile" data-toggle="tab">PROGRESS</a></li>
         <li class="dropdown">
-            <a class="dropdown-toggle" data-toggle="dropdown" href="#">More <span class="caret"></span></a>
+            <a class="dropdown-toggle" data-toggle="dropdown" href="#">M0RE <span class="caret"></span></a>
             <ul class="dropdown-menu">
                 <li><a href="#dropdown1" data-toggle="tab">Leaderboard</a></li>
                 <li class="divider"></li>
@@ -165,12 +165,47 @@ if (file_exists($badgePath)) {
   <h4>🚩 Ready for a challenge?</h4>
   <p>Explore hands-on CTF-style challenges to sharpen your skills.</p>
   <ul class="list-group">
-    <li class="list-group-item">🧠 Reverse Engineering — <em>Coming soon</em></li>
-    <li class="list-group-item">🔐 Web Exploitation — <em>Coming soon</em></li>
-    <li class="list-group-item">🕵️ OSINT — <em>Coming soon</em></li>
-  </ul>
+<?php
+$challenges = mysqli_query($conn, "
+    SELECT c.id, c.title, c.category, c.end_time, c.description, t.name 
+    FROM challenges c 
+    LEFT JOIN targets t ON c.target_id = t.id 
+    WHERE c.status='active' 
+    ORDER BY c.end_time ASC
+");
+
+if (mysqli_num_rows($challenges) > 0) {
+    while ($c = mysqli_fetch_assoc($challenges)) {
+        $launchUrl = "../targets/" . $c['path'];
+        echo "<li class='list-group-item d-flex justify-content-between align-items-center'>
+            <div class='challenge-info'>
+                <div>🚩 <strong>" . htmlentities($c['title']) . "</strong></div>
+                <div><em>" . htmlentities($c['category']) . "</em>  
+                    <code class='countdown' title='Time left' data-end='" . $c['end_time'] . "'></code>
+                </div>
+            </div>
+            <div class='challenge-action'>
+                <a href='#' 
+                   class='badge badge-start launch-link' 
+                   data-launchurl='" . $launchUrl . "'
+                   data-ctfname='" . htmlentities($ctfname) . "'
+                   data-title='" . htmlentities($c['title']) . "'
+                   data-category='" . htmlentities($c['category']) . "'
+                   data-target='" . htmlentities($c['name']) . "'
+                   data-description='" . htmlentities($c['description']) . "'>
+                   Start
+                </a>
+            </div>
+        </li>";
+    }
+} else {
+    echo "<li class='list-group-item text-muted'>No active challenges yet. Stay tuned.</li>";
+}
+?>
+</ul>
   <p class="text-muted">New challenges drop weekly. Stay sharp.</p>
-  </div>
+</div>
+
     </div><hr>
 </div>
 <div class="alert alert-dismissible alert-success">
@@ -207,4 +242,7 @@ if (file_exists($badgePath)) {
         |<b class="badge-title"><?php echo $currentBadge['vibe']; ?></b>
     </div>
 </div>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="js/start.js"></script>
+<script src="js/timer.js"></script>
 <?php include 'footer.php'; ?>

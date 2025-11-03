@@ -63,9 +63,9 @@ ob_end_flush();
                 <li class="divider"></li>
                 <li><a href="#dropdown2" data-toggle="tab">Submit Report</a></li>
                 <li class="divider"></li>
-                <li><a href="#takequiz" data-toggle="tab">Take Quiz</a></li>
+               <li><a href="#challenges" data-toggle="tab">Challenges</a></li>
     <li class="divider"></li>
-                <li><a href="logout.php"><b>./exit</b></a></li>
+                <li><a href="logout"><b>./exit</b></a></li>
             </ul>
         </li>
     </ul>
@@ -160,20 +160,16 @@ if (file_exists($badgePath)) {
             ?>
             </ul>
         </div>
-        <div class="tab-pane fade" id="takequiz">
-    <a href="#" class="close text-none">*</a>
-    <h4>🧠 Ready to test your skills?</h4>
-    <p>Click below to begin your quiz journey.</p>
-    <button id="loadTopicsBtn">Load Topics</button>
-<div id="topicsContainer"></div>
-
-
-    <!-- ✅ Confirmation block goes here -->
-    <div id="quizConfirm" class="alert alert-dismissible alert-warning" style="display:none;">
-      <h4>🧠 Ready to begin?</h4>
-      <p>This quiz is timed. You’ll have <strong id="quizDurationText">...</strong> minutes to complete it.</p>
-      <button class="btn btn-success" id="confirmStart">Start Quiz</button>
-    </div>
+        <div class="tab-pane fade" id="challenges">
+  <a href="#" class="close text-none">*</a>
+  <h4>🚩 Ready for a challenge?</h4>
+  <p>Explore hands-on CTF-style challenges to sharpen your skills.</p>
+  <ul class="list-group">
+    <li class="list-group-item">🧠 Reverse Engineering — <em>Coming soon</em></li>
+    <li class="list-group-item">🔐 Web Exploitation — <em>Coming soon</em></li>
+    <li class="list-group-item">🕵️ OSINT — <em>Coming soon</em></li>
+  </ul>
+  <p class="text-muted">New challenges drop weekly. Stay sharp.</p>
   </div>
     </div><hr>
 </div>

@@ -1,6 +1,6 @@
 <footer class="py-4 bg-dark mt-auto">
     <div class="container-fluid">
-        <div class="text-center text-green">CTFBACKBOX 💀 | Admin Panel</div>
+        <div class="text-center text-green">CTFBACKBOX | MZGZ</div>
     </div>
 </footer>
 </div>
