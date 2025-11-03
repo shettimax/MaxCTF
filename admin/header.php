@@ -2,28 +2,19 @@
 session_start();
 include 'config.php';
 
-// 🔐 Redirect if not logged in
 if (!isset($_SESSION['alogin']) || empty($_SESSION['alogin'])) {
     header('location:index.php');
     exit;
 }
 
-// ⏱️ Session timeout: 30 minutes
-$timeout = 1800; // seconds
+$timeout = 1800;
 if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity']) > $timeout) {
-    $expiredUser = $_SESSION['alogin'];
     session_unset();
     session_destroy();
     header("Location: index.php?timeout=1");
     exit;
 }
 $_SESSION['last_activity'] = time();
-
-// 🧠 Optional: Role-based access (uncomment if needed)
-// if ($_SESSION['role'] !== 'admin' && $_SESSION['role'] !== 'superadmin') {
-//     header('location:unauthorized.php');
-//     exit;
-// }
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -50,12 +41,18 @@ $_SESSION['last_activity'] = time();
             <a class="nav-link text-green" href="dashboard.php"><i class="fas fa-terminal"></i> Dashboard</a>
             <a class="nav-link text-green" href="flags.php"><i class="fas fa-bug"></i> Flags</a>
             <a class="nav-link text-green" href="ctflog.php"><i class="fas fa-history"></i> Flag History</a>
+            <a class="nav-link text-green" href="solves.php"><i class="fas fa-check-double"></i> Solves</a>
             <a class="nav-link text-green" href="userz.php"><i class="fas fa-users"></i> Users</a>
             <a class="nav-link text-green" href="badges.php"><i class="fas fa-award"></i> Badges</a>
             <a class="nav-link text-green" href="challenges.php"><i class="fas fa-puzzle-piece"></i> Challenges</a>
             <a class="nav-link text-green" href="targets.php"><i class="fas fa-crosshairs"></i> Targets</a>
             <a class="nav-link text-green" href="modpanel.php"><i class="fas fa-user-shield"></i> Mod Panel</a>
             <a class="nav-link text-green" href="analytics.php"><i class="fas fa-chart-bar"></i> Analytics</a>
+
+            <div class="sb-sidenav-menu-heading text-green">Admin Panel</div>
+            <a class="nav-link text-green" href="addadmin.php"><i class="fas fa-user-plus"></i> Add Admin</a>
+            <a class="nav-link text-green" href="viewadmins.php"><i class="fas fa-users-cog"></i> View Admins</a>
+            <a class="nav-link text-green" href="auditlog.php"><i class="fas fa-clipboard-list"></i> Audit Log</a>
         </div>
     </div>
 </nav>

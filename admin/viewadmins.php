@@ -57,20 +57,11 @@ $admins = mysqli_query($conn, "SELECT * FROM admin");
                     <tbody>
                         <?php while ($row = mysqli_fetch_array($admins)) { ?>
                         <tr data-id="<?php echo $row['idPrimary']; ?>">
+                            <td class="username"><?php echo htmlentities($row['username']); ?></td>
+                            <td class="email"><?php echo htmlentities($row['email']); ?></td>
+                            <td class="role"><?php echo htmlentities($row['role']); ?></td>
                             <td>
-                                <input type="text" class="form-control username" value="<?php echo htmlentities($row['username']); ?>">
-                            </td>
-                            <td>
-                                <input type="text" class="form-control email" value="<?php echo htmlentities($row['email']); ?>">
-                            </td>
-                            <td>
-                                <select class="form-control role">
-                                    <option value="admin" <?php if ($row['role'] === 'admin') echo 'selected'; ?>>admin</option>
-                                    <option value="superadmin" <?php if ($row['role'] === 'superadmin') echo 'selected'; ?>>superadmin</option>
-                                </select>
-                            </td>
-                            <td>
-                                <button class="btn btn-success btn-sm edit">Save</button>
+                                <button class="btn btn-warning btn-sm edit-toggle">Edit</button>
                                 <button class="btn btn-danger btn-sm delete ml-2">Delete</button>
                             </td>
                         </tr>
@@ -82,13 +73,33 @@ $admins = mysqli_query($conn, "SELECT * FROM admin");
     </div>
 </div>
 </main>
-<?php include 'footer2.php'; ?>
+<?php include 'footer.php'; ?>
+
+<!-- Delete Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content bg-dark text-green">
+      <div class="modal-header">
+        <h5 class="modal-title">Confirm Delete</h5>
+        <button type="button" class="close text-green" data-dismiss="modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        Are you sure you want to delete this admin?
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-danger confirm-delete">Delete</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- DataTables + SweetAlert2 -->
 <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
 $(document).ready(function () {
@@ -97,83 +108,66 @@ $(document).ready(function () {
         responsive: true
     });
 
-    $('.edit').on('click', function () {
+    let deleteId = null;
+
+    $(document).on('click', '.edit-toggle', function () {
+        const row = $(this).closest('tr');
+        const username = row.find('.username').text();
+        const email = row.find('.email').text();
+        const role = row.find('.role').text();
+
+        row.find('.username').html(`<input type="text" class="form-control username-edit" value="${username}" data-original="${username}">`);
+        row.find('.email').html(`<input type="text" class="form-control email-edit" value="${email}" data-original="${email}">`);
+        row.find('.role').html(`
+            <select class="form-control role-edit" data-original="${role}">
+                <option value="admin" ${role === 'admin' ? 'selected' : ''}>admin</option>
+                <option value="superadmin" ${role === 'superadmin' ? 'selected' : ''}>superadmin</option>
+            </select>
+        `);
+        $(this).replaceWith(`
+            <button class="btn btn-success btn-sm save-edit">Save</button>
+            <button class="btn btn-secondary btn-sm cancel-edit ml-2">Cancel</button>
+        `);
+    });
+
+    $(document).on('click', '.save-edit', function () {
         const row = $(this).closest('tr');
         const id = row.data('id');
-        const username = row.find('.username').val();
-        const email = row.find('.email').val();
-        const role = row.find('.role').val();
+        const username = row.find('.username-edit').val();
+        const email = row.find('.email-edit').val();
+        const role = row.find('.role-edit').val();
 
         $.post('viewadmins.php', {
             action: 'edit',
-            id: id,
-            username: username,
-            email: email,
-            role: role
-        }).done(function () {
-            Swal.fire({
-                toast: true,
-                position: 'top-end',
-                icon: 'success',
-                title: 'Admin updated',
-                showConfirmButton: false,
-                timer: 2000,
-                timerProgressBar: true
-            });
-        }).fail(function () {
-            Swal.fire({
-                toast: true,
-                position: 'top-end',
-                icon: 'error',
-                title: 'Update failed',
-                text: 'Could not update admin.',
-                showConfirmButton: false,
-                timer: 3000,
-                timerProgressBar: true
-            });
-        });
+            id, username, email, role
+        }).done(() => location.reload());
     });
 
-    $('.delete').on('click', function () {
+    $(document).on('click', '.cancel-edit', function () {
         const row = $(this).closest('tr');
-        const id = row.data('id');
+        const originalUsername = row.find('.username-edit').data('original');
+        const originalEmail = row.find('.email-edit').data('original');
+        const originalRole = row.find('.role-edit').data('original');
 
-        Swal.fire({
-            title: 'Delete this admin?',
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonText: 'Yes, delete',
-            cancelButtonText: 'Cancel'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                $.post('viewadmins.php', {
-                    action: 'delete',
-                    id: id
-                }).done(function () {
-                    row.remove();
-                    Swal.fire({
-                        toast: true,
-                        position: 'top-end',
-                        icon: 'success',
-                        title: 'Admin deleted',
-                        showConfirmButton: false,
-                        timer: 2000,
-                        timerProgressBar: true
-                    });
-                }).fail(function () {
-                    Swal.fire({
-                        toast: true,
-                        position: 'top-end',
-                        icon: 'error',
-                        title: 'Delete failed',
-                        text: 'Could not delete admin.',
-                        showConfirmButton: false,
-                        timer: 3000,
-                        timerProgressBar: true
-                    });
-                });
-            }
-        });
+        row.find('.username').text(originalUsername);
+        row.find('.email').text(originalEmail);
+        row.find('.role').text(originalRole);
+
+        row.find('.save-edit').remove();
+        $(this).remove();
+        row.find('td:last-child').prepend(`<button class="btn btn-warning btn-sm edit-toggle">Edit</button>`);
+    });
+
+    $(document).on('click', '.delete', function () {
+        deleteId = $(this).closest('tr').data('id');
+        $('#deleteModal').modal('show');
+    });
+
+    $(document).on('click', '.confirm-delete', function () {
+        $.post('viewadmins.php', {
+            action: 'delete',
+            id: deleteId
+        }).done(() => location.reload());
     });
 });
 </script>
