@@ -20,7 +20,7 @@ $_SESSION['last_activity'] = time();
 <html lang="en">
 <head>
     <meta charset="utf-8" />
-    <title>CTF Admin 💀</title>
+    <title>M4XCTF</title>
     <link href="css/hacker.css" rel="stylesheet" />
     <link href="css/alert.css" rel="stylesheet" />
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet" />
@@ -28,7 +28,7 @@ $_SESSION['last_activity'] = time();
 </head>
 <body class="sb-nav-fixed" style="background-color: #000; color: #00ff99;">
 <nav class="navbar navbar-expand navbar-dark bg-dark">
-    <a class="navbar-brand text-green" href="dashboard.php">CTFBACKBOX 💀</a>
+    <a class="navbar-brand text-green" href="dashboard.php">MAXCTFBB</a>
     <ul class="navbar-nav ml-auto">
         <li class="nav-item"><a class="nav-link text-green" href="logout.php"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
     </ul>

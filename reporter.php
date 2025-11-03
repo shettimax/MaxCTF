@@ -159,7 +159,7 @@ unset($_SESSION['success']);
                                         <label>
                                             <input required type="checkbox"> i agree & accept rules stated
                                         </label>
-                                        <input name="amount" value="20" type="hidden">
+                                        <input name="amount" value="13" type="hidden">
                                     </div>
                                 </div>
                             </div>
