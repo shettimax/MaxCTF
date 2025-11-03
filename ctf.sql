@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1:3306
--- Generation Time: Oct 29, 2025 at 03:16 AM
+-- Generation Time: Nov 03, 2025 at 11:55 AM
 -- Server version: 5.7.44
 -- PHP Version: 5.6.40-81+ubuntu20.04.1+deb.sury.org+1
 
@@ -61,7 +61,7 @@ CREATE TABLE `accounts` (
   `ctfskillset` varchar(4) NOT NULL COMMENT 'noob or 1337',
   `gender` varchar(10) NOT NULL COMMENT 'male ni or female',
   `ctfemail` varchar(30) NOT NULL COMMENT 'email',
-  `ctfpassword` varchar(1000) NOT NULL COMMENT 'password its d mail o',
+  `ctfpassword` varchar(1000) NOT NULL COMMENT 'password',
   `farko` varchar(11) DEFAULT NULL COMMENT 'basic if uuser bypass d html reg'
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
@@ -72,12 +72,14 @@ CREATE TABLE `accounts` (
 INSERT INTO `accounts` (`id`, `ctfid`, `ctfname`, `ctfscore`, `joined`, `ctfskillset`, `gender`, `ctfemail`, `ctfpassword`, `farko`) VALUES
 (1, 'CTFM4X1337', 'Al0new0lf', 106, '2019-12-17', 'noob', 'male', 'shettimax@1337.co', '0eb9ea0bef58bbe654059ac7e27f67c2e8eb9240', '1'),
 (2, 'BL4KXPL6', 'BXP6', 500, '2020-02-16', 'noob', 'male', 'black@1337.co', '0eb9ea0bef58bbe654059ac7e27f67c2e8eb9240', '1'),
-(3, 'M4Z4NG33Z0', 'MZGZ', 1000, '2021-12-16', '1337', 'male', 'mzgz@1337.co', '0eb9ea0bef58bbe654059ac7e27f67c2e8eb9240', '1'),
+(3, 'M4Z4NG33Z0', 'MZGZ', 1100, '2021-12-16', '1337', 'male', 'mzgz@1337.co', '0eb9ea0bef58bbe654059ac7e27f67c2e8eb9240', '1'),
 (4, 'C0BR47A73', 'KingCobra', 1500, '2022-10-25', 'noob', 'male', 'cobra@1337.co', '0eb9ea0bef58bbe654059ac7e27f67c2e8eb9240', '1'),
 (5, 'CTFXG33W4', '0xvince', 2000, '2023-11-05', 'N00B', 'male', '0xvince@1337.co', '0eb9ea0bef58bbe654059ac7e27f67c2e8eb9240', '1'),
 (6, 'CTF3XL0V44', 'XL0V3R', 2500, '2024-09-16', '1337', 'MALE', 'XL0V3R@1337.co', '0eb9ea0bef58bbe654059ac7e27f67c2e8eb9240', '1'),
-(10, 'CTFHO910260316', 'kiralina', 3033, '2025-10-26', 'N00B', 'FEMALE', 'kira@1337.co', '0eb9ea0bef58bbe654059ac7e27f67c2e8eb9240', '1'),
-(11, 'CTFHO60316', 'DMP', 3569, '2025-10-27', 'N00B', 'FEMALE', 'dudu@1337.co', '0eb9ea0bef58bbe654059ac7e27f67c2e8eb9240', '1');
+(10, 'CTFHO910260316', 'kiralina', 3054, '2025-10-26', 'N00B', 'FEMALE', 'kira@1337.co', '0eb9ea0bef58bbe654059ac7e27f67c2e8eb9240', '1'),
+(11, 'CTFHO60316', 'DMP', 3587, '2025-10-27', 'N00B', 'FEMALE', 'dudu@1337.co', '0eb9ea0bef58bbe654059ac7e27f67c2e8eb9240', '1'),
+(12, 'CTFVH310290308', 'emsonj4y', 29, '2025-10-29', 'N00B', 'MALE', 'emsonj4y@1337.co', '0eb9ea0bef58bbe654059ac7e27f67c2e8eb9240', '1'),
+(13, 'CTFQJ110291223', 'maxinjector', 20, '2025-10-29', '1337', 'MALE', 'maxinjector@1337.co', '0eb9ea0bef58bbe654059ac7e27f67c2e8eb9240', NULL);
 
 -- --------------------------------------------------------
 
@@ -89,15 +91,56 @@ CREATE TABLE `admin` (
   `id` int(11) NOT NULL,
   `username` varchar(100) NOT NULL,
   `email` varchar(100) NOT NULL,
-  `password` varchar(100) NOT NULL
+  `password` varchar(100) NOT NULL,
+  `role` varchar(20) DEFAULT 'admin'
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 --
 -- Dumping data for table `admin`
 --
 
-INSERT INTO `admin` (`id`, `username`, `email`, `password`) VALUES
-(1, 'ctfadmin', 'admin@maxctf.xyz', '$2y$10$JKsviA8XtBmgRpsmtBXXyemW.2oCS2JHco.ns6UTIjZSmu.zajZ3e');
+INSERT INTO `admin` (`id`, `username`, `email`, `password`, `role`) VALUES
+(1, 'ctfadmin', 'admin@maxctf.xyz', '$2y$10$JKsviA8XtBmgRpsmtBXXyemW.2oCS2JHco.ns6UTIjZSmu.zajZ3e', 'admin'),
+(2, 'ctfmod', 'mod@maxctf.xyz', '$2y$10$JKsviA8XtBmgRpsmtBXXyemW.2oCS2JHco.ns6UTIjZSmu.zajZ3e', 'mod'),
+(3, 'mazang1z0', 'mzgz@maxctf.xyz', '$2y$10$JKsviA8XtBmgRpsmtBXXyemW.2oCS2JHco.ns6UTIjZSmu.zajZ3e', 'admin'),
+(4, 'ctfadmin2', 'ctfadmin2@1337.xyz', '$2y$10$hkB0LXKUCkBBTjJtY9Dym.Uak40utL8eB7u0REdybG5G/uTXoHHfO', 'admin');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `auditlog`
+--
+
+CREATE TABLE `auditlog` (
+  `id` int(11) NOT NULL,
+  `admin` varchar(50) DEFAULT NULL,
+  `action` text,
+  `timestamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+--
+-- Dumping data for table `auditlog`
+--
+
+INSERT INTO `auditlog` (`id`, `admin`, `action`, `timestamp`) VALUES
+(1, 'ctfadmin', 'Approved flag ID 9 for CTFHO910260316 with note: ', '2025-11-02 17:36:02'),
+(2, 'ctfadmin', 'Approved flag ID 11 for M4Z4NG33Z0 with note: xx', '2025-11-02 17:36:30'),
+(3, 'ctfadmin', 'Approved flag ID 9 for CTFHO910260316 with note: xx', '2025-11-02 17:41:55'),
+(4, 'ctfadmin', 'Approved flag ID 11 for M4Z4NG33Z0 with note: ccc', '2025-11-02 17:50:06'),
+(5, 'ctfadmin', 'Rejected flag ID 10 for CTFM4X1333337 with reason: ccc', '2025-11-02 17:50:13'),
+(6, 'ctfadmin', 'Approved flag ID 12 for M4Z4NG33Z0 with note: zz', '2025-11-02 18:09:52'),
+(7, 'ctfadmin', 'Approved flag ID 13 for M4Z4NG33Z0 with note: ee', '2025-11-02 18:15:21'),
+(8, 'ctfadmin', 'Approved flag ID 14 for M4Z4NG33Z0 with note: dfg', '2025-11-02 18:24:06'),
+(9, 'ctfadmin', 'Updated user BL4KXPL6', '2025-11-02 19:18:14'),
+(10, 'ctfadmin', 'Updated user BL4KXPL6', '2025-11-02 19:23:11'),
+(11, 'ctfadmin', 'Created new admin ctfadmin2', '2025-11-02 19:34:48'),
+(12, 'ctfadmin', 'Edited admin ctfadmin', '2025-11-02 19:41:03'),
+(13, 'ctfadmin2', 'Logged in', '2025-11-03 09:14:53'),
+(14, 'ctfadmin2', 'Logged in', '2025-11-03 09:19:35'),
+(15, 'ctfadmin2', 'Logged in', '2025-11-03 09:27:10'),
+(16, 'ctfadmin2', 'Logged in', '2025-11-03 09:28:05'),
+(17, 'ctfadmin2', 'Edited admin ctfadmin', '2025-11-03 10:16:18'),
+(18, 'ctfadmin2', 'Edited admin ctfadmin', '2025-11-03 10:16:29');
 
 -- --------------------------------------------------------
 
@@ -169,6 +212,22 @@ INSERT INTO `bugs` (`id`, `bug`) VALUES
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `challenges`
+--
+
+CREATE TABLE `challenges` (
+  `id` int(11) NOT NULL,
+  `title` varchar(100) DEFAULT NULL,
+  `description` text,
+  `points` int(11) DEFAULT NULL,
+  `category` varchar(50) DEFAULT NULL,
+  `flag` varchar(100) DEFAULT NULL,
+  `status` varchar(10) DEFAULT 'active'
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `ctfs`
 --
 
@@ -205,6 +264,20 @@ CREATE TABLE `genders` (
 INSERT INTO `genders` (`gender`) VALUES
 ('MALE'),
 ('FEMALE');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `modlog`
+--
+
+CREATE TABLE `modlog` (
+  `id` int(11) NOT NULL,
+  `modname` varchar(50) DEFAULT NULL,
+  `action` text,
+  `targetid` int(11) DEFAULT NULL,
+  `timestamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 -- --------------------------------------------------------
 
@@ -307,25 +380,29 @@ CREATE TABLE `reportx` (
   `date` varchar(60) NOT NULL,
   `status` text NOT NULL,
   `bug` varchar(15) NOT NULL,
-  `severity` varchar(15) NOT NULL
+  `severity` varchar(15) NOT NULL,
+  `notes` text NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='bugsubmissions';
 
 --
 -- Dumping data for table `reportx`
 --
 
-INSERT INTO `reportx` (`id`, `walletid`, `amount`, `proofimage`, `date`, `status`, `bug`, `severity`) VALUES
-(1, 'MXS4F96TOK0', '20', 'admin/proofimages/mclcnew1.png', '2020-12-19 03:12:33', 'approved', 'XSS', 'MEDIUM'),
-(2, 'CTFBB812170105', '20', 'admin/proofimages/Screenshot from 2025-10-20 16-36-30.png', '2025-10-23 12:10:27', 'approved', 'XSS', 'LOW'),
-(3, 'CTFBB137987489', '100', 'proof.jpg', '2025-10-23 13:14', 'approved', 'XSS', 'high'),
-(4, 'CTFBB812170105', '20', 'admin/admin/proofimages/vatar1337.png', '2025-10-23 14:30:06', 'approved', 'XSS', 'FIRM'),
-(5, 'CTFXN410251144', '20', 'admin/admin/proofimages/vatar1337.png', '2025-10-23 14:30:06', 'approved', 'XSS', 'FIRM'),
-(6, 'CTFXN410251144', '30', 'admin/admin/proofimages/vatar1337.png', '2025-10-24 14:30:06', 'approved', 'XSS', 'FIRM'),
-(7, 'CTFHO910260316', '20', 'admin/proofimages/mclcnew1.png', '2020-12-19 03:12:33', 'approved', 'XSS', 'MEDIUM'),
-(8, 'CTFHO910260316', '20', 'admin/admin/proofimages/vatar1337.png', '2025-10-23 14:30:06', 'approved', 'XSS', 'FIRM'),
-(9, 'CTFHO910260316', '0', 'admin/proofimages/Screenshot from 2025-10-20 16-36-30.png', '2025-10-23 12:10:27', 'pending', 'XSS', 'LOW'),
-(10, 'CTFM4X1333337', '15', 'admin/proofimages/Screenshot from 2025-10-20 16-36-30.png', '2025-10-23 12:10:27', 'pending', 'LFI', 'LOW'),
-(11, 'M4Z4NG33Z0', '20', 'admin/proofimages/mclcnew1.png', '2020-12-19 03:12:33', 'approved', 'XSS', 'MEDIUM');
+INSERT INTO `reportx` (`id`, `walletid`, `amount`, `proofimage`, `date`, `status`, `bug`, `severity`, `notes`) VALUES
+(1, 'MXS4F96TOK0', '20', 'admin/proofimages/mclcnew1.png', '2020-12-19 03:12:33', 'approved', 'XSS', 'MEDIUM', ''),
+(2, 'CTFBB812170105', '20', 'admin/proofimages/Screenshot from 2025-10-20 16-36-30.png', '2025-10-23 12:10:27', 'approved', 'XSS', 'LOW', ''),
+(3, 'CTFBB137987489', '100', 'proof.jpg', '2025-10-23 13:14', 'approved', 'XSS', 'high', ''),
+(4, 'CTFBB812170105', '20', 'admin/admin/proofimages/vatar1337.png', '2025-10-23 14:30:06', 'approved', 'XSS', 'FIRM', ''),
+(5, 'CTFXN410251144', '20', 'admin/admin/proofimages/vatar1337.png', '2025-10-23 14:30:06', 'approved', 'XSS', 'FIRM', ''),
+(6, 'CTFXN410251144', '30', 'admin/admin/proofimages/vatar1337.png', '2025-10-24 14:30:06', 'approved', 'XSS', 'FIRM', ''),
+(7, 'CTFHO910260316', '20', 'admin/proofimages/mclcnew1.png', '2020-12-19 03:12:33', 'approved', 'XSS', 'MEDIUM', ''),
+(8, 'CTFHO910260316', '20', 'admin/admin/proofimages/vatar1337.png', '2025-10-23 14:30:06', 'approved', 'XSS', 'FIRM', ''),
+(9, 'CTFHO910260316', '0', 'admin/proofimages/Screenshot from 2025-10-20 16-36-30.png', '2025-10-23 12:10:27', 'approved', 'XSS', 'LOW', 'xx'),
+(10, 'CTFM4X1333337', '15', 'admin/proofimages/Screenshot from 2025-10-20 16-36-30.png', '2025-10-23 12:10:27', 'rejected', 'LFI', 'LOW', 'ccc'),
+(11, 'M4Z4NG33Z0', '20', 'admin/proofimages/mclcnew1.png', '2020-12-19 03:12:33', 'approved', 'XSS', 'MEDIUM', 'ccc'),
+(12, 'M4Z4NG33Z0', '20', 'admin/proofimages/mclcnew1.png', '2020-12-19 03:12:33', 'approved', 'XSS', 'MEDIUM', 'zz'),
+(13, 'M4Z4NG33Z0', '20', 'admin/proofimages/mclcnew1.png', '2020-12-19 03:12:33', 'approved', 'XSS', 'MEDIUM', 'ee'),
+(14, 'M4Z4NG33Z0', '20', 'admin/proofimages/mclcnew1.png', '2020-12-19 03:12:33', 'approved', 'XSS', 'MEDIUM', 'dfg');
 
 -- --------------------------------------------------------
 
@@ -394,6 +471,32 @@ INSERT INTO `skillsets` (`id`, `skillset`) VALUES
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `solves`
+--
+
+CREATE TABLE `solves` (
+  `id` int(11) NOT NULL,
+  `ctfid` varchar(50) DEFAULT NULL,
+  `challenge_id` int(11) DEFAULT NULL,
+  `timestamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `targets`
+--
+
+CREATE TABLE `targets` (
+  `id` int(11) NOT NULL,
+  `name` varchar(50) DEFAULT NULL,
+  `path` varchar(100) DEFAULT NULL,
+  `status` varchar(10) DEFAULT 'active'
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `Y3J5cHRzYWxnb3JpdGht`
 --
 
@@ -438,6 +541,12 @@ ALTER TABLE `admin`
   ADD PRIMARY KEY (`id`);
 
 --
+-- Indexes for table `auditlog`
+--
+ALTER TABLE `auditlog`
+  ADD PRIMARY KEY (`id`);
+
+--
 -- Indexes for table `badges`
 --
 ALTER TABLE `badges`
@@ -450,9 +559,21 @@ ALTER TABLE `bugs`
   ADD PRIMARY KEY (`id`);
 
 --
+-- Indexes for table `challenges`
+--
+ALTER TABLE `challenges`
+  ADD PRIMARY KEY (`id`);
+
+--
 -- Indexes for table `ctfs`
 --
 ALTER TABLE `ctfs`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `modlog`
+--
+ALTER TABLE `modlog`
   ADD PRIMARY KEY (`id`);
 
 --
@@ -492,6 +613,18 @@ ALTER TABLE `skillsets`
   ADD PRIMARY KEY (`id`);
 
 --
+-- Indexes for table `solves`
+--
+ALTER TABLE `solves`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `targets`
+--
+ALTER TABLE `targets`
+  ADD PRIMARY KEY (`id`);
+
+--
 -- Indexes for table `Y3J5cHRzYWxnb3JpdGht`
 --
 ALTER TABLE `Y3J5cHRzYWxnb3JpdGht`
@@ -511,13 +644,19 @@ ALTER TABLE `1f86700588aed0390dd27c383b7fc963`
 -- AUTO_INCREMENT for table `accounts`
 --
 ALTER TABLE `accounts`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
 --
 -- AUTO_INCREMENT for table `admin`
 --
 ALTER TABLE `admin`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+
+--
+-- AUTO_INCREMENT for table `auditlog`
+--
+ALTER TABLE `auditlog`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=19;
 
 --
 -- AUTO_INCREMENT for table `bugs`
@@ -526,10 +665,22 @@ ALTER TABLE `bugs`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
 
 --
+-- AUTO_INCREMENT for table `challenges`
+--
+ALTER TABLE `challenges`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `ctfs`
 --
 ALTER TABLE `ctfs`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+--
+-- AUTO_INCREMENT for table `modlog`
+--
+ALTER TABLE `modlog`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `modz`
@@ -547,7 +698,7 @@ ALTER TABLE `quotes`
 -- AUTO_INCREMENT for table `reportx`
 --
 ALTER TABLE `reportx`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
 
 --
 -- AUTO_INCREMENT for table `severities`
@@ -566,6 +717,18 @@ ALTER TABLE `site`
 --
 ALTER TABLE `skillsets`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+
+--
+-- AUTO_INCREMENT for table `solves`
+--
+ALTER TABLE `solves`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `targets`
+--
+ALTER TABLE `targets`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `Y3J5cHRzYWxnb3JpdGht`
