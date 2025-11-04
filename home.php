@@ -249,6 +249,6 @@ $rowcount=mysqli_num_rows($query1xxi);
             </div>
         </div>
 
-        
+        <script src="js/hacktivity.js"></script>
 <?php include 'footer.php';
 ?>

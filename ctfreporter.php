@@ -187,7 +187,7 @@ if (isset($_POST['go'])) {
   </div>
 </div>
 
-<script src="/js/reporter.js"></script>
+<script src="js/reporter.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <?php 
@@ -201,5 +201,3 @@ if (isset($_SESSION['error'])) {
 ?>
 
 <?php include 'footer.php'; ?>
-
-  echo "<script>Swal.fire({title

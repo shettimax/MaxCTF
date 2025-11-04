@@ -202,7 +202,6 @@ if (mysqli_num_rows($challenges) > 0) {
 }
 ?>
 </ul>
-  <p class="text-muted">New challenges drop weekly. Stay sharp.</p>
 </div>
 
     </div><hr>
