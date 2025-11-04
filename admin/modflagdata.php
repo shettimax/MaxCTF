@@ -1,6 +1,12 @@
 <?php
 include 'config.php';
 session_start();
+
+if (!isset($_SESSION['alogin']) || $_SESSION['role'] !== 'mod') {
+    header('location:index.php');
+    exit;
+}
+
 $modname = $_SESSION['alogin'];
 $get = mysqli_query($conn,"SELECT * FROM reportx WHERE status='pending' AND bug IN (SELECT bug FROM modz WHERE modname='$modname')");
 echo '<table class="table table-bordered text-green"><thead><tr>

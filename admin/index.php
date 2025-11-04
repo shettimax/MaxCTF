@@ -1,6 +1,9 @@
 <?php
 ob_start();
-session_start();
+// Start session only once at the beginning
+if (session_status() == PHP_SESSION_NONE) {
+    session_start();
+}
 include 'config.php';
 
 if (isset($_SESSION['alogin']) && strlen($_SESSION['alogin']) != 0) {
@@ -13,19 +16,28 @@ $error = '';
 if (isset($_POST['login'])) {
     $username = mysqli_real_escape_string($conn, $_POST['name']);
     $password = $_POST['password'];
-
-    $query = mysqli_query($conn, "SELECT * FROM admin WHERE username='$username'");
-    $admin = mysqli_fetch_array($query);
-
-    if ($admin && password_verify($password, $admin['password'])) {
-        $_SESSION['alogin'] = $admin['username'];
-        $_SESSION['role'] = $admin['role'];
-        $_SESSION['last_activity'] = time();
-        mysqli_query($conn, "INSERT INTO auditlog (admin, action) VALUES ('$username','Logged in')");
-        header('location:dashboard.php');
-        exit;
+    
+    // Basic input validation
+    if (empty($username) || empty($password)) {
+        $error = "Username and password are required";
     } else {
-        $error = "Invalid username or password";
+        $query = mysqli_query($conn, "SELECT * FROM admin WHERE username='$username'");
+        if (mysqli_num_rows($query) === 1) {
+            $admin = mysqli_fetch_array($query);
+            if ($admin && password_verify($password, $admin['password'])) {
+                $_SESSION['alogin'] = $admin['username'];
+                $_SESSION['role'] = $admin['role'];
+                $_SESSION['last_activity'] = time();
+                
+                mysqli_query($conn, "INSERT INTO auditlog (admin, action) VALUES ('$username','Logged in')");
+                header('location:dashboard.php');
+                exit;
+            } else {
+                $error = "Invalid username or password";
+            }
+        } else {
+            $error = "Invalid username or password";
+        }
     }
 }
 ob_end_flush();
@@ -45,10 +57,10 @@ ob_end_flush();
         <div class="login-box mt-5">
             <h2 class="text-center mb-4">CTFBACKBOX 💀</h2>
             <form method="post" class="card p-4 bg-black border-green">
-                <label>Username</label>
-                <input type="text" name="name" class="form-control mb-3" required>
-                <label>Password</label>
-                <input type="password" name="password" class="form-control mb-3" required>
+                <label for="username">Username</label>
+                <input type="text" name="name" id="username" class="form-control mb-3" required>
+                <label for="password">Password</label>
+                <input type="password" name="password" id="password" class="form-control mb-3" required>
                 <button type="submit" name="login" class="btn btn-success w-100">Login</button>
             </form>
         </div>
@@ -60,7 +72,7 @@ ob_end_flush();
         toast: true,
         position: 'top-end',
         icon: '<?php echo isset($_GET['timeout']) ? "info" : "error"; ?>',
-        title: '<?php echo isset($_GET['timeout']) ? "Session expired" : $error; ?>',
+        title: '<?php echo isset($_GET['timeout']) ? "Session expired" : addslashes($error); ?>',
         text: '<?php echo isset($_GET['timeout']) ? "Please log in again." : ""; ?>',
         showConfirmButton: false,
         timer: 3000,

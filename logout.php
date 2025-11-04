@@ -1,5 +1,5 @@
 <?php
-session_start();
+include("session.php");
 include 'confik.php';
 
 // Award 5 points if user is logged in, means they had time to follow flows to have logout

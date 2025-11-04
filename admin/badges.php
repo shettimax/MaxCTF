@@ -1,6 +1,9 @@
 <?php
 ob_start();
-session_start();
+// Start session only once
+if (session_status() == PHP_SESSION_NONE) {
+    session_start();
+}
 error_reporting(0);
 include 'config.php';
 
@@ -12,33 +15,49 @@ ob_end_flush();
 // Handle AJAX actions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($_POST['action'] === 'update') {
-        $id = $_POST['id'];
-        $title = $_POST['title'];
-        $vibe = $_POST['vibe'];
-        $score = $_POST['score'];
-        mysqli_query($conn, "UPDATE badges SET title='$title', vibe='$vibe', required_score='$score' WHERE id='$id'");
-        $admin = $_SESSION['alogin'];
-        mysqli_query($conn, "INSERT INTO auditlog (admin, action) VALUES ('$admin','Updated badge $title')");
+        $id = intval($_POST['id']);
+        $title = mysqli_real_escape_string($conn, $_POST['title']);
+        $vibe = mysqli_real_escape_string($conn, $_POST['vibe']);
+        $score = intval($_POST['score']);
+        
+        // Validate inputs
+        if ($id > 0 && !empty($title) && $score >= 0) {
+            mysqli_query($conn, "UPDATE badges SET title='$title', vibe='$vibe', required_score='$score' WHERE id='$id'");
+            $admin = mysqli_real_escape_string($conn, $_SESSION['alogin']);
+            $action = "Updated badge $title";
+            mysqli_query($conn, "INSERT INTO auditlog (admin, action) VALUES ('$admin','$action')");
+            echo "success";
+        }
         exit;
     }
 
     if ($_POST['action'] === 'delete') {
-        $id = $_POST['id'];
-        $badge = mysqli_fetch_array(mysqli_query($conn,"SELECT title FROM badges WHERE id='$id'"));
-        $title = $badge['title'];
-        mysqli_query($conn,"DELETE FROM badges WHERE id='$id'");
-        $admin = $_SESSION['alogin'];
-        mysqli_query($conn,"INSERT INTO auditlog (admin, action) VALUES ('$admin','Deleted badge $title')");
+        $id = intval($_POST['id']);
+        
+        if ($id > 0) {
+            $badge = mysqli_fetch_array(mysqli_query($conn,"SELECT title FROM badges WHERE id='$id'"));
+            $title = mysqli_real_escape_string($conn, $badge['title']);
+            mysqli_query($conn,"DELETE FROM badges WHERE id='$id'");
+            $admin = mysqli_real_escape_string($conn, $_SESSION['alogin']);
+            mysqli_query($conn,"INSERT INTO auditlog (admin, action) VALUES ('$admin','Deleted badge $title')");
+            echo "success";
+        }
         exit;
     }
 
     if ($_POST['action'] === 'add') {
-        $title = $_POST['title'];
-        $vibe = $_POST['vibe'];
-        $score = $_POST['required_score'];
-        mysqli_query($conn,"INSERT INTO badges (title, vibe, required_score) VALUES ('$title','$vibe','$score')");
-        $admin = $_SESSION['alogin'];
-        mysqli_query($conn,"INSERT INTO auditlog (admin, action) VALUES ('$admin','Added badge $title')");
+        $title = mysqli_real_escape_string($conn, $_POST['title']);
+        $vibe = mysqli_real_escape_string($conn, $_POST['vibe']);
+        $score = intval($_POST['required_score']);
+        
+        // Validate inputs
+        if (!empty($title) && !empty($vibe) && $score >= 0) {
+            mysqli_query($conn,"INSERT INTO badges (title, vibe, required_score) VALUES ('$title','$vibe','$score')");
+            $admin = mysqli_real_escape_string($conn, $_SESSION['alogin']);
+            $action = "Added badge $title";
+            mysqli_query($conn,"INSERT INTO auditlog (admin, action) VALUES ('$admin','$action')");
+            echo "success";
+        }
         exit;
     }
 }
@@ -58,14 +77,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <div class="card-body">
 <form id="addBadgeForm">
     <div class="form-group">
-        <label>Title</label>
-        <input type="text" name="title" class="form-control" required>
-        <label>Vibe (icon or description)</label>
-        <input type="text" name="vibe" class="form-control" required>
-        <label>Required Score</label>
-        <input type="number" name="required_score" class="form-control" required>
-        <button type="submit" class="btn btn-primary mt-3">Add Badge</button>
+        <label for="badgeTitle">Title</label>
+        <input type="text" name="title" id="badgeTitle" class="form-control" required>
     </div>
+    <div class="form-group">
+        <label for="badgeVibe">Vibe (icon or description)</label>
+        <input type="text" name="vibe" id="badgeVibe" class="form-control" required>
+    </div>
+    <div class="form-group">
+        <label for="badgeScore">Required Score</label>
+        <input type="number" name="required_score" id="badgeScore" class="form-control" required>
+    </div>
+    <button type="submit" class="btn btn-primary mt-3">Add Badge</button>
 </form>
 </div>
 </div>
@@ -89,10 +112,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <?php
 $get = mysqli_query($conn,"SELECT * FROM badges ORDER BY required_score ASC");
 while($row = mysqli_fetch_array($get)){
-    $id = $row['id'];
-    $title = htmlentities($row['title']);
-    $vibe = htmlentities($row['vibe']);
-    $score = htmlentities($row['required_score']);
+    $id = intval($row['id']);
+    $title = htmlspecialchars($row['title'], ENT_QUOTES, 'UTF-8');
+    $vibe = htmlspecialchars($row['vibe'], ENT_QUOTES, 'UTF-8');
+    $score = intval($row['required_score']);
     $badgePath = "../badges/$id.png";
 ?>
 <tr data-id="<?php echo $id; ?>">
@@ -110,13 +133,14 @@ while($row = mysqli_fetch_array($get)){
         <input type="number" class="form-control score-input d-none" value="<?php echo $score; ?>">
     </td>
     <td>
-        <?php if (file_exists($badgePath)) {
+        <?php 
+        if (file_exists($badgePath)) {
             $imageData = base64_encode(file_get_contents($badgePath));
-            $mimeType = mime_content_type($badgePath) ?: 'image/png';
-            echo "<img src='data:$mimeType;base64,$imageData' alt='Badge $title' title='$vibe' width='80'>";
+            echo "<img src='data:image/png;base64,$imageData' alt='Badge $title' title='$vibe' width='80'>";
         } else {
             echo "<img src='assets/locked.png' alt='Locked Badge' title='Locked badge' width='80'>";
-        } ?>
+        }
+        ?>
     </td>
     <td>
         <button class="btn btn-warning btn-sm edit-btn">Edit</button>
@@ -144,9 +168,15 @@ $(document).ready(function () {
     $('#addBadgeForm').submit(function (e) {
         e.preventDefault();
         const formData = $(this).serialize() + '&action=add';
-        $.post('badges.php', formData, function () {
-            Swal.fire({ icon: 'success', title: 'Badge added', showConfirmButton: false, timer: 1500 });
-            setTimeout(() => location.reload(), 1600);
+        $.post('badges.php', formData, function (response) {
+            if (response === 'success') {
+                Swal.fire({ icon: 'success', title: 'Badge added', showConfirmButton: false, timer: 1500 });
+                setTimeout(() => location.reload(), 1600);
+            } else {
+                Swal.fire({ icon: 'error', title: 'Error adding badge', timer: 1500 });
+            }
+        }).fail(function() {
+            Swal.fire({ icon: 'error', title: 'Error adding badge', timer: 1500 });
         });
     });
 
@@ -182,15 +212,21 @@ $(document).ready(function () {
             title: title,
             vibe: vibe,
             score: score
-        }, function () {
-            row.find('.title-text').text(title);
-            row.find('.vibe-text').text(vibe);
-            row.find('.score-text').text(score);
-            row.find('.title-input, .vibe-input, .score-input').addClass('d-none');
-            row.find('.title-text, .vibe-text, .score-text').removeClass('d-none');
-            row.find('.save-btn, .cancel-btn').addClass('d-none');
-            row.find('.edit-btn').removeClass('d-none');
-            Swal.fire({ icon: 'success', title: 'Badge updated', showConfirmButton: false, timer: 1500 });
+        }, function (response) {
+            if (response === 'success') {
+                row.find('.title-text').text(title);
+                row.find('.vibe-text').text(vibe);
+                row.find('.score-text').text(score);
+                row.find('.title-input, .vibe-input, .score-input').addClass('d-none');
+                row.find('.title-text, .vibe-text, .score-text').removeClass('d-none');
+                row.find('.save-btn, .cancel-btn').addClass('d-none');
+                row.find('.edit-btn').removeClass('d-none');
+                Swal.fire({ icon: 'success', title: 'Badge updated', showConfirmButton: false, timer: 1500 });
+            } else {
+                Swal.fire({ icon: 'error', title: 'Error updating badge', timer: 1500 });
+            }
+        }).fail(function() {
+            Swal.fire({ icon: 'error', title: 'Error updating badge', timer: 1500 });
         });
     });
 
@@ -205,16 +241,25 @@ $(document).ready(function () {
             showCancelButton: true,
             confirmButtonText: 'Yes, delete it!',
             cancelButtonText: 'Cancel'
-               }).then((result) => {
+        }).then((result) => {
             if (result.isConfirmed) {
-                $.post('badges.php', { action: 'delete', id: id }, function () {
-                    row.remove();
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Badge deleted',
-                        showConfirmButton: false,
-                        timer: 1500
-                    });
+                $.post('badges.php', { 
+                    action: 'delete', 
+                    id: id
+                }, function (response) {
+                    if (response === 'success') {
+                        row.remove();
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Badge deleted',
+                            showConfirmButton: false,
+                            timer: 1500
+                        });
+                    } else {
+                        Swal.fire({ icon: 'error', title: 'Error deleting badge', timer: 1500 });
+                    }
+                }).fail(function() {
+                    Swal.fire({ icon: 'error', title: 'Error deleting badge', timer: 1500 });
                 });
             }
         });

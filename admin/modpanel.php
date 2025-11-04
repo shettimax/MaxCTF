@@ -31,7 +31,7 @@ ob_end_flush();
 </div>
 </div>
 </main>
-<?php include 'footer2.php'; ?>
+<?php include 'footer.php'; ?>
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
@@ -44,7 +44,9 @@ function loadModFlags(){
 function showAlert(message, type){
     const alertBox = $('<div class="alert '+type+'">'+message+'</div>');
     $('body').append(alertBox);
-    setTimeout(() => alertBox.fadeOut(500, () => alertBox.remove()), 3000);
+    setTimeout(function(){
+        alertBox.fadeOut(500, function(){ alertBox.remove(); });
+    }, 3000);
 }
 
 $(document).ready(function(){

@@ -1,5 +1,8 @@
 <?php
-session_start();
+// Start session only once
+if (session_status() == PHP_SESSION_NONE) {
+    session_start();
+}
 error_reporting(0);
 include 'config.php';
 
@@ -10,49 +13,82 @@ if(strlen($_SESSION['alogin'])==0){
 
 // Add challenge
 if (isset($_POST['add'])) {
-    $title = $_POST['title'];
-    $desc = $_POST['description'];
-    $points = $_POST['points'];
-    $category = $_POST['category'];
-    $status = $_POST['status'];
-    $start = $_POST['start_time'];
-    $end = $_POST['end_time'];
-    $target_id = $_POST['target_id'];
+    $title = mysqli_real_escape_string($conn, $_POST['title']);
+    $desc = mysqli_real_escape_string($conn, $_POST['description']);
+    $points = intval($_POST['points']);
+    $category = mysqli_real_escape_string($conn, $_POST['category']);
+    $status = mysqli_real_escape_string($conn, $_POST['status']);
+    $start = mysqli_real_escape_string($conn, $_POST['start_time']);
+    $end = mysqli_real_escape_string($conn, $_POST['end_time']);
+    $target_id = intval($_POST['target_id']);
 
-    $sql = "INSERT INTO challenges (title, description, points, category, status, start_time, end_time, target_id) 
-            VALUES ('$title','$desc','$points','$category','$status','$start','$end','$target_id')";
-    $_SESSION['challenge_alert'] = mysqli_query($conn, $sql)
-        ? ['type' => 'success', 'msg' => 'Challenge added successfully.']
-        : ['type' => 'error', 'msg' => 'Error: ' . mysqli_error($conn)];
+    // Validate inputs
+    if (!empty($title) && !empty($desc) && $points >= 0) {
+        $sql = "INSERT INTO challenges (title, description, points, category, status, start_time, end_time, target_id) 
+                VALUES ('$title','$desc','$points','$category','$status','$start','$end','$target_id')";
+        
+        if (mysqli_query($conn, $sql)) {
+            $_SESSION['challenge_alert'] = ['type' => 'success', 'msg' => 'Challenge added successfully.'];
+            $admin = mysqli_real_escape_string($conn, $_SESSION['alogin']);
+            $action = "Added challenge: $title";
+            mysqli_query($conn, "INSERT INTO auditlog (admin, action) VALUES ('$admin','$action')");
+        } else {
+            $_SESSION['challenge_alert'] = ['type' => 'error', 'msg' => 'Error: ' . mysqli_error($conn)];
+        }
+    } else {
+        $_SESSION['challenge_alert'] = ['type' => 'error', 'msg' => 'Please fill all required fields.'];
+    }
     header("Location: challenges.php");
     exit();
 }
 
 // Update challenge
 if (isset($_POST['update'])) {
-    $id = $_POST['id'];
-    $title = $_POST['title'];
-    $desc = $_POST['description'];
-    $points = $_POST['points'];
-    $category = $_POST['category'];
-    $status = $_POST['status'];
-    $start = $_POST['start_time'];
-    $end = $_POST['end_time'];
-    $target_id = $_POST['target_id'];
+    $id = intval($_POST['id']);
+    $title = mysqli_real_escape_string($conn, $_POST['title']);
+    $desc = mysqli_real_escape_string($conn, $_POST['description']);
+    $points = intval($_POST['points']);
+    $category = mysqli_real_escape_string($conn, $_POST['category']);
+    $status = mysqli_real_escape_string($conn, $_POST['status']);
+    $start = mysqli_real_escape_string($conn, $_POST['start_time']);
+    $end = mysqli_real_escape_string($conn, $_POST['end_time']);
+    $target_id = intval($_POST['target_id']);
 
-    $sql = "UPDATE challenges SET title='$title', description='$desc', points='$points', category='$category', status='$status', start_time='$start', end_time='$end', target_id='$target_id' WHERE id='$id'";
-    $_SESSION['challenge_alert'] = mysqli_query($conn, $sql)
-        ? ['type' => 'success', 'msg' => 'Challenge updated successfully.']
-        : ['type' => 'error', 'msg' => 'Error: ' . mysqli_error($conn)];
+    // Validate inputs
+    if ($id > 0 && !empty($title) && !empty($desc) && $points >= 0) {
+        $sql = "UPDATE challenges SET title='$title', description='$desc', points='$points', category='$category', status='$status', start_time='$start', end_time='$end', target_id='$target_id' WHERE id='$id'";
+        
+        if (mysqli_query($conn, $sql)) {
+            $_SESSION['challenge_alert'] = ['type' => 'success', 'msg' => 'Challenge updated successfully.'];
+            $admin = mysqli_real_escape_string($conn, $_SESSION['alogin']);
+            $action = "Updated challenge: $title";
+            mysqli_query($conn, "INSERT INTO auditlog (admin, action) VALUES ('$admin','$action')");
+        } else {
+            $_SESSION['challenge_alert'] = ['type' => 'error', 'msg' => 'Error: ' . mysqli_error($conn)];
+        }
+    } else {
+        $_SESSION['challenge_alert'] = ['type' => 'error', 'msg' => 'Invalid input data.'];
+    }
     header("Location: challenges.php");
     exit();
 }
 
 // Delete challenge
 if (isset($_GET['del'])) {
-    $id = $_GET['del'];
-    mysqli_query($conn, "DELETE FROM challenges WHERE id='$id'");
-    $_SESSION['challenge_alert'] = ['type' => 'success', 'msg' => 'Challenge deleted.'];
+    $id = intval($_GET['del']);
+    
+    if ($id > 0) {
+        // Get challenge title for audit log
+        $challenge = mysqli_fetch_array(mysqli_query($conn, "SELECT title FROM challenges WHERE id='$id'"));
+        $title = mysqli_real_escape_string($conn, $challenge['title']);
+        
+        mysqli_query($conn, "DELETE FROM challenges WHERE id='$id'");
+        $_SESSION['challenge_alert'] = ['type' => 'success', 'msg' => 'Challenge deleted.'];
+        
+        $admin = mysqli_real_escape_string($conn, $_SESSION['alogin']);
+        $action = "Deleted challenge: $title";
+        mysqli_query($conn, "INSERT INTO auditlog (admin, action) VALUES ('$admin','$action')");
+    }
     header("Location: challenges.php");
     exit();
 }
@@ -80,29 +116,55 @@ Swal.fire({
 <div class="card mb-4">
 <div class="card-header d-flex justify-content-between">
     <span>Add New Challenge</span>
-    <button class="btn btn-sm btn-success" onclick="toggleChallengeForm()">+</button>
+    <button type="button" class="btn btn-sm btn-success" id="toggleChallengeForm">+</button>
 </div>
 <div class="card-body" id="addChallengeForm" style="display:none;">
 <form method="post">
-    <input type="text" name="title" class="form-control mb-2" placeholder="Title" required>
-    <textarea name="description" class="form-control mb-2" placeholder="Description" required></textarea>
-    <input type="number" name="points" class="form-control mb-2" placeholder="Points" required>
-    <input type="text" name="category" class="form-control mb-2" placeholder="Category">
-    <select name="status" class="form-control mb-2">
-        <option value="active">Active</option>
-        <option value="inactive">Inactive</option>
-    </select>
-    <input type="datetime-local" name="start_time" class="form-control mb-2">
-    <input type="datetime-local" name="end_time" class="form-control mb-2">
-    <select name="target_id" class="form-control mb-2">
-        <option value="">-- Select Target --</option>
-        <?php
-        $targets = mysqli_query($conn, "SELECT id, name FROM targets");
-        while ($t = mysqli_fetch_array($targets)) {
-            echo "<option value='{$t['id']}'>{$t['name']}</option>";
-        }
-        ?>
-    </select>
+    <div class="form-group">
+        <label for="title">Title *</label>
+        <input type="text" name="title" id="title" class="form-control mb-2" placeholder="Title" required maxlength="255">
+    </div>
+    <div class="form-group">
+        <label for="description">Description *</label>
+        <textarea name="description" id="description" class="form-control mb-2" placeholder="Description" required maxlength="1000"></textarea>
+    </div>
+    <div class="form-group">
+        <label for="points">Points *</label>
+        <input type="number" name="points" id="points" class="form-control mb-2" placeholder="Points" required min="0" max="10000">
+    </div>
+    <div class="form-group">
+        <label for="category">Category</label>
+        <input type="text" name="category" id="category" class="form-control mb-2" placeholder="Category" maxlength="100">
+    </div>
+    <div class="form-group">
+        <label for="status">Status</label>
+        <select name="status" id="status" class="form-control mb-2">
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+        </select>
+    </div>
+    <div class="form-group">
+        <label for="start_time">Start Time</label>
+        <input type="datetime-local" name="start_time" id="start_time" class="form-control mb-2">
+    </div>
+    <div class="form-group">
+        <label for="end_time">End Time</label>
+        <input type="datetime-local" name="end_time" id="end_time" class="form-control mb-2">
+    </div>
+    <div class="form-group">
+        <label for="target_id">Target</label>
+        <select name="target_id" id="target_id" class="form-control mb-2">
+            <option value="">-- Select Target --</option>
+            <?php
+            $targets = mysqli_query($conn, "SELECT id, name FROM targets");
+            while ($t = mysqli_fetch_array($targets)) {
+                $target_id = intval($t['id']);
+                $target_name = htmlspecialchars($t['name'], ENT_QUOTES, 'UTF-8');
+                echo "<option value='$target_id'>$target_name</option>";
+            }
+            ?>
+        </select>
+    </div>
     <button type="submit" name="add" class="btn btn-primary">Add Challenge</button>
 </form>
 </div>
@@ -112,23 +174,51 @@ Swal.fire({
 <div class="card mb-4">
 <div class="card-header">Existing Challenges</div>
 <div class="card-body">
-<table class="table table-bordered">
-<thead><tr><th>ID</th><th>Title</th><th>Points</th><th>Category</th><th>Status</th><th>Target</th><th>Action</th></tr></thead>
+<table class="table table-bordered" id="challengesTable">
+<thead>
+    <tr>
+        <th>ID</th>
+        <th>Title</th>
+        <th>Points</th>
+        <th>Category</th>
+        <th>Status</th>
+        <th>Target</th>
+        <th>Action</th>
+    </tr>
+</thead>
 <tbody>
 <?php
 $get = mysqli_query($conn,"SELECT c.*, t.name AS target_name FROM challenges c LEFT JOIN targets t ON c.target_id = t.id ORDER BY c.points DESC");
 while($row = mysqli_fetch_array($get)){
+    $id = intval($row['id']);
+    $title = htmlspecialchars($row['title'], ENT_QUOTES, 'UTF-8');
+    $points = intval($row['points']);
+    $category = htmlspecialchars($row['category'], ENT_QUOTES, 'UTF-8');
+    $status = htmlspecialchars($row['status'], ENT_QUOTES, 'UTF-8');
+    $target_name = htmlspecialchars($row['target_name'] ?: 'None', ENT_QUOTES, 'UTF-8');
+    $description = htmlspecialchars($row['description'], ENT_QUOTES, 'UTF-8');
+    $start_time = htmlspecialchars($row['start_time'], ENT_QUOTES, 'UTF-8');
+    $end_time = htmlspecialchars($row['end_time'], ENT_QUOTES, 'UTF-8');
+    $target_id = intval($row['target_id']);
 ?>
-<tr>
-    <td><?= $row['id'] ?></td>
-    <td><?= htmlentities($row['title']) ?></td>
-    <td><?= $row['points'] ?></td>
-    <td><?= htmlentities($row['category']) ?></td>
-    <td><?= htmlentities($row['status']) ?></td>
-    <td><?= htmlentities($row['target_name']) ?></td>
+<tr data-id="<?= $id ?>" 
+    data-title="<?= $title ?>" 
+    data-description="<?= $description ?>" 
+    data-points="<?= $points ?>" 
+    data-category="<?= $category ?>" 
+    data-status="<?= $status ?>" 
+    data-start_time="<?= $start_time ?>" 
+    data-end_time="<?= $end_time ?>" 
+    data-target_id="<?= $target_id ?>">
+    <td><?= $id ?></td>
+    <td><?= $title ?></td>
+    <td><?= $points ?></td>
+    <td><?= $category ?></td>
+    <td><?= $status ?></td>
+    <td><?= $target_name ?></td>
     <td>
-        <button class="btn btn-warning btn-sm" onclick="editChallenge(<?= $row['id'] ?>,'<?= addslashes($row['title']) ?>','<?= addslashes($row['description']) ?>','<?= $row['points'] ?>','<?= addslashes($row['category']) ?>','<?= $row['status'] ?>','<?= $row['start_time'] ?>','<?= $row['end_time'] ?>','<?= $row['target_id'] ?>')">Edit</button>
-        <a href="challenges.php?del=<?= $row['id'] ?>" class="btn btn-danger btn-sm">Delete</a>
+        <button class="btn btn-warning btn-sm edit-challenge-btn">Edit</button>
+        <button class="btn btn-danger btn-sm delete-challenge-btn">Delete</button>
     </td>
 </tr>
 <?php } ?>
@@ -144,62 +234,128 @@ while($row = mysqli_fetch_array($get)){
 <div class="modal-dialog">
 <div class="modal-content">
 <form method="post">
-<div class="modal-header"><h5 class="modal-title">Edit Challenge</h5></div>
+<div class="modal-header">
+    <h5 class="modal-title">Edit Challenge</h5>
+    <button type="button" class="close text-green" data-dismiss="modal">&times;</button>
+</div>
 <div class="modal-body">
     <input type="hidden" name="id" id="editId">
-    <input type="text" name="title" id="editTitle" class="form-control mb-2" required>
-    <textarea name="description" id="editDesc" class="form-control mb-2" required></textarea>
-    <input type="number" name="points" id="editPoints" class="form-control mb-2" required>
-    <input type="text" name="category" id="editCategory" class="form-control mb-2">
-    <select name="status" id="editStatus" class="form-control mb-2">
-        <option value="active">Active</option>
-        <option value="inactive">Inactive</option>
-    </select>
-    <input type="datetime-local" name="start_time" id="editStart" class="form-control mb-2">
-    <input type="datetime-local" name="end_time" id="editEnd" class="form-control mb-2">
-    <select name="target_id" id="editTarget" class="form-control mb-2">
-        <?php
-        $targets = mysqli_query($conn, "SELECT id, name FROM targets");
-        while ($t = mysqli_fetch_array($targets)) {
-            echo "<option value='{$t['id']}'>{$t['name']}</option>";
-        }
-        ?>
-    </select>
+    <div class="form-group">
+        <label for="editTitle">Title *</label>
+        <input type="text" name="title" id="editTitle" class="form-control mb-2" required maxlength="255">
+    </div>
+    <div class="form-group">
+        <label for="editDesc">Description *</label>
+        <textarea name="description" id="editDesc" class="form-control mb-2" required maxlength="1000"></textarea>
+    </div>
+    <div class="form-group">
+        <label for="editPoints">Points *</label>
+        <input type="number" name="points" id="editPoints" class="form-control mb-2" required min="0" max="10000">
+    </div>
+    <div class="form-group">
+        <label for="editCategory">Category</label>
+        <input type="text" name="category" id="editCategory" class="form-control mb-2" maxlength="100">
+    </div>
+    <div class="form-group">
+        <label for="editStatus">Status</label>
+        <select name="status" id="editStatus" class="form-control mb-2">
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+        </select>
+    </div>
+    <div class="form-group">
+        <label for="editStart">Start Time</label>
+        <input type="datetime-local" name="start_time" id="editStart" class="form-control mb-2">
+    </div>
+    <div class="form-group">
+        <label for="editEnd">End Time</label>
+        <input type="datetime-local" name="end_time" id="editEnd" class="form-control mb-2">
+    </div>
+    <div class="form-group">
+        <label for="editTarget">Target</label>
+        <select name="target_id" id="editTarget" class="form-control mb-2">
+            <option value="">-- Select Target --</option>
+            <?php
+            $targets = mysqli_query($conn, "SELECT id, name FROM targets");
+            while ($t = mysqli_fetch_array($targets)) {
+                $target_id = intval($t['id']);
+                $target_name = htmlspecialchars($t['name'], ENT_QUOTES, 'UTF-8');
+                echo "<option value='$target_id'>$target_name</option>";
+            }
+            ?>
+        </select>
+    </div>
 </div>
 <div class="modal-footer">
     <button type="submit" name="update" class="btn btn-primary">Update</button>
-    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
 </div>
 </form>
 </div>
 </div>
 </div>
 
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+
 <script>
-function toggleChallengeForm() {
-    const form = document.getElementById('addChallengeForm');
-    form.style.display = form.style.display === 'none' ? 'block' : 'none';
-}
+$(document).ready(function() {
+    // Toggle add challenge form
+    $('#toggleChallengeForm').click(function() {
+        $('#addChallengeForm').slideToggle();
+    });
 
-function editChallenge(id, title, desc, points, category, status, start, end, target_id) {
-    document.getElementById('editId').value = id;
-        document.getElementById('editTitle').value = title;
-    document.getElementById('editDesc').value = desc;
-    document.getElementById('editPoints').value = points;
-    document.getElementById('editCategory').value = category;
-    document.getElementById('editStatus').value = status;
-    document.getElementById('editStart').value = start.replace(' ', 'T');
-    document.getElementById('editEnd').value = end.replace(' ', 'T');
+    // Edit challenge button click
+    $(document).on('click', '.edit-challenge-btn', function() {
+        const row = $(this).closest('tr');
+        const id = row.data('id');
+        const title = row.data('title');
+        const description = row.data('description');
+        const points = row.data('points');
+        const category = row.data('category');
+        const status = row.data('status');
+        const start_time = row.data('start_time');
+        const end_time = row.data('end_time');
+        const target_id = row.data('target_id');
 
-    const targetSelect = document.getElementById('editTarget');
-    for (let i = 0; i < targetSelect.options.length; i++) {
-        if (targetSelect.options[i].value === target_id) {
-            targetSelect.selectedIndex = i;
-            break;
-        }
-    }
+        $('#editId').val(id);
+        $('#editTitle').val(title);
+        $('#editDesc').val(description);
+        $('#editPoints').val(points);
+        $('#editCategory').val(category);
+        $('#editStatus').val(status);
+        
+        // Format datetime for input fields
+        $('#editStart').val(start_time ? start_time.replace(' ', 'T').substr(0, 16) : '');
+        $('#editEnd').val(end_time ? end_time.replace(' ', 'T').substr(0, 16) : '');
 
-    new bootstrap.Modal(document.getElementById('editModal')).show();
-}
+        // Set target selection
+        $('#editTarget').val(target_id);
+
+        // Show modal
+        $('#editModal').modal('show');
+    });
+
+    // Delete challenge confirmation
+    $(document).on('click', '.delete-challenge-btn', function() {
+        const row = $(this).closest('tr');
+        const id = row.data('id');
+        const title = row.data('title');
+
+        Swal.fire({
+            title: 'Delete Challenge?',
+            text: `Are you sure you want to delete "${title}"?`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, delete it!',
+            cancelButtonText: 'Cancel'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.location.href = 'challenges.php?del=' + id;
+            }
+        });
+    });
+});
 </script>
+
 <?php include 'footer.php'; ?>

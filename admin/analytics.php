@@ -75,12 +75,3 @@ while($row = mysqli_fetch_array($top_query)){
     echo "<tr><td>".htmlentities($row['ctfid'])."</td><td>".htmlentities($row['ctfname'])."</td><td>".htmlentities($row['ctfscore'])."</td></tr>";
 }
 ?>
-</tbody>
-</table>
-</div>
-</div>
-</div>
-
-</div>
-</main>
-<?php include 'footer.php'; ?>

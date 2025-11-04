@@ -1,14 +1,21 @@
 <?php
-include 'header.php';
+// Start session only once
+if (session_status() == PHP_SESSION_NONE) {
+    session_start();
+}
 include 'config.php';
+include 'header.php';
 
-// Filter by action keyword
+// Filter by action keyword with input validation
 $filter = isset($_GET['action']) ? trim($_GET['action']) : '';
 $where = '';
 
 if ($filter) {
-    $escaped = mysqli_real_escape_string($conn, $filter);
-    $where = "WHERE action LIKE '%$escaped%'";
+    $allowed_filters = array('Logged in', 'Created', 'Edited', 'Deleted', 'Approved', 'Rejected', 'Added');
+    if (in_array($filter, $allowed_filters)) {
+        $escaped = mysqli_real_escape_string($conn, $filter);
+        $where = "WHERE action LIKE '%$escaped%'";
+    }
 }
 
 $logs = mysqli_query($conn, "SELECT * FROM auditlog $where ORDER BY timestamp DESC");
@@ -54,9 +61,9 @@ $logs = mysqli_query($conn, "SELECT * FROM auditlog $where ORDER BY timestamp DE
                     <tbody>
                         <?php while ($row = mysqli_fetch_array($logs)) { ?>
                         <tr>
-                            <td><?php echo htmlentities($row['admin']); ?></td>
-                            <td><?php echo htmlentities($row['action']); ?></td>
-                            <td><?php echo htmlentities($row['timestamp']); ?></td>
+                            <td><?php echo htmlspecialchars($row['admin'], ENT_QUOTES, 'UTF-8'); ?></td>
+                            <td><?php echo htmlspecialchars($row['action'], ENT_QUOTES, 'UTF-8'); ?></td>
+                            <td><?php echo htmlspecialchars($row['timestamp'], ENT_QUOTES, 'UTF-8'); ?></td>
                         </tr>
                         <?php } ?>
                     </tbody>

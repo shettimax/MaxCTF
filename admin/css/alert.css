@@ -1,0 +1,208 @@
+/* alert.css — hacker-themed SweetAlert2 styling with glitch and boot animation */
+
+.swal2-popup {
+  background-color: #0f0f0f !important;
+  color: #00ff99 !important;
+  border: 2px solid #00ff99;
+  box-shadow: 0 0 20px #00ff99;
+  font-family: 'Courier New', monospace;
+  animation: bootUp 1.2s ease-out;
+  position: relative;
+  overflow: hidden;
+}
+
+.swal2-title {
+  font-size: 24px !important;
+  font-weight: bold !important;
+  text-shadow: 0 0 5px #00ff99;
+  animation: glitch 1s infinite;
+}
+
+.swal2-confirm {
+  background-color: #000 !important;
+  color: #00ff99 !important;
+  border: 1px solid #00ff99 !important;
+  font-weight: bold !important;
+  animation: pulse 1.5s infinite;
+}
+
+/* Boot-up animation */
+@keyframes bootUp {
+  0% {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Glitch effect */
+@keyframes glitch {
+  0% {
+    text-shadow: 2px 0 red, -2px 0 cyan;
+  }
+  20% {
+    text-shadow: -2px 0 red, 2px 0 cyan;
+  }
+  40% {
+    text-shadow: 2px 0 red, -2px 0 cyan;
+  }
+  60% {
+    text-shadow: -2px 0 red, 2px 0 cyan;
+  }
+  80% {
+    text-shadow: 2px 0 red, -2px 0 cyan;
+  }
+  100% {
+    text-shadow: 0 0 5px #00ff99;
+  }
+}
+
+/* Button pulse */
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 5px #00ff99;
+  }
+  50% {
+    box-shadow: 0 0 20px #00ff99;
+  }
+  100% {
+    box-shadow: 0 0 5px #00ff99;
+  }
+}
+.terminal-scroll {
+  font-family: 'Courier New', monospace;
+  color: #00ff99;
+  white-space: pre-wrap;
+  overflow: hidden;
+  border-left: 2px solid #00ff99;
+  padding-left: 10px;
+  animation: typing 4s steps(60, end), blink 0.8s step-end infinite;
+}
+
+@keyframes typing {
+  from { width: 0 }
+  to { width: 100% }
+}
+
+@keyframes blink {
+  50% { border-color: transparent }
+}
+.terminal-scroll::after {
+  content: '_';
+  animation: blink-cursor 1s steps(2, start) infinite;
+}
+
+@keyframes blink-cursor {
+  0% { opacity: 1 }
+  50% { opacity: 0 }
+  100% { opacity: 1 }
+}
+.terminal-feed {
+    background-color: #000;
+  color: #0f0;
+  font-family: monospace;
+  padding: 10px;
+  border: 1px solid #0f0;
+  box-shadow: 0 0 10px #0f0;
+  margin-bottom: 20px;
+  /* Removed height and overflow */
+}
+.terminal-feed p {
+    margin: 0 0 5px;
+}
+.text-center em {
+    color: #0f0;
+    font-family: monospace;
+    text-shadow: 0 0 5px #0f0;
+}
+.swal-text {
+  color: #0f0;
+  font-family: 'Courier New', monospace;
+  text-shadow: 0 0 5px #0f0;
+}
+
+.swal-title {
+  color: #0f0;
+  font-family: 'Courier New', monospace;
+  text-shadow: 0 0 5px #0f0;
+}
+
+.swal-button {
+  background-color: #0f0;
+  color: #000;
+  font-weight: bold;
+}
+/* Typography and text */
+.text-dark {
+  color: #080808;
+}
+
+.text-green {
+  color: #00ff99;
+  font-weight: bold;
+}
+
+.text-olive {
+  color: #6B8E23;
+}
+
+.text-muted {
+  opacity: 0.5;
+}
+
+.text-none {
+  text-decoration: none;
+}
+
+/* Layout and spacing */
+.full-width {
+  width: 100%;
+}
+
+.rounded-bar {
+  border-radius: 10px;
+  overflow: hidden;
+  height: 20px;
+}
+
+/* Progress bar */
+.progress-bg {
+  background-color: #eee;
+}
+
+.progress-fill {
+  background-color: #4caf50;
+  height: 100%;
+}
+
+/* Badge styling */
+.badge-title {
+  color: #52593b;
+}
+
+/* Image sizing */
+.img-100 {
+  width: 100px;
+}
+
+.img-110 {
+  width: 110px;
+}
+.table-header-hacker {
+  color: #964B00;
+  font-weight: bold;
+  font-family: 'Courier New', monospace;
+  text-shadow: 0 0 3px #964B00;
+}
+.terminal-feed {
+  scroll-behavior: smooth;
+}
+body {
+  padding-top: 70px; /* adjust based on navbar height */
+}

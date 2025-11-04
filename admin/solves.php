@@ -1,6 +1,9 @@
 <?php
 ob_start();
-session_start();
+// Start session only once
+if (session_status() == PHP_SESSION_NONE) {
+    session_start();
+}
 error_reporting(0);
 include 'config.php';
 
@@ -44,14 +47,20 @@ $get = mysqli_query($conn,"
     ORDER BY s.timestamp DESC
 ");
 while($row = mysqli_fetch_array($get)){
+    $ctfid = htmlspecialchars($row['ctfid'], ENT_QUOTES, 'UTF-8');
+    $ctfname = htmlspecialchars($row['ctfname'], ENT_QUOTES, 'UTF-8');
+    $title = htmlspecialchars($row['title'], ENT_QUOTES, 'UTF-8');
+    $points = intval($row['points']);
+    $category = htmlspecialchars($row['category'], ENT_QUOTES, 'UTF-8');
+    $timestamp = htmlspecialchars($row['timestamp'], ENT_QUOTES, 'UTF-8');
 ?>
 <tr>
-    <td><?php echo htmlentities($row['ctfid']); ?></td>
-    <td><?php echo htmlentities($row['ctfname']); ?></td>
-    <td><?php echo htmlentities($row['title']); ?></td>
-    <td><?php echo htmlentities($row['points']); ?></td>
-    <td><?php echo htmlentities($row['category']); ?></td>
-    <td><?php echo htmlentities($row['timestamp']); ?></td>
+    <td><?php echo $ctfid; ?></td>
+    <td><?php echo $ctfname; ?></td>
+    <td><?php echo $title; ?></td>
+    <td><?php echo $points; ?></td>
+    <td><?php echo $category; ?></td>
+    <td><?php echo $timestamp; ?></td>
 </tr>
 <?php } ?>
 </tbody>
@@ -64,7 +73,13 @@ while($row = mysqli_fetch_array($get)){
 <div class="card-header text-green">Top Solvers (by # of solves)</div>
 <div class="card-body">
 <table class="table table-bordered text-green">
-<thead><tr><th>CTFID</th><th>Name</th><th>Total Solves</th></tr></thead>
+<thead>
+    <tr>
+        <th>CTFID</th>
+        <th>Name</th>
+        <th>Total Solves</th>
+    </tr>
+</thead>
 <tbody>
 <?php
 $top = mysqli_query($conn,"
@@ -76,7 +91,10 @@ $top = mysqli_query($conn,"
     LIMIT 10
 ");
 while($row = mysqli_fetch_array($top)){
-    echo "<tr><td>".htmlentities($row['ctfid'])."</td><td>".htmlentities($row['ctfname'])."</td><td>".htmlentities($row['total'])."</td></tr>";
+    $ctfid = htmlspecialchars($row['ctfid'], ENT_QUOTES, 'UTF-8');
+    $ctfname = htmlspecialchars($row['ctfname'], ENT_QUOTES, 'UTF-8');
+    $total = intval($row['total']);
+    echo "<tr><td>$ctfid</td><td>$ctfname</td><td>$total</td></tr>";
 }
 ?>
 </tbody>
@@ -86,4 +104,22 @@ while($row = mysqli_fetch_array($top)){
 
 </div>
 </main>
+
+<!-- DataTables CSS -->
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap4.min.css">
+
+<!-- DataTables JS -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap4.min.js"></script>
+
+<script>
+$(document).ready(function() {
+    $('#dataTable').DataTable({
+        pageLength: 50,
+        order: [[5, 'desc']]
+    });
+});
+</script>
+
 <?php include 'footer.php'; ?>

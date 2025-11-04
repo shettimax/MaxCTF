@@ -1,6 +1,9 @@
 <?php
 ob_start();
-session_start();
+// Start session only once
+if (session_status() == PHP_SESSION_NONE) {
+    session_start();
+}
 error_reporting(0);
 include 'config.php';
 
@@ -78,18 +81,18 @@ while($log = mysqli_fetch_array($logs)){
 </div>
 </div>
 
-<!-- Recent Flag Submissions (with missing header for Status) -->
+<!-- Recent Flag Submissions -->
 <div class="col-xl-6 col-md-12">
 <div class="card bg-dark text-green mb-4">
 <div class="card-header">Recent Flag Submissions</div>
 <div class="card-body">
 <table class="table table-sm table-dark table-bordered">
-<thead><tr><th>User</th><th>Bug</th></tr></thead>
+<thead><tr><th>User</th><th>Bug</th><th>Status</th></tr></thead>
 <tbody>
 <?php
-$recentFlags = mysqli_query($conn,"SELECT walletid, bug, status FROM reportx ORDER BY id DESC LIMIT 5");
+$recentFlags = mysqli_query($conn,"SELECT walletid, bug, status, severity FROM reportx ORDER BY id DESC LIMIT 5");
 while($row = mysqli_fetch_array($recentFlags)){
-    echo "<tr><td>{$row['walletid']}</td><td>{$row['bug']}</td><td>{$row['status']}</td></tr>";
+    echo "<tr><td>{$row['walletid']}</td><td>{$row['severity']} {$row['bug']}</td><td>{$row['status']}</td></tr>";
 }
 ?>
 </tbody>

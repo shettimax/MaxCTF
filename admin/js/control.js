@@ -1,28 +1,29 @@
+// /js/control.js
+
 function loadFlags() {
-    $.get('flagdata.php', function (data) {
+    $.get('./flagdata.php', function (data) {
         $('#flagTable').html(data);
     });
 }
 
 function loadModFlags() {
-    $.get('modflagdata.php', function (data) {
+    $.get('./modflagdata.php', function (data) {
         $('#modFlagTable').html(data);
     });
 }
 
 function showAlert(message, type) {
-    Swal.fire({
-        title: type === 'success' ? '✅ Approved' : '❌ Rejected',
-        text: message,
-        icon: type,
-        confirmButtonText: 'OK',
-        customClass: {
-            popup: 'swal2-popup',
-            title: 'swal2-title',
-            confirmButton: 'swal2-confirm'
-        }
-    });
+  Swal.fire({
+    toast: true,
+    position: 'top-end',
+    icon: type,
+    title: message,
+    showConfirmButton: false,
+    timer: 9000,
+    timerProgressBar: true
+  });
 }
+
 
 function bindFlagActions() {
     $(document).on('click', '.approve-btn', function () {
@@ -32,7 +33,7 @@ function bindFlagActions() {
         const amount = btn.data('amount');
         const note = btn.prev('.note-input').val();
 
-        $.post('ajax.php', {
+        $.post('./ajax.php', {
             action: 'confirm',
             id: id,
             walletid: walletid,
@@ -51,7 +52,7 @@ function bindFlagActions() {
         const walletid = btn.data('wallet');
         const note = btn.prev('.note-input').val();
 
-        $.post('ajax.php', {
+        $.post('./ajax.php', {
             action: 'reject',
             id: id,
             walletid: walletid,

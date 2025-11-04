@@ -1,6 +1,9 @@
 <?php
 ob_start();
-session_start();
+// Start session only once
+if (session_status() == PHP_SESSION_NONE) {
+    session_start();
+}
 error_reporting(0);
 include 'config.php';
 
@@ -10,13 +13,13 @@ if(strlen($_SESSION['alogin'])==0){
 ob_end_flush();
 
 // Fetch distinct skillsets and genders from accounts
-$skill_options = [];
+$skill_options = array();
 $skill_query = mysqli_query($conn, "SELECT DISTINCT ctfskillset FROM accounts WHERE ctfskillset != '' ORDER BY ctfskillset ASC");
 while ($s = mysqli_fetch_array($skill_query)) {
     $skill_options[] = $s['ctfskillset'];
 }
 
-$gender_options = [];
+$gender_options = array();
 $gender_query = mysqli_query($conn, "SELECT DISTINCT gender FROM accounts WHERE gender != '' ORDER BY gender ASC");
 while ($g = mysqli_fetch_array($gender_query)) {
     $gender_options[] = $g['gender'];
@@ -25,23 +28,32 @@ while ($g = mysqli_fetch_array($gender_query)) {
 // Handle AJAX actions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($_POST['action'] === 'update') {
-        $id = $_POST['id'];
-        $name = $_POST['name'];
-        $skill = $_POST['skill'];
-        $gender = $_POST['gender'];
-        mysqli_query($conn, "UPDATE accounts SET ctfname='$name', ctfskillset='$skill', gender='$gender' WHERE ctfid='$id'");
-        $admin = $_SESSION['alogin'];
-        mysqli_query($conn, "INSERT INTO auditlog (admin, action) VALUES ('$admin','Updated user $id')");
+        $id = mysqli_real_escape_string($conn, $_POST['id']);
+        $name = mysqli_real_escape_string($conn, $_POST['name']);
+        $skill = mysqli_real_escape_string($conn, $_POST['skill']);
+        $gender = mysqli_real_escape_string($conn, $_POST['gender']);
+        
+        // Validate inputs
+        if (!empty($id) && !empty($name)) {
+            mysqli_query($conn, "UPDATE accounts SET ctfname='$name', ctfskillset='$skill', gender='$gender' WHERE ctfid='$id'");
+            $admin = mysqli_real_escape_string($conn, $_SESSION['alogin']);
+            mysqli_query($conn, "INSERT INTO auditlog (admin, action) VALUES ('$admin','Updated user $id')");
+            echo "success";
+        }
         exit;
     }
 
     if ($_POST['action'] === 'delete') {
-        $id = $_POST['id'];
-        $user = mysqli_fetch_array(mysqli_query($conn,"SELECT ctfname FROM accounts WHERE ctfid='$id'"));
-        $name = $user['ctfname'];
-        mysqli_query($conn,"DELETE FROM accounts WHERE ctfid='$id'");
-        $admin = $_SESSION['alogin'];
-        mysqli_query($conn,"INSERT INTO auditlog (admin, action) VALUES ('$admin','Deleted user $name')");
+        $id = mysqli_real_escape_string($conn, $_POST['id']);
+        
+        if (!empty($id)) {
+            $user = mysqli_fetch_array(mysqli_query($conn,"SELECT ctfname FROM accounts WHERE ctfid='$id'"));
+            $name = mysqli_real_escape_string($conn, $user['ctfname']);
+            mysqli_query($conn,"DELETE FROM accounts WHERE ctfid='$id'");
+            $admin = mysqli_real_escape_string($conn, $_SESSION['alogin']);
+            mysqli_query($conn,"INSERT INTO auditlog (admin, action) VALUES ('$admin','Deleted user $name')");
+            echo "success";
+        }
         exit;
     }
 }
@@ -77,16 +89,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $get = "SELECT * FROM accounts ORDER BY ctfscore DESC";
 $run = mysqli_query($conn,$get);
 while($row = mysqli_fetch_array($run)){
-    $ctfid = $row['ctfid'];
-    $name = htmlentities($row['ctfname']);
-    $score = $row['ctfscore'];
-    $skill = htmlentities($row['ctfskillset']);
-    $gender = htmlentities($row['gender']);
-    $joined = htmlentities($row['joined']);
+    $ctfid = htmlspecialchars($row['ctfid'], ENT_QUOTES, 'UTF-8');
+    $name = htmlspecialchars($row['ctfname'], ENT_QUOTES, 'UTF-8');
+    $score = intval($row['ctfscore']);
+    $skill = htmlspecialchars($row['ctfskillset'], ENT_QUOTES, 'UTF-8');
+    $gender = htmlspecialchars($row['gender'], ENT_QUOTES, 'UTF-8');
+    $joined = htmlspecialchars($row['joined'], ENT_QUOTES, 'UTF-8');
 
     $badge_query = mysqli_query($conn,"SELECT title FROM badges WHERE required_score <= '$score' ORDER BY required_score DESC LIMIT 1");
     $badge = mysqli_fetch_array($badge_query);
-    $badge_title = $badge ? $badge['title'] : 'None';
+    $badge_title = $badge ? htmlspecialchars($badge['title'], ENT_QUOTES, 'UTF-8') : 'None';
 ?>
 <tr data-id="<?php echo $ctfid; ?>">
     <td><?php echo $ctfid; ?></td>
@@ -94,13 +106,14 @@ while($row = mysqli_fetch_array($run)){
         <span class="name-text"><?php echo $name; ?></span>
         <input type="text" class="form-control name-input d-none" value="<?php echo $name; ?>">
     </td>
-    <td><span class="badge badge-success"><?php echo htmlentities($badge_title); ?></span></td>
+    <td><span class="badge badge-success"><?php echo $badge_title; ?></span></td>
     <td>
         <span class="skill-text"><?php echo $skill; ?></span>
         <select class="form-control skill-input d-none">
             <?php foreach ($skill_options as $opt) {
+                $safe_opt = htmlspecialchars($opt, ENT_QUOTES, 'UTF-8');
                 $selected = ($opt == $skill) ? 'selected' : '';
-                echo "<option value='".htmlentities($opt)."' $selected>".htmlentities($opt)."</option>";
+                echo "<option value='$safe_opt' $selected>$safe_opt</option>";
             } ?>
         </select>
     </td>
@@ -108,8 +121,9 @@ while($row = mysqli_fetch_array($run)){
         <span class="gender-text"><?php echo $gender; ?></span>
         <select class="form-control gender-input d-none">
             <?php foreach ($gender_options as $opt) {
+                $safe_opt = htmlspecialchars($opt, ENT_QUOTES, 'UTF-8');
                 $selected = ($opt == $gender) ? 'selected' : '';
-                echo "<option value='".htmlentities($opt)."' $selected>".htmlentities($opt)."</option>";
+                echo "<option value='$safe_opt' $selected>$safe_opt</option>";
             } ?>
         </select>
     </td>
@@ -173,23 +187,36 @@ $(document).ready(function () {
             name: name,
             skill: skill,
             gender: gender
-        }).done(function () {
-            row.find('.name-text').text(name);
-            row.find('.skill-text').text(skill);
-            row.find('.gender-text').text(gender);
-            row.find('.name-input, .skill-input, .gender-input').addClass('d-none');
-            row.find('.name-text, .skill-text, .gender-text').removeClass('d-none');
-            row.find('.save-btn, .cancel-btn').addClass('d-none');
-            row.find('.edit-btn').removeClass('d-none');
-            Swal.fire({
-                toast: true,
-                position: 'top-end',
-                icon: 'success',
-                title: 'User updated',
-                showConfirmButton: false,
-                timer: 2000,
-                timerProgressBar: true
-            });
+        }).done(function (response) {
+            if (response === 'success') {
+                row.find('.name-text').text(name);
+                row.find('.skill-text').text(skill);
+                row.find('.gender-text').text(gender);
+                row.find('.name-input, .skill-input, .gender-input').addClass('d-none');
+                row.find('.name-text, .skill-text, .gender-text').removeClass('d-none');
+                row.find('.save-btn, .cancel-btn').addClass('d-none');
+                row.find('.edit-btn').removeClass('d-none');
+                Swal.fire({
+                    toast: true,
+                    position: 'top-end',
+                    icon: 'success',
+                    title: 'User updated',
+                    showConfirmButton: false,
+                    timer: 2000,
+                    timerProgressBar: true
+                });
+            } else {
+                Swal.fire({
+                    toast: true,
+                    position: 'top-end',
+                    icon: 'error',
+                    title: 'Something went wrong',
+                    text: 'Could not update user.',
+                    showConfirmButton: false,
+                    timer: 3000,
+                    timerProgressBar: true
+                });
+            }
         }).fail(function () {
             Swal.fire({
                 toast: true,
@@ -212,22 +239,38 @@ $(document).ready(function () {
             title: 'Delete this user?',
             icon: 'warning',
             showCancelButton: true,
-                        confirmButtonText: 'Yes, delete',
+            confirmButtonText: 'Yes, delete',
             cancelButtonText: 'Cancel'
         }).then((result) => {
             if (result.isConfirmed) {
-                $.post('userz.php', { action: 'delete', id: id })
-                .done(function () {
-                    row.remove();
-                    Swal.fire({
-                        toast: true,
-                        position: 'top-end',
-                        icon: 'success',
-                        title: 'User deleted',
-                        showConfirmButton: false,
-                        timer: 2000,
-                        timerProgressBar: true
-                    });
+                $.post('userz.php', { 
+                    action: 'delete', 
+                    id: id
+                })
+                .done(function (response) {
+                    if (response === 'success') {
+                        row.remove();
+                        Swal.fire({
+                            toast: true,
+                            position: 'top-end',
+                            icon: 'success',
+                            title: 'User deleted',
+                            showConfirmButton: false,
+                            timer: 2000,
+                            timerProgressBar: true
+                        });
+                    } else {
+                        Swal.fire({
+                            toast: true,
+                            position: 'top-end',
+                            icon: 'error',
+                            title: 'Something went wrong',
+                            text: 'Could not delete user.',
+                            showConfirmButton: false,
+                            timer: 3000,
+                            timerProgressBar: true
+                        });
+                    }
                 })
                 .fail(function () {
                     Swal.fire({
