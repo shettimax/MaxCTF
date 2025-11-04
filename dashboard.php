@@ -1,8 +1,7 @@
 <?php
 ob_start();
+include("session.php");
 ini_set('display_errors', 0);
-error_reporting(E_ALL);
-session_start();
 include 'confik.php';
 
 if (!isset($_SESSION['id']) || empty($_SESSION['id'])) {
@@ -167,7 +166,7 @@ if (file_exists($badgePath)) {
   <ul class="list-group">
 <?php
 $challenges = mysqli_query($conn, "
-    SELECT c.id, c.title, c.category, c.end_time, c.description, t.name 
+    SELECT c.id, c.title, c.category, c.end_time, c.description, t.name, t.path 
     FROM challenges c 
     LEFT JOIN targets t ON c.target_id = t.id 
     WHERE c.status='active' 
@@ -176,7 +175,7 @@ $challenges = mysqli_query($conn, "
 
 if (mysqli_num_rows($challenges) > 0) {
     while ($c = mysqli_fetch_assoc($challenges)) {
-        $launchUrl = "../targets/" . $c['path'];
+        $launchUrl = "targets/" . $c['path'];
         echo "<li class='list-group-item d-flex justify-content-between align-items-center'>
             <div class='challenge-info'>
                 <div>🚩 <strong>" . htmlentities($c['title']) . "</strong></div>

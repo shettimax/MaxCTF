@@ -1,6 +1,8 @@
 <?php
-session_start();
-include("confik.php");
+ob_start();
+include("session.php");
+ini_set('display_errors', 0);
+include 'confik.php';
 include("header2.php");
 ?>
 

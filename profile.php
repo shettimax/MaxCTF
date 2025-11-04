@@ -1,9 +1,9 @@
 <?php
 ob_start();
+include("session.php");
 ini_set('display_errors', 0);
-error_reporting(E_ALL);
-session_start();
 include 'confik.php';
+
 
 if (!isset($_SESSION['id']) || empty($_SESSION['id'])) {
     header('location:disclaimer.php');

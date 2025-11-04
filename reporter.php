@@ -1,9 +1,8 @@
 <?php
-session_start();
-include("confik.php");
-
+ob_start();
+include("session.php");
 ini_set('display_errors', 0);
-error_reporting(E_ALL);
+include 'confik.php';
 
 if (!isset($_SESSION['id']) || strlen($_SESSION['id']) == 0) {
     header("location:login.php");

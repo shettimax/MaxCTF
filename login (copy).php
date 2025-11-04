@@ -1,7 +1,7 @@
 <?php
 ob_start();
-include("session.php");
 ini_set('display_errors', 0);
+session_start();
 include 'confik.php';
 
 if (isset($_SESSION['id']) && strlen($_SESSION['id']) != 0) {

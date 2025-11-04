@@ -13,19 +13,17 @@ function loadModFlags() {
 }
 
 function showAlert(message, type) {
-    Swal.fire({
-        title: type === 'success' ? '✅ Approved' : '❌ Rejected',
-        text: message,
-        icon: type,
-        showConfirmButton: false,
-        timer: 2000,
-        timerProgressBar: true,
-        customClass: {
-            popup: 'swal2-popup',
-            title: 'swal2-title'
-        }
-    });
+  Swal.fire({
+    toast: true,
+    position: 'top-end',
+    icon: type,
+    title: message,
+    showConfirmButton: false,
+    timer: 9000,
+    timerProgressBar: true
+  });
 }
+
 
 function bindFlagActions() {
     $(document).on('click', '.approve-btn', function () {

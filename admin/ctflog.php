@@ -84,4 +84,4 @@ while($row = mysqli_fetch_array($get)){
 </div>
 </div>
 </main>
-<?php include 'footer2.php'; ?>
+<?php include 'footer.php'; ?>

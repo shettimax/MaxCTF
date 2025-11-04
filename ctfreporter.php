@@ -1,34 +1,33 @@
 <?php
-session_start();
+include("session.php");
 include("confik.php");
 
 ini_set('display_errors', 0);
 error_reporting(E_ALL);
 
 // Session check
-if (!isset($_SESSION['id']) || strlen($_SESSION['id']) == 0) {
-    header("location:login.php");
+if (!isset($_SESSION['id']) || empty($_SESSION['ctfid']) || empty($_SESSION['ctfname'])) {
+    header("Location: login.php");
     exit();
 }
 
 $ctfid = $_SESSION['ctfid'];
 $ctfname = $_SESSION['ctfname'];
 
-// CSRF token generation
-if (empty($_SESSION['csrf_token'])) {
-    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+// CSRF token
+if (!isset($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(openssl_random_pseudo_bytes(32));
 }
 
-// Random site info
+// Site info
 $site = mysqli_query($conn, "SELECT * FROM site ORDER BY RAND() LIMIT 1");
 $siterow = mysqli_fetch_array($site);
-$name = $siterow['sitename'];
-$bankname = $siterow['header'];
-$banknumber = $siterow['header2'];
+$name = isset($siterow['sitename']) ? $siterow['sitename'] : "MaxCTF";
+$bankname = isset($siterow['header']) ? $siterow['header'] : "CTF Bank";
+$banknumber = isset($siterow['header2']) ? $siterow['header2'] : "000000";
 
 // Handle form submission
 if (isset($_POST['go'])) {
-    // CSRF token validation
     if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
         $_SESSION['error'] = "Invalid CSRF token.";
         header("Location: ctfreporter.php");
@@ -37,45 +36,49 @@ if (isset($_POST['go'])) {
 
     $bug = $_POST['bugx'];
     $severity = $_POST['severityx'];
-    $amount = $_POST['amount'];
     $rawNotes = $_POST['notes'];
     $notes = htmlspecialchars(strip_tags(substr($rawNotes, 0, 120)), ENT_QUOTES, 'UTF-8');
     $date = date("Y-m-d H:i:s");
 
     $target_dir = "admin/proofimages/";
+    if (!is_dir($target_dir)) mkdir($target_dir, 0755, true);
+
     $timestamp = time();
     $extension = strtolower(pathinfo($_FILES["proofimage"]["name"], PATHINFO_EXTENSION));
     $filename = $ctfid . "_" . $timestamp . "." . $extension;
     $target_file = $target_dir . $filename;
     $uploadOk = 1;
 
-    // Size check
+    // File checks
     if ($_FILES["proofimage"]["size"] > 500000) {
         $uploadOk = 0;
         $_SESSION['error'] = "File too large. Max allowed size is 500KB.";
     }
 
-    // Extension check
-    if (!in_array($extension, ["jpg", "jpeg", "png", "gif"])) {
+    if (!in_array($extension, array("jpg", "jpeg", "png", "gif"))) {
         $uploadOk = 0;
         $_SESSION['error'] = "Invalid file extension.";
     }
 
-    // MIME type check
+    if (!is_uploaded_file($_FILES["proofimage"]["tmp_name"])) {
+        $uploadOk = 0;
+        $_SESSION['error'] = "No valid file uploaded.";
+    }
+
     $finfo = finfo_open(FILEINFO_MIME_TYPE);
     $mimeType = finfo_file($finfo, $_FILES["proofimage"]["tmp_name"]);
     finfo_close($finfo);
-    $allowedMimeTypes = ["image/jpeg", "image/png", "image/gif"];
+    $allowedMimeTypes = array("image/jpeg", "image/png", "image/gif");
     if (!in_array($mimeType, $allowedMimeTypes)) {
         $uploadOk = 0;
-        $_SESSION['error'] = "Invalid MIME type: $mimeType";
+        $_SESSION['error'] = "Invalid MIME type: " . $mimeType;
     }
 
     // Upload and insert
     if ($uploadOk == 1) {
         if (move_uploaded_file($_FILES["proofimage"]["tmp_name"], $target_file)) {
             $sql = "INSERT INTO reportx (walletid, amount, proofimage, date, status, bug, severity, notes) 
-                    VALUES ('$ctfid', '$amount', '$target_file', '$date', 'pending', '$bug', '$severity', '$notes')";
+                    VALUES ('$ctfid', '13', '$target_file', '$date', 'pending', '$bug', '$severity', '$notes')";
             if (mysqli_query($conn, $sql)) {
                 $_SESSION['success'] = "Submitted! Admin will review.";
             } else {
@@ -96,7 +99,7 @@ if (isset($_POST['go'])) {
     <div class="well">
       <form method="post" enctype="multipart/form-data" class="form-horizontal">
         <fieldset>
-          <legend class="text-green">GUVF GBB VF N PUNYYRATR</legend>
+          <legend class="text-green">Submit Your Finding</legend>
 
           <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
 
@@ -108,17 +111,17 @@ if (isset($_POST['go'])) {
           </div>
 
           <div class="form-group">
-            <label class="col-lg-2 control-label">NOM</label>
+            <label class="col-lg-2 control-label">Name</label>
             <div class="col-lg-10">
               <input name="ctfname" class="form-control" value="<?php echo $ctfname; ?>" type="text" readonly>
             </div>
           </div>
 
           <div class="form-group">
-            <label class="col-lg-2 control-label">CTF-Poc's</label>
+            <label class="col-lg-2 control-label">Bug Type</label>
             <div class="col-lg-10">
               <select required name="bugx" class="form-control">
-                <option>see bugtype</option>
+                <option disabled selected>Choose bug type</option>
                 <?php
                   $selectedBug = isset($_GET['bugx']) ? $_GET['bugx'] : '';
                   $result = mysqli_query($conn, "SELECT `bug` FROM `bugs`");
@@ -134,7 +137,7 @@ if (isset($_POST['go'])) {
           <div class="form-group">
             <label class="col-lg-2 control-label">Proof</label>
             <div class="col-lg-10">
-              <input required type="file" name="proofimage" accept="image/x-png,image/gif,image/jpeg" class="form-control">
+              <input required type="file" name="proofimage" accept="image/jpeg,image/png,image/gif" class="form-control">
             </div>
           </div>
 
@@ -142,7 +145,7 @@ if (isset($_POST['go'])) {
             <label class="col-lg-2 control-label">Severity</label>
             <div class="col-lg-10">
               <select required name="severityx" class="form-control">
-                <option>choose severity</option>
+                <option disabled selected>Choose severity</option>
                 <?php
                   $selectedSeverity = isset($_GET['severityx']) ? $_GET['severityx'] : '';
                   $result = mysqli_query($conn, "SELECT `severity` FROM `severities`");
@@ -152,10 +155,6 @@ if (isset($_POST['go'])) {
                   }
                 ?>
               </select>
-              <input name="amount" value="<?php echo isset($_GET['amount']) ? $_GET['amount'] : '13'; ?>" type="hidden">
-              <div class="checkbox">
-                <label><input required type="checkbox"> i agree & accept rules stated</label>
-              </div>
             </div>
           </div>
 
@@ -164,6 +163,14 @@ if (isset($_POST['go'])) {
             <div class="col-lg-10">
               <textarea name="notes" id="notes" class="form-control" rows="3" maxlength="120" placeholder="Briefly describe what you found (max 120 chars)"></textarea>
               <small><span id="charCount">0</span>/120 characters</small>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <div class="col-lg-10 col-lg-offset-2">
+              <div class="checkbox">
+                <label><input required type="checkbox"> I agree & accept rules stated <a href="disclaimer.php">here</a></label>
+              </div>
             </div>
           </div>
 
@@ -194,3 +201,5 @@ if (isset($_SESSION['error'])) {
 ?>
 
 <?php include 'footer.php'; ?>
+
+  echo "<script>Swal.fire({title
