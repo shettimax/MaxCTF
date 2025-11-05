@@ -161,7 +161,7 @@ if (file_exists($badgePath)) {
         </div>
         <div class="tab-pane fade" id="challenges">
   <a href="#" class="close text-none">*</a>
-  <h4>-/h4>
+  <h4>-</h4>
   <p>Explore hands-on CTF-style challenges to sharpen your skills.</p>
   <ul class="list-group">
 <?php
