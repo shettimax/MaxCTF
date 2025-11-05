@@ -14,7 +14,7 @@ function updateCountdowns() {
       if (launchLink) {
         launchLink.classList.add('disabled');
         launchLink.removeAttribute('href');
-        launchLink.textContent = 'Locked';
+        launchLink.textContent = '';
       }
     } else {
       const hours = Math.floor(diff / (1000 * 60 * 60));

@@ -13,7 +13,7 @@ document.addEventListener('DOMContentLoaded', function () {
       Swal.fire({
         title: 'Mission Briefing',
         html: `
-          <p>Dear <b>${ctfname}</b>, you're about hunting for <b>${title}</b> in <em>${category}</em> under <code>${name}</code>.</p>
+          <p>Dear <b>${ctfname}</b>, you're about hunting for <b>${title}</b> under <em>${category}</em> in <code>${name}</code>.</p>
           <p>What's expected of you is:<br><code>${description}</code></p>
           <p><b>Good luck</b></p>
         `,
