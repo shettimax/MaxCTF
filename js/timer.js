@@ -6,7 +6,7 @@ function updateCountdowns() {
     const diff = endTime - now;
 
     if (diff <= 0) {
-      el.textContent = 'Expired';
+      el.textContent = 'UNAVAILABLE';
       el.classList.add('text-danger');
 
       const parent = el.closest('li');

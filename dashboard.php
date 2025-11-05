@@ -154,14 +154,14 @@ if (file_exists($badgePath)) {
             $feed = mysqli_query($conn, "SELECT date, bug, severity, amount, status FROM reportx WHERE walletid='$ctfid' ORDER BY date DESC LIMIT 5");
             while ($row = mysqli_fetch_assoc($feed)) {
                 $tag = ($row['status'] === 'approved') ? '✔' : '✖';
-                echo "<li class='list-group-item'>[$tag] " . htmlentities($row['date']) . " flagged <em>" . htmlentities($row['bug']) . "</em> (" . htmlentities($row['severity']) . ") — <span class='badge'>" . htmlentities($row['amount']) . " pts</span></li>";
+                echo "<li class='list-group-item'>[$tag] " . htmlentities($row['date']) . " flagged <em class='text-dark'>" . htmlentities($row['bug']) . "</em> (" . htmlentities($row['severity']) . ") — <span class='badge'>" . htmlentities($row['amount']) . " pts</span></li>";
             }
             ?>
             </ul>
         </div>
         <div class="tab-pane fade" id="challenges">
   <a href="#" class="close text-none">*</a>
-  <h4>_</h4>
+  <h4>-/h4>
   <p>Explore hands-on CTF-style challenges to sharpen your skills.</p>
   <ul class="list-group">
 <?php
