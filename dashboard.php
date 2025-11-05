@@ -84,7 +84,6 @@ ob_end_flush();
             echo "<p class='text-center'><code>“" . htmlentities($quoteRow['quote']) . "”</code></p>";
         }
         ?>
-        </p>
         <div class="badge-preview">
     <h5 style="color:#00ff99;">⭐RANK</h5>
     <p><strong><?php echo $currentBadge['title']; ?></strong></p>
@@ -179,7 +178,7 @@ if (mysqli_num_rows($challenges) > 0) {
         echo "<li class='list-group-item d-flex justify-content-between align-items-center'>
             <div class='challenge-info'>
                 <div>🚩 <strong>" . htmlentities($c['title']) . "</strong></div>
-                <div><em>" . htmlentities($c['category']) . "</em>  
+                <div><em class='text-dark'>" . htmlentities($c['category']) . "</em>  
                     <code class='countdown' title='Time left' data-end='" . $c['end_time'] . "'></code>
                 </div>
             </div>
