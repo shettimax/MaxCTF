@@ -98,7 +98,7 @@ if(mysqli_num_rows($get) > 0) {
     </td>
     <td>
         <?php if(!empty($note)) { ?>
-            <?php if(strlen($note) > 40){ ?>
+            <?php if(strlen($note) > 2){ ?>
                 <button type="button" class="btn btn-info btn-sm view-note-btn" 
                         data-note="<?php echo htmlspecialchars($note, ENT_QUOTES, 'UTF-8'); ?>"
                         data-id="<?php echo htmlspecialchars($row['id'], ENT_QUOTES, 'UTF-8'); ?>">
