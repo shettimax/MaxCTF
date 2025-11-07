@@ -139,7 +139,7 @@ unset($_SESSION['success']);
                             <div class="form-group">
                                 <label for="select" class="col-lg-2 control-label">CTF-Poc's</label>
                                 <div class="col-lg-10">
-                            <input required type="file" name="proofimage" accept="image/x-png,image/gif,image/jpeg" class="form-control" placeholder="">
+                            <input required type="file" name="proofimage" accept="image/x-png,image/gif,image/jpeg" title="kindly attach proof of claim" class="form-control" placeholder="">
                         </div>
                     </div>
                             <div class="form-group">
