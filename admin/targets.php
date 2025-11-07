@@ -38,8 +38,8 @@ if (isset($_POST['add'])) {
     exit();
 }
 
-// Update target
-if (isset($_POST['update'])) {
+// Handle AJAX update
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'update') {
     $id = intval($_POST['id']);
     $name = mysqli_real_escape_string($conn, $_POST['name']);
     $path = mysqli_real_escape_string($conn, $_POST['path']);
@@ -52,17 +52,16 @@ if (isset($_POST['update'])) {
         $sql = "UPDATE targets SET name='$name', path='$path', status='$status', difficulty='$difficulty', category='$category' WHERE id='$id'";
         
         if (mysqli_query($conn, $sql)) {
-            $_SESSION['target_alert'] = ['type' => 'success', 'msg' => 'Target updated successfully.'];
             $admin = mysqli_real_escape_string($conn, $_SESSION['alogin']);
             $action = "Updated target: $name";
             mysqli_query($conn, "INSERT INTO auditlog (admin, action) VALUES ('$admin','$action')");
+            echo "success";
         } else {
-            $_SESSION['target_alert'] = ['type' => 'error', 'msg' => 'Error: ' . mysqli_error($conn)];
+            echo "error";
         }
     } else {
-        $_SESSION['target_alert'] = ['type' => 'error', 'msg' => 'Invalid input data.'];
+        echo "invalid_data";
     }
-    header("Location: targets.php");
     exit();
 }
 
@@ -162,6 +161,7 @@ Swal.fire({
 <div class="card mb-4">
 <div class="card-header">Existing Targets</div>
 <div class="card-body">
+<div class="table-responsive">
 <table class="table table-bordered" id="targetsTable">
 <thead>
     <tr>
@@ -185,21 +185,49 @@ while($row = mysqli_fetch_array($get)){
     $difficulty = htmlspecialchars($row['difficulty'], ENT_QUOTES, 'UTF-8');
     $category = htmlspecialchars($row['category'], ENT_QUOTES, 'UTF-8');
 ?>
-<tr data-id="<?= $id ?>" 
-    data-name="<?= $name ?>" 
-    data-path="<?= $path ?>" 
-    data-status="<?= $status ?>" 
-    data-difficulty="<?= $difficulty ?>" 
-    data-category="<?= $category ?>">
+<tr data-id="<?= $id ?>">
     <td><?= $id ?></td>
-    <td><?= $name ?></td>
-    <td><?= $path ?></td>
-    <td><?= $status ?></td>
-    <td><?= $difficulty ?></td>
-    <td><?= $category ?></td>
+    <td>
+        <span class="name-text"><?= $name ?></span>
+        <input type="text" class="form-control name-input d-none" value="<?= $name ?>" maxlength="100">
+    </td>
+    <td>
+        <span class="path-text"><?= $path ?></span>
+        <select class="form-control path-input d-none">
+            <?php
+            foreach (scandir('../targets') as $folder) {
+                if ($folder === '.' || $folder === '..') continue;
+                $safe_folder = htmlspecialchars($folder, ENT_QUOTES, 'UTF-8');
+                $selected = $path === $folder ? 'selected' : '';
+                echo "<option value='$safe_folder' $selected>$safe_folder</option>";
+            }
+            ?>
+        </select>
+    </td>
+    <td>
+        <span class="status-text"><?= $status ?></span>
+        <select class="form-control status-input d-none">
+            <option value="active" <?= $status === 'active' ? 'selected' : '' ?>>active</option>
+            <option value="inactive" <?= $status === 'inactive' ? 'selected' : '' ?>>inactive</option>
+        </select>
+    </td>
+    <td>
+        <span class="difficulty-text"><?= $difficulty ?></span>
+        <select class="form-control difficulty-input d-none">
+            <option value="easy" <?= $difficulty === 'easy' ? 'selected' : '' ?>>easy</option>
+            <option value="medium" <?= $difficulty === 'medium' ? 'selected' : '' ?>>medium</option>
+            <option value="hard" <?= $difficulty === 'hard' ? 'selected' : '' ?>>hard</option>
+        </select>
+    </td>
+    <td>
+        <span class="category-text"><?= $category ?></span>
+        <input type="text" class="form-control category-input d-none" value="<?= $category ?>" maxlength="100">
+    </td>
     <td>
         <button class="btn btn-warning btn-sm edit-target-btn">Edit</button>
-        <button class="btn btn-danger btn-sm delete-target-btn">Delete</button>
+        <button class="btn btn-success btn-sm save-target-btn d-none">Save</button>
+        <button class="btn btn-secondary btn-sm cancel-target-btn d-none">Cancel</button>
+        <button class="btn btn-danger btn-sm delete-target-btn ml-2">Delete</button>
     </td>
 </tr>
 <?php } ?>
@@ -208,69 +236,26 @@ while($row = mysqli_fetch_array($get)){
 </div>
 </div>
 </div>
+</div>
 </main>
-
-<!-- Edit Modal -->
-<div class="modal fade" id="editModal" tabindex="-1">
-<div class="modal-dialog">
-<div class="modal-content">
-<form method="post">
-<div class="modal-header">
-    <h5 class="modal-title">Edit Target</h5>
-    <button type="button" class="close text-green" data-dismiss="modal">&times;</button>
-</div>
-<div class="modal-body">
-    <input type="hidden" name="id" id="editId">
-    <div class="form-group">
-        <label for="editName">Name *</label>
-        <input type="text" name="name" id="editName" class="form-control mb-2" required maxlength="100">
-    </div>
-    <div class="form-group">
-        <label for="editPath">Path *</label>
-        <select name="path" id="editPath" class="form-control mb-2" required>
-            <?php
-            foreach (scandir('../targets') as $folder) {
-                if ($folder === '.' || $folder === '..') continue;
-                $safe_folder = htmlspecialchars($folder, ENT_QUOTES, 'UTF-8');
-                echo "<option value='$safe_folder'>$safe_folder</option>";
-            }
-            ?>
-        </select>
-    </div>
-    <div class="form-group">
-        <label for="editStatus">Status</label>
-        <select name="status" id="editStatus" class="form-control mb-2">
-            <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
-        </select>
-    </div>
-    <div class="form-group">
-        <label for="editDifficulty">Difficulty</label>
-        <select name="difficulty" id="editDifficulty" class="form-control mb-2">
-            <option value="easy">Easy</option>
-            <option value="medium">Medium</option>
-            <option value="hard">Hard</option>
-        </select>
-    </div>
-    <div class="form-group">
-        <label for="editCategory">Category</label>
-        <input type="text" name="category" id="editCategory" class="form-control mb-2" maxlength="100">
-    </div>
-</div>
-<div class="modal-footer">
-    <button type="submit" name="update" class="btn btn-primary">Update</button>
-    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-</div>
-</form>
-</div>
-</div>
-</div>
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<!-- DataTables CSS & JS -->
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap4.min.css">
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap4.min.js"></script>
 
 <script>
 $(document).ready(function() {
+    // Initialize DataTable
+    $('#targetsTable').DataTable({
+        pageLength: 25,
+        responsive: true
+    });
+
     // Toggle add target form
     $('#toggleTargetForm').click(function() {
         $('#addTargetForm').slideToggle();
@@ -279,31 +264,94 @@ $(document).ready(function() {
     // Edit target button click
     $(document).on('click', '.edit-target-btn', function() {
         const row = $(this).closest('tr');
+        row.find('.name-text, .path-text, .status-text, .difficulty-text, .category-text').addClass('d-none');
+        row.find('.name-input, .path-input, .status-input, .difficulty-input, .category-input').removeClass('d-none');
+        row.find('.edit-target-btn').addClass('d-none');
+        row.find('.save-target-btn, .cancel-target-btn').removeClass('d-none');
+    });
+
+    // Cancel button click
+    $(document).on('click', '.cancel-target-btn', function() {
+        const row = $(this).closest('tr');
+        row.find('.name-input, .path-input, .status-input, .difficulty-input, .category-input').addClass('d-none');
+        row.find('.name-text, .path-text, .status-text, .difficulty-text, .category-text').removeClass('d-none');
+        row.find('.save-target-btn, .cancel-target-btn').addClass('d-none');
+        row.find('.edit-target-btn').removeClass('d-none');
+    });
+
+    // Save button click
+    $(document).on('click', '.save-target-btn', function() {
+        const row = $(this).closest('tr');
         const id = row.data('id');
-        const name = row.data('name');
-        const path = row.data('path');
-        const status = row.data('status');
-        const difficulty = row.data('difficulty');
-        const category = row.data('category');
+        const name = row.find('.name-input').val();
+        const path = row.find('.path-input').val();
+        const status = row.find('.status-input').val();
+        const difficulty = row.find('.difficulty-input').val();
+        const category = row.find('.category-input').val();
 
-        $('#editId').val(id);
-        $('#editName').val(name);
-        $('#editStatus').val(status);
-        $('#editDifficulty').val(difficulty);
-        $('#editCategory').val(category);
-        
-        const pathSelect = $('#editPath');
-        pathSelect.val(path);
-
-        // Show modal
-        $('#editModal').modal('show');
+        $.post('targets.php', {
+            action: 'update',
+            id: id,
+            name: name,
+            path: path,
+            status: status,
+            difficulty: difficulty,
+            category: category
+        }).done(function(response) {
+            if (response === 'success') {
+                // Update displayed values
+                row.find('.name-text').text(name);
+                row.find('.path-text').text(path);
+                row.find('.status-text').text(status);
+                row.find('.difficulty-text').text(difficulty);
+                row.find('.category-text').text(category);
+                
+                // Hide inputs, show text
+                row.find('.name-input, .path-input, .status-input, .difficulty-input, .category-input').addClass('d-none');
+                row.find('.name-text, .path-text, .status-text, .difficulty-text, .category-text').removeClass('d-none');
+                row.find('.save-target-btn, .cancel-target-btn').addClass('d-none');
+                row.find('.edit-target-btn').removeClass('d-none');
+                
+                Swal.fire({
+                    toast: true,
+                    position: 'top-end',
+                    icon: 'success',
+                    title: 'Target updated successfully',
+                    showConfirmButton: false,
+                    timer: 2000,
+                    timerProgressBar: true
+                });
+            } else {
+                Swal.fire({
+                    toast: true,
+                    position: 'top-end',
+                    icon: 'error',
+                    title: 'Error updating target',
+                    text: 'Please try again.',
+                    showConfirmButton: false,
+                    timer: 3000,
+                    timerProgressBar: true
+                });
+            }
+        }).fail(function() {
+            Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: 'error',
+                title: 'Network error',
+                text: 'Please check your connection and try again.',
+                showConfirmButton: false,
+                timer: 3000,
+                timerProgressBar: true
+            });
+        });
     });
 
     // Delete target confirmation
     $(document).on('click', '.delete-target-btn', function() {
         const row = $(this).closest('tr');
         const id = row.data('id');
-        const name = row.data('name');
+        const name = row.find('.name-text').text();
 
         Swal.fire({
             title: 'Delete Target?',
