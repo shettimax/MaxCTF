@@ -165,7 +165,8 @@ echo $csc.''.$ran.''.$mon.''.$mon1;
                             <div class="form-group">
                                 <div class="col-lg-10 col-lg-offset-2">
                                     <button type="reset" class="btn btn-default">Reset</button>
-                                    <button type="submit" name="signup" class="btn btn-primary">Submit</button> Already have account? <button type="button" class="btn btn-default" onclick="window.location.href='login.php'">LOGIN</button>
+                                    <button type="submit" name="signup" class="btn btn-primary">Submit</button> <br>
+                                    <i>Already have account?</i> <button type="button" class="btn btn-default" onclick="window.location.href='login.php'">LOGIN</button>
                                 </div>
                             </div>
                         </fieldset>

@@ -169,7 +169,7 @@ $challenges = mysqli_query($conn, "
     FROM challenges c 
     LEFT JOIN targets t ON c.target_id = t.id 
     WHERE c.status='active' 
-    ORDER BY c.end_time ASC
+    ORDER BY c.end_time DESC LIMIT 5
 ");
 
 if (mysqli_num_rows($challenges) > 0) {

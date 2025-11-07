@@ -152,6 +152,7 @@ $(document).ready(function () {
         responsive: true
     });
 
+    // Edit button click - Show inputs
     $(document).on('click', '.edit-btn', function () {
         const row = $(this).closest('tr');
         row.find('.username-text, .email-text, .role-text').addClass('d-none');
@@ -160,6 +161,7 @@ $(document).ready(function () {
         row.find('.save-btn, .cancel-btn').removeClass('d-none');
     });
 
+    // Cancel button click - Hide inputs
     $(document).on('click', '.cancel-btn', function () {
         const row = $(this).closest('tr');
         row.find('.username-input, .email-input, .role-input').addClass('d-none');
@@ -168,6 +170,7 @@ $(document).ready(function () {
         row.find('.edit-btn').removeClass('d-none');
     });
 
+    // Save button click - Update data
     $(document).on('click', '.save-btn', function () {
         const row = $(this).closest('tr');
         const id = row.data('id');
@@ -183,18 +186,22 @@ $(document).ready(function () {
             role: role
         }).done(function (response) {
             if (response === 'success') {
+                // Update displayed values
                 row.find('.username-text').text(username);
                 row.find('.email-text').text(email);
                 row.find('.role-text').text(role);
+                
+                // Hide inputs, show text
                 row.find('.username-input, .email-input, .role-input').addClass('d-none');
                 row.find('.username-text, .email-text, .role-text').removeClass('d-none');
                 row.find('.save-btn, .cancel-btn').addClass('d-none');
                 row.find('.edit-btn').removeClass('d-none');
+                
                 Swal.fire({
                     toast: true,
                     position: 'top-end',
                     icon: 'success',
-                    title: 'Admin updated',
+                    title: 'Admin updated successfully',
                     showConfirmButton: false,
                     timer: 2000,
                     timerProgressBar: true
@@ -239,7 +246,7 @@ $(document).ready(function () {
                 position: 'top-end',
                 icon: 'error',
                 title: 'Network error',
-                text: 'Please try again.',
+                text: 'Please check your connection and try again.',
                 showConfirmButton: false,
                 timer: 3000,
                 timerProgressBar: true
@@ -247,15 +254,18 @@ $(document).ready(function () {
         });
     });
 
+    // Delete button click
     $(document).on('click', '.delete-btn', function () {
         const row = $(this).closest('tr');
         const id = row.data('id');
+        const username = row.find('.username-text').text();
 
         Swal.fire({
-            title: 'Delete this admin?',
+            title: 'Delete Admin?',
+            text: `Are you sure you want to delete "${username}"?`,
             icon: 'warning',
             showCancelButton: true,
-            confirmButtonText: 'Yes, delete',
+            confirmButtonText: 'Yes, delete it!',
             cancelButtonText: 'Cancel'
         }).then((result) => {
             if (result.isConfirmed) {
@@ -269,7 +279,7 @@ $(document).ready(function () {
                             toast: true,
                             position: 'top-end',
                             icon: 'success',
-                            title: 'Admin deleted',
+                            title: 'Admin deleted successfully',
                             showConfirmButton: false,
                             timer: 2000,
                             timerProgressBar: true
@@ -279,7 +289,7 @@ $(document).ready(function () {
                             toast: true,
                             position: 'top-end',
                             icon: 'error',
-                            title: 'Cannot delete own account',
+                            title: 'Cannot delete your own account',
                             showConfirmButton: false,
                             timer: 3000,
                             timerProgressBar: true
@@ -302,7 +312,7 @@ $(document).ready(function () {
                         position: 'top-end',
                         icon: 'error',
                         title: 'Network error',
-                        text: 'Please try again.',
+                        text: 'Please check your connection and try again.',
                         showConfirmButton: false,
                         timer: 3000,
                         timerProgressBar: true
