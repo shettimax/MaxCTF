@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1:3306
--- Generation Time: Nov 03, 2025 at 11:55 AM
+-- Generation Time: Nov 08, 2025 at 08:59 AM
 -- Server version: 5.7.44
 -- PHP Version: 5.6.40-81+ubuntu20.04.1+deb.sury.org+1
 
@@ -70,16 +70,16 @@ CREATE TABLE `accounts` (
 --
 
 INSERT INTO `accounts` (`id`, `ctfid`, `ctfname`, `ctfscore`, `joined`, `ctfskillset`, `gender`, `ctfemail`, `ctfpassword`, `farko`) VALUES
-(1, 'CTFM4X1337', 'Al0new0lf', 106, '2019-12-17', 'noob', 'male', 'shettimax@1337.co', '0eb9ea0bef58bbe654059ac7e27f67c2e8eb9240', '1'),
-(2, 'BL4KXPL6', 'BXP6', 500, '2020-02-16', 'noob', 'male', 'black@1337.co', '0eb9ea0bef58bbe654059ac7e27f67c2e8eb9240', '1'),
-(3, 'M4Z4NG33Z0', 'MZGZ', 1100, '2021-12-16', '1337', 'male', 'mzgz@1337.co', '0eb9ea0bef58bbe654059ac7e27f67c2e8eb9240', '1'),
+(1, 'CTFM4X1337', 'Al0new0lf', 115, '2019-12-17', 'noob', 'male', 'shettimax@1337.co', '0eb9ea0bef58bbe654059ac7e27f67c2e8eb9240', '1'),
+(2, 'BL4KXPL6', 'BXP6', 500, '2020-02-16', '1337', 'male', 'black@1337.co', '0eb9ea0bef58bbe654059ac7e27f67c2e8eb9240', '1'),
+(3, 'M4Z4NG33Z0', 'MZGZ', 1140, '2021-12-16', '1337', 'male', 'mzgz@1337.co', '0eb9ea0bef58bbe654059ac7e27f67c2e8eb9240', '1'),
 (4, 'C0BR47A73', 'KingCobra', 1500, '2022-10-25', 'noob', 'male', 'cobra@1337.co', '0eb9ea0bef58bbe654059ac7e27f67c2e8eb9240', '1'),
-(5, 'CTFXG33W4', '0xvince', 2000, '2023-11-05', 'N00B', 'male', '0xvince@1337.co', '0eb9ea0bef58bbe654059ac7e27f67c2e8eb9240', '1'),
+(5, 'CTFXG33W4', '0xvince', 2003, '2023-11-05', 'N00B', 'male', '0xvince@1337.co', '0eb9ea0bef58bbe654059ac7e27f67c2e8eb9240', '1'),
 (6, 'CTF3XL0V44', 'XL0V3R', 2500, '2024-09-16', '1337', 'MALE', 'XL0V3R@1337.co', '0eb9ea0bef58bbe654059ac7e27f67c2e8eb9240', '1'),
-(10, 'CTFHO910260316', 'kiralina', 3054, '2025-10-26', 'N00B', 'FEMALE', 'kira@1337.co', '0eb9ea0bef58bbe654059ac7e27f67c2e8eb9240', '1'),
-(11, 'CTFHO60316', 'DMP', 3587, '2025-10-27', 'N00B', 'FEMALE', 'dudu@1337.co', '0eb9ea0bef58bbe654059ac7e27f67c2e8eb9240', '1'),
+(10, 'CTFHO910260316', 'kiralina', 3095, '2025-10-26', 'N00B', 'FEMALE', 'kira@1337.co', '0eb9ea0bef58bbe654059ac7e27f67c2e8eb9240', '1'),
+(11, 'CTFHO60316', 'DMP', 3717, '2025-10-27', 'N00B', 'FEMALE', 'dudu@1337.co', '0eb9ea0bef58bbe654059ac7e27f67c2e8eb9240', '1'),
 (12, 'CTFVH310290308', 'emsonj4y', 29, '2025-10-29', 'N00B', 'MALE', 'emsonj4y@1337.co', '0eb9ea0bef58bbe654059ac7e27f67c2e8eb9240', '1'),
-(13, 'CTFQJ110291223', 'maxinjector', 20, '2025-10-29', '1337', 'MALE', 'maxinjector@1337.co', '0eb9ea0bef58bbe654059ac7e27f67c2e8eb9240', NULL);
+(13, 'CTFQJ110291223', 'maxinjector', 23, '2025-10-29', '1337', 'MALE', 'maxinjector@1337.co', '0eb9ea0bef58bbe654059ac7e27f67c2e8eb9240', '1');
 
 -- --------------------------------------------------------
 
@@ -103,7 +103,8 @@ INSERT INTO `admin` (`id`, `username`, `email`, `password`, `role`) VALUES
 (1, 'ctfadmin', 'admin@maxctf.xyz', '$2y$10$JKsviA8XtBmgRpsmtBXXyemW.2oCS2JHco.ns6UTIjZSmu.zajZ3e', 'admin'),
 (2, 'ctfmod', 'mod@maxctf.xyz', '$2y$10$JKsviA8XtBmgRpsmtBXXyemW.2oCS2JHco.ns6UTIjZSmu.zajZ3e', 'mod'),
 (3, 'mazang1z0', 'mzgz@maxctf.xyz', '$2y$10$JKsviA8XtBmgRpsmtBXXyemW.2oCS2JHco.ns6UTIjZSmu.zajZ3e', 'admin'),
-(4, 'ctfadmin2', 'ctfadmin2@1337.xyz', '$2y$10$hkB0LXKUCkBBTjJtY9Dym.Uak40utL8eB7u0REdybG5G/uTXoHHfO', 'admin');
+(4, 'ctfadmin2', 'ctfadmin2@1337.xyz', '$2y$10$hkB0LXKUCkBBTjJtY9Dym.Uak40utL8eB7u0REdybG5G/uTXoHHfO', 'admin'),
+(5, 'kira', 'kira@1337.co', '$2y$10$ae0GuWiXOw3.3A6EX/gX3OQW2Y.POEmAUjWqSFGuKbHY2vAxxzYcu', 'admin');
 
 -- --------------------------------------------------------
 
@@ -140,7 +141,54 @@ INSERT INTO `auditlog` (`id`, `admin`, `action`, `timestamp`) VALUES
 (15, 'ctfadmin2', 'Logged in', '2025-11-03 09:27:10'),
 (16, 'ctfadmin2', 'Logged in', '2025-11-03 09:28:05'),
 (17, 'ctfadmin2', 'Edited admin ctfadmin', '2025-11-03 10:16:18'),
-(18, 'ctfadmin2', 'Edited admin ctfadmin', '2025-11-03 10:16:29');
+(18, 'ctfadmin2', 'Edited admin ctfadmin', '2025-11-03 10:16:29'),
+(19, '', 'Updated user BL4KXPL6', '2025-11-03 14:38:22'),
+(20, 'ctfadmin2', 'Logged in', '2025-11-03 14:38:45'),
+(21, 'ctfadmin2', 'Approved flag ID 15 for M4Z4NG33Z0 with note: ', '2025-11-03 14:43:32'),
+(22, 'ctfadmin2', 'Approved flag ID 15 for M4Z4NG33Z0 with note: ', '2025-11-03 14:45:32'),
+(23, 'ctfadmin2', 'Logged in', '2025-11-03 15:38:58'),
+(24, 'ctfadmin2', 'Logged in', '2025-11-03 15:41:25'),
+(25, 'ctfadmin2', 'Logged in', '2025-11-03 23:06:19'),
+(26, 'ctfadmin2', 'Approved flag ID 16 for CTFHO60316 with note: confirmed', '2025-11-03 23:06:57'),
+(27, 'ctfadmin2', 'Approved flag ID 16 for CTFHO60316 with note: good', '2025-11-03 23:20:01'),
+(28, 'ctfadmin2', 'Approved flag ID 16 for CTFHO60316 with note: good boy', '2025-11-03 23:23:12'),
+(29, 'ctfadmin2', 'Rejected flag ID 16 for CTFHO60316 with reason: uwaka', '2025-11-03 23:24:08'),
+(30, 'ctfadmin2', 'Logged in', '2025-11-04 10:07:54'),
+(31, 'ctfadmin2', 'Approved flag ID 16 for CTFHO60316 with note: good good', '2025-11-04 10:16:33'),
+(32, 'ctfadmin2', 'Rejected flag ID 17 for CTFHO910260316 with reason: kai karyace', '2025-11-04 10:16:48'),
+(33, 'ctfadmin2', 'Edited admin ctfadmin', '2025-11-04 10:49:58'),
+(34, 'ctfadmin2', 'Edited admin ctfadmin', '2025-11-04 10:50:13'),
+(35, 'ctfadmin2', 'Edited admin ctfadmin', '2025-11-04 10:50:33'),
+(36, 'ctfadmin2', 'Edited admin ctfadmin', '2025-11-04 10:50:45'),
+(37, 'ctfadmin2', 'Edited admin ctfadmin', '2025-11-04 11:09:52'),
+(38, 'ctfadmin2', 'Updated user BL4KXPL6', '2025-11-04 12:02:52'),
+(39, 'ctfadmin2', 'Updated user BL4KXPL6', '2025-11-04 12:03:08'),
+(40, 'ctfadmin2', 'Logged in', '2025-11-04 16:25:22'),
+(41, 'ctfadmin2', 'Edited admin ctfadmin', '2025-11-04 16:27:38'),
+(42, 'ctfadmin2', 'Logged in', '2025-11-04 17:20:59'),
+(43, 'ctfadmin2', 'Logged in', '2025-11-04 17:44:58'),
+(44, 'ctfadmin2', 'Logged in', '2025-11-04 17:51:30'),
+(45, 'ctfadmin2', 'Updated user BL4KXPL6', '2025-11-04 17:57:10'),
+(46, 'ctfadmin2', 'Created new admin kira', '2025-11-04 18:11:16'),
+(47, 'ctfadmin2', 'Updated user BL4KXPL6', '2025-11-04 18:38:02'),
+(48, 'ctfadmin2', 'Approved flag ID 17 for CTFHO910260316 with note: cool', '2025-11-04 18:39:47'),
+(49, 'ctfadmin2', 'Updated badge ShadowCoder', '2025-11-04 19:07:42'),
+(50, 'ctfadmin2', 'Logged in', '2025-11-05 09:56:08'),
+(51, 'ctfadmin2', 'Updated user BL4KXPL6', '2025-11-05 09:56:19'),
+(52, 'ctfadmin2', 'Updated user BL4KXPL6', '2025-11-05 09:56:23'),
+(53, 'ctfadmin2', 'Updated badge n00b', '2025-11-05 09:56:59'),
+(54, 'ctfadmin2', 'Updated badge n00b', '2025-11-05 09:57:04'),
+(55, 'ctfadmin2', 'Updated challenge: SQLi101', '2025-11-05 10:02:08'),
+(56, 'ctfadmin2', 'Updated challenge: SQLi101', '2025-11-05 10:02:24'),
+(57, 'ctfadmin2', 'Updated challenge: XSS101', '2025-11-05 10:03:03'),
+(58, 'ctfadmin2', 'Logged in', '2025-11-06 11:07:50'),
+(59, 'ctfadmin2', 'Rejected flag ID 17 for CTFHO910260316 with reason: na lie', '2025-11-06 11:08:37'),
+(60, 'ctfadmin2', 'Updated user BL4KXPL6', '2025-11-06 11:09:16'),
+(61, 'ctfadmin2', 'Updated user BL4KXPL6', '2025-11-06 11:09:21'),
+(62, 'ctfadmin2', 'Logged in', '2025-11-07 11:24:54'),
+(63, 'ctfadmin2', 'Approved flag ID 17 for CTFHO910260316 with note: good catch', '2025-11-07 11:25:32'),
+(64, 'ctfadmin2', 'Updated target: MCTFVWA', '2025-11-07 11:34:14'),
+(65, 'ctfadmin2', 'Updated target: MCTFVWA', '2025-11-07 11:34:18');
 
 -- --------------------------------------------------------
 
@@ -199,11 +247,11 @@ CREATE TABLE `bugs` (
 INSERT INTO `bugs` (`id`, `bug`) VALUES
 (1, 'SQLi'),
 (2, 'XSS'),
-(3, 'LFI'),
-(4, 'RFI'),
-(5, 'OSCMD'),
+(3, 'CSRF'),
+(4, 'MANIPULATION'),
+(5, 'AUTH'),
 (6, 'UPLOADer'),
-(7, 'CLICKJACK'),
+(7, 'IDOR'),
 (8, 'SESSIONs'),
 (9, 'DIRBRUTE'),
 (10, 'XMLPARSER'),
@@ -221,9 +269,24 @@ CREATE TABLE `challenges` (
   `description` text,
   `points` int(11) DEFAULT NULL,
   `category` varchar(50) DEFAULT NULL,
-  `flag` varchar(100) DEFAULT NULL,
-  `status` varchar(10) DEFAULT 'active'
+  `status` varchar(10) DEFAULT 'active',
+  `start_time` datetime DEFAULT NULL,
+  `end_time` datetime DEFAULT NULL,
+  `target_id` int(11) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+--
+-- Dumping data for table `challenges`
+--
+
+INSERT INTO `challenges` (`id`, `title`, `description`, `points`, `category`, `status`, `start_time`, `end_time`, `target_id`) VALUES
+(1, 'SQLi', 'SQLi101', 15, 'WebAppSecurity', 'active', '2025-11-03 14:22:00', '2027-08-27 14:22:00', 1),
+(2, 'XSS', 'XSS101', 15, 'WebAppSecurity', 'inactive', '2025-11-03 16:42:00', '2025-11-04 13:47:00', 1),
+(3, 'IDOR', 'find as many IDOR you can and submit on the go.', 15, 'WebAppSecurity', 'active', '2025-11-04 01:02:00', '2027-02-04 01:02:00', 1),
+(4, 'UPLOAD', 'run as many UPLOAD bypass you can and submit POC on the go.', 15, 'WebAppSecurity', 'active', '2025-11-04 01:06:00', '2026-02-28 04:06:00', 1),
+(5, 'CSRF101', 'find as many CSRF you can and submit POC on the go.', 15, 'WebAppSecurity', 'active', '2025-11-04 01:08:00', '2027-05-22 01:08:00', 1),
+(6, 'AUTHBYPASS', 'bypass as many AUTH you can and submit POC on the go.', 15, 'WebAppSecurity', 'active', '2025-11-04 01:12:00', '2027-10-09 01:12:00', 1),
+(7, 'B-LOGIC', 'manipulate your way around this BUSINESS LOGIC and submit POC on the go', 15, 'WebAppSecurity', 'active', '2025-11-04 01:23:00', '2027-10-28 01:23:00', 1);
 
 -- --------------------------------------------------------
 
@@ -246,6 +309,25 @@ CREATE TABLE `ctfs` (
 
 INSERT INTO `ctfs` (`id`, `farkoo`, `biyu`, `uku`, `hudu`, `biyar`) VALUES
 (1, 'targets/Dummyvotingsys', 'targets/Dummyloginsys', 'targets/DummyAdmissionchecksys', 'targets/DummyLFi', 'targets/Dummy');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `dp`
+--
+
+CREATE TABLE `dp` (
+  `id` int(11) NOT NULL,
+  `gender` tinyint(1) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+--
+-- Dumping data for table `dp`
+--
+
+INSERT INTO `dp` (`id`, `gender`) VALUES
+(1, 1),
+(2, 2);
 
 -- --------------------------------------------------------
 
@@ -402,7 +484,10 @@ INSERT INTO `reportx` (`id`, `walletid`, `amount`, `proofimage`, `date`, `status
 (11, 'M4Z4NG33Z0', '20', 'admin/proofimages/mclcnew1.png', '2020-12-19 03:12:33', 'approved', 'XSS', 'MEDIUM', 'ccc'),
 (12, 'M4Z4NG33Z0', '20', 'admin/proofimages/mclcnew1.png', '2020-12-19 03:12:33', 'approved', 'XSS', 'MEDIUM', 'zz'),
 (13, 'M4Z4NG33Z0', '20', 'admin/proofimages/mclcnew1.png', '2020-12-19 03:12:33', 'approved', 'XSS', 'MEDIUM', 'ee'),
-(14, 'M4Z4NG33Z0', '20', 'admin/proofimages/mclcnew1.png', '2020-12-19 03:12:33', 'approved', 'XSS', 'MEDIUM', 'dfg');
+(14, 'M4Z4NG33Z0', '20', 'admin/proofimages/mclcnew1.png', '2020-12-19 03:12:33', 'approved', 'XSS', 'MEDIUM', 'trying to drop a long submission text to text some functionalities in admin dashboard trying to drop a long submission text to text some functionalities in admin dashboard trying to drop a long submission text to text some functionalities in admin dashboard trying to drop a long submission text to text some functionalities in admin dashboard'),
+(15, 'M4Z4NG33Z0', '20', 'proofimages/mclcnew1.png', '2020-12-19 03:12:33', 'approved', 'XSS', 'MEDIUM', ''),
+(16, 'CTFHO60316', '13', 'admin/proofimages/CTFHO60316_1762211043.png', '2025-11-04 00:04:03', 'approved', 'IDOR', 'MEDIUM', 'good good'),
+(17, 'CTFHO910260316', '13', 'admin/proofimages/CTFHO910260316_1762249624.jpeg', '2025-11-04 10:47:04', 'approved', 'CSRF', 'MEDIUM', 'good catch');
 
 -- --------------------------------------------------------
 
@@ -491,8 +576,17 @@ CREATE TABLE `targets` (
   `id` int(11) NOT NULL,
   `name` varchar(50) DEFAULT NULL,
   `path` varchar(100) DEFAULT NULL,
-  `status` varchar(10) DEFAULT 'active'
+  `status` varchar(10) DEFAULT 'active',
+  `difficulty` varchar(20) DEFAULT NULL,
+  `category` varchar(100) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+--
+-- Dumping data for table `targets`
+--
+
+INSERT INTO `targets` (`id`, `name`, `path`, `status`, `difficulty`, `category`) VALUES
+(1, 'MCTFVWA', 'mctfvwa', 'active', 'easy', 'WebAppSecurity');
 
 -- --------------------------------------------------------
 
@@ -568,6 +662,12 @@ ALTER TABLE `challenges`
 -- Indexes for table `ctfs`
 --
 ALTER TABLE `ctfs`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `dp`
+--
+ALTER TABLE `dp`
   ADD PRIMARY KEY (`id`);
 
 --
@@ -650,13 +750,13 @@ ALTER TABLE `accounts`
 -- AUTO_INCREMENT for table `admin`
 --
 ALTER TABLE `admin`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT for table `auditlog`
 --
 ALTER TABLE `auditlog`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=19;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=66;
 
 --
 -- AUTO_INCREMENT for table `bugs`
@@ -668,13 +768,19 @@ ALTER TABLE `bugs`
 -- AUTO_INCREMENT for table `challenges`
 --
 ALTER TABLE `challenges`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- AUTO_INCREMENT for table `ctfs`
 --
 ALTER TABLE `ctfs`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+--
+-- AUTO_INCREMENT for table `dp`
+--
+ALTER TABLE `dp`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `modlog`
@@ -698,7 +804,7 @@ ALTER TABLE `quotes`
 -- AUTO_INCREMENT for table `reportx`
 --
 ALTER TABLE `reportx`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
 
 --
 -- AUTO_INCREMENT for table `severities`
@@ -728,7 +834,7 @@ ALTER TABLE `solves`
 -- AUTO_INCREMENT for table `targets`
 --
 ALTER TABLE `targets`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `Y3J5cHRzYWxnb3JpdGht`

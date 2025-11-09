@@ -12,7 +12,6 @@ if (!isset($_SESSION['id']) || empty($_SESSION['id'])) {
 $ctfid = $_SESSION['id'];
 $query = mysqli_query($conn, "SELECT * FROM accounts WHERE ctfid='$ctfid'");
 $data = mysqli_fetch_assoc($query);
-
 $ctfname = $data['ctfname'];
 $ctfscore = $data['ctfscore'];
 // Get current badge
@@ -54,7 +53,7 @@ ob_end_flush();
     <h3>MAXCTF</h3>
     <ul class="nav nav-tabs">
         <li class="active"><a href="#home" data-toggle="tab">H0ME</a></li>
-        <li><a href="#profile" data-toggle="tab">PROGRESS</a></li>
+        <li><a href="#profile" data-toggle="tab">PR0GRESS</a></li>
         <li class="dropdown">
             <a class="dropdown-toggle" data-toggle="dropdown" href="#">M0RE <span class="caret"></span></a>
             <ul class="dropdown-menu">
@@ -74,7 +73,7 @@ ob_end_flush();
     <div class="alert alert-dismissible alert-success">
         <a href="#" class="close text-none">*</a>
         <hr>
-        <img src="static.webp" class="img-100" height="110">
+        <img src="<?php echo $dpPath; ?>" class="img-100" height="110">
         <h2 class="text-dark"><?php echo htmlentities($ctfname); ?></h2>
         <hr>
         <p><?php
