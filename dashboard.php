@@ -73,7 +73,7 @@ ob_end_flush();
     <div class="alert alert-dismissible alert-success">
         <a href="#" class="close text-none">*</a>
         <hr>
-        <img src="<?php echo $dpPath; ?>" class="img-100" height="110">
+        <img src="static.webp" class="img-100" height="110">
         <h2 class="text-dark"><?php echo htmlentities($ctfname); ?></h2>
         <hr>
         <p><?php
