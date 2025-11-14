@@ -82,8 +82,9 @@ ob_end_flush();
                             <div class="form-group">
                                 <div class="col-lg-10 col-lg-offset-2">
                                     <button type="reset" class="btn btn-default">Reset</button>
-                                    <button type="submit" name="login" class="btn btn-primary">LOGIN</button> <br>
-                                    <i>No account yet?</i> <button type="button" class="btn btn-success" onclick="window.location.href='reg'">SIGNUP</button>
+                                    <button type="submit" name="login" class="btn btn-primary">LOGIN</button>
+                                    <blockquote class="blockquote-reverse">
+                                    <i>No account yet?</i> <button type="button" class="btn btn-success" onclick="window.location.href='reg'">SIGNUP</button></blockquote>
                                 </div>
                             </div>
                         </fieldset>
