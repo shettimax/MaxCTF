@@ -1,7 +1,10 @@
 RewriteEngine On
 
-# Hide .php extension
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteCond %{REQUEST_FILENAME}\.php -f
-RewriteRule ^([^\.]+)$ $1.php [L]
+# Redirect to the URL without .php extension
+RewriteCond %{THE_REQUEST} \s/+(.*?/)?(?:index)?(.*?)\.php[\s?/] [NC]
+RewriteRule ^ /%1%2 [R=301,L]
 
+# internally add .php to the request
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME}.php -f
+RewriteRule ^(.*?)/?$ $1.php [L]

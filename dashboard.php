@@ -52,8 +52,8 @@ ob_end_flush();
 <div class="col-md-4">
     <h3>MAXCTF</h3>
     <ul class="nav nav-tabs">
-        <li class="active"><a href="#home" data-toggle="tab">H0ME</a></li>
-        <li><a href="#profile" data-toggle="tab">PR0GRESS</a></li>
+        <li class="active"><a href="#home" data-toggle="tab" class="btn btn-default">H0ME</a></li>
+        <li><a href="#profile" data-toggle="tab" class="btn btn-default">PR0GRESS</a></li>
         <li class="dropdown">
             <a class="dropdown-toggle" data-toggle="dropdown" href="#">M0RE <span class="caret"></span></a>
             <ul class="dropdown-menu">
@@ -139,14 +139,14 @@ if (file_exists($badgePath)) {
                 echo "<p><strong>" . htmlentities($row['ctfid']) . "</strong>: " . htmlentities($row['ctfscore']) . " pts</p>";
             }
             ?>
-            <p>See full board <a href="rankprogression.php">here</a></p>
+            <p><a href="rankprogression.php"><button class="btn btn-success">View Rankings</button></a></p>
         </div>
 
         <div class="tab-pane fade" id="dropdown2">
             <p>Need more points? Capture flags & submit <a href="profile.php">here</a><br>
             Or goto <code>cmVwb3J0ZXI=</code>.php<br>
             Points will be rewarded once verified.</p>
-            <h5 style="color:#00ff99;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[<b>RECENT FLAG SUBMISSIONS</b>]</h5>
+            <h5 style="color:#00ff99;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<button disabled>RECENT FLAG SUBMISSIONS</b></h5></button>
             <ul class="list-group">
             <?php
             $feed = mysqli_query($conn, "SELECT date, bug, severity, amount, status FROM reportx WHERE walletid='$ctfid' ORDER BY date DESC LIMIT 5");
