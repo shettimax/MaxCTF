@@ -102,7 +102,8 @@ ob_end_flush();
         <p>
         </p>
         <div class="badge-preview">
-            <h5>🎖️[CURRENTBADGE]</h5>
+            <h5 class="btn btn-info">🎖️CURRENT BADGE</h5>
+            <br>
             <?php
 $badgePath = "badges/" . $currentBadge['id'] . ".png"; // or .jpg if needed
 if (file_exists($badgePath)) {
