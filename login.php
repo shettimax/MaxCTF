@@ -74,19 +74,16 @@ ob_end_flush();
                                 <div class="col-lg-10">
                                     <input required name="ctfid" class="form-control" id="inputPassword" placeholder="your ctfid" type="text">
                                     <input required name="ctfpassword" class="form-control" id="inputPassword" placeholder="your ctfpassword" title="the password during signup" type="password">
-                                    
-                                </div>
-                            </div>
-                                    <div class="checkbox">
-                                        <label>
+                                    <label>
                                             <input required type="checkbox"> i agree & accept rules stated <a href="disclaimer.php">here</a>
                                         </label>
-                                    </div>
-                                
+                                </div>
+                            </div>
                             <div class="form-group">
                                 <div class="col-lg-10 col-lg-offset-2">
                                     <button type="reset" class="btn btn-default">Reset</button>
-                                    <button type="submit" name="login" class="btn btn-primary">Submit</button>
+                                    <button type="submit" name="login" class="btn btn-primary">LOGIN</button> <br>
+                                    <i>No account yet?</i> <button type="button" class="btn btn-success" onclick="window.location.href='reg'">SIGNUP</button>
                                 </div>
                             </div>
                         </fieldset>
