@@ -1,0 +1,383 @@
+@extends('layout.staff.master')
+
+@section('css')
+    <link rel="stylesheet" href="{{ asset('DataTables/datatables.min.css') }}">
+    <style>
+        .row {
+            margin-left: unset;
+            margin-right: unset;
+        }
+
+        #records {
+            overflow-x: auto;
+            border-color: #cccccc;
+            border-width: 1px;
+            border-radius: 5px;
+            min-height: 50px;
+            padding: 10px;
+        }
+
+        .breadcrumb {
+            margin-bottom: unset;
+        }
+
+        .heading-line-bottom {
+            margin: unset;
+        }
+    </style>
+@endsection
+
+@section('content')
+    <section class="pt-10 pl-5">
+        <div class="section-content">
+            <div class="row  mt-20">
+                <form action="" id="putmeform">
+                    @csrf
+                    <input type="hidden" name="role_id" id="role_id">
+                    <input type="hidden" name="user_id" id="user_id">
+                    <div class="row p-40">
+
+                        <div class="col-md-3 mb-3">
+                            <label for="faculty">Faculty: </label>
+                            <select class="form-control  {{ $errors->has('faculty')?'is-invalid':'is-valid' }}"
+                                    name="faculty" id="faculty" required>
+                                <option value="">Select...</option>
+                                <option value="all">All Faculties</option>
+                                @foreach(\App\Models\Faculty::where("id",">",0)->orderBy("name")->get()  as $faculty)
+                                    @php
+                                        $selected="";
+                                        $facultyid = 0;
+                                        if(isset($model) || old('programme') !=null ){
+                                            $programeid = isset($model)?$model->programmeid:old('programme');
+                                            if($programeid !="all")
+                                                $facultyid = \App\Models\Programme::find($programeid)->getdepartment()->first()->faculty()->first()->id;
+                                            $selected = $facultyid== $faculty->id?"selected":"";
+                                        }
+                                    @endphp
+                                    <option value="{{$faculty->id}}" {{$selected}}>{{$faculty->name}}</option>
+                                @endforeach
+                            </select>
+                            @if($errors->has('faculty'))
+                                <div class="invalid-feedback" style="color:red;">
+                                    {{ $errors->first('faculty')}}
+                                </div>
+                            @endif
+                        </div>
+
+                        <div class="col-md-3 mb-3">
+                            <label for="department">Department: </label>
+                            <select class="form-control  {{ $errors->has('department')?'is-invalid':'is-valid' }}"
+                                    name="department" id="department" required>
+                                <option value="">Select...</option>
+                                @if(isset($model) || old('programme') !=null ))
+                                @php $programmeid = isset($model)?$model->programmeid:old('programme');
+                                            $departmentid = "all";
+                                            $name = "All Departments";
+                                            if($programmeid !="all"){
+                                                $department = \App\Models\Programme::find($programmeid)->getdepartment()->first();
+                                                $departmentid= $department->id;
+                                                $name = $department->name;
+                                            }
+                                @endphp
+                                <option value="{{$departmentid}}" selected>{{$name}}</option>
+                                @endif
+                            </select>
+                            @if($errors->has('department'))
+                                <div class="invalid-feedback" style="color:red;">
+                                    {{ $errors->first('department')}}
+                                </div>
+                            @endif
+                        </div>
+
+
+
+                        <div class="col-md-3 mb-2">
+                            <label for="programme">Programme: </label>
+                            <select class="form-control  {{ $errors->has('programme')?'is-invalid':'is-valid' }}" name="programme" id="programme" required>
+                                <option value="">Select...</option>
+                                @if(isset($model) || old('programme') !=null ))
+                                @php $programmeid = isset($model)?$model->programmeid:old('programme');
+                                                $name="All Programmes";
+                                                if ($programmeid !="all"){
+                                                    $name= \App\Models\Programme::find($programmeid)->name;
+                                                }
+                                @endphp
+                                <option value="{{$programmeid}}" selected>{{$name}}</option>
+                                @endif
+                            </select>
+                            @if($errors->has('programme'))
+                                <div class="invalid-feedback">
+                                    {{ $errors->first('programme')}}
+                                </div>
+                            @endif
+                        </div>
+
+                        <div class="col-md-3 mb-3">
+                            <label for="candidate_type">Candidate Type:</label>
+                            <select id="candidate_type" name="candidate_type"
+                                    class="form-control {{ $errors->has('level')?'is-invalid':'is-valid' }}">
+                                <option value="%">All</option>
+                                @foreach(\App\Models\CandidateFormType::orderBy("name","ASC")->get() as $candidateFormType)
+                                    <option value="{{ $candidateFormType->id }}">{{ $candidateFormType->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label for="putmestatus">Screening Status:</label>
+                            <select id="putmestatus" name="putmestatus" class="form-control {{ $errors->has('putmestatus')?'is-invalid':'is-valid' }}">
+                                <option value="">--select--</option>
+                                <option value='%'>All Screened</option>
+                                <option value='Qualified'>Screen - Cleared</option>
+                                <option value='Not Qualified'>Screen - Not Cleared</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-3 mb-3">
+                            <label for="session">Session:</label>
+                            <select id="session" name="session"
+                                    class="form-control is-valid"
+                                    required>
+                                <option value="">--select--</option>
+
+                            </select>
+                        </div>
+                    </div>
+                </form>
+                <br/>
+                <button style="margin-left: 10px;" class="btn btn-success btn-generate" type="button">Generate</button>
+                <br/>
+                <br/>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-12">
+                <div id="records">
+                    @if (isset($putmecandidates) && count($putmecandidates) > 0)
+                        @include('pages.staff.reports.candidates.load_putme_candidate')
+                    @endif
+                </div>
+            </div>
+        </div>
+    </section>
+@endsection
+
+@section('js')
+    <script src="{{ asset('DataTables/datatables.min.js') }}"></script>
+    <script>
+        jQuery(function () {
+            jQuery("body").on("change", "#faculty", function () {
+                var id = jQuery(this).val();
+                jQuery("#department").empty();
+                jQuery("#department").append("<option value=''>Select...</option>");
+                jQuery("#department").append("<option value='all'>All Departments</option>");
+                $.getJSON("{{ route("ajax.department",[''])}}/" + id, function (obj) {
+                    $.each(obj, function (key, value) {
+                        jQuery("#department").append("<option value='" + value.id + "'>" + value.name + "</option>");
+                    });
+                });
+            });
+            jQuery("body").on("change", "#department", function () {
+                var deptid = jQuery(this).val();
+                jQuery("#programme").empty();
+                jQuery("#programme").append("<option value='%'>All Programmes</option>");
+                $.getJSON("{{ route("staff.ajax.programmes.one",[''])}}/" + deptid, function (obj) {
+                    $.each(obj, function (key, value) {
+                        jQuery("#programme").append("<option value='" + value.id + "'>" + value.name + "</option>");
+                    });
+                });
+            });
+        });
+
+        function formatMoney(n, c, d, t) {
+            var c = isNaN(c = Math.abs(c)) ? 2 : c,
+                d = d == undefined ? "." : d,
+                t = t == undefined ? "," : t,
+                s = n < 0 ? "-" : "",
+                i = String(parseInt(n = Math.abs(Number(n) || 0).toFixed(c))),
+                j = (j = i.length) > 3 ? j % 3 : 0;
+            return s + (j ? i.substr(0, j) + t : "") + i.substr(j).replace(/(\d{3})(?=\d)/g, "$1" + t) + (c ? d + Math.abs(n - i).toFixed(c).slice(2) : "");
+        };
+
+        //Load faculties
+        $.ajax({
+            url: '{{route("filter.faculties")}}',
+            type: 'GET',
+            data: {permission: '{{Route::currentRouteName()}}',category:'academic'}
+        }).done(function (msg) {
+            $("#faculty").html("<option value=''>--select--</option>" + msg);
+        });
+
+
+
+        $.ajax('{{route("filter.formsessions")}}')
+            .done(function (msg) {
+                $("#session").html("<option value=''>--select--</option><option value='%'>--All--</option>" + msg);
+            });
+
+        //Return departments on select of faculty
+        $(document).on("change", "#faculty", function (event) {
+            $("#department").html("<option value=''>Loading...</option>");
+            $.ajax({
+                url: '{{route("filter.departments")}}',
+                type: 'GET',
+                data: {
+                    permission: '{{Route::currentRouteName()}}',
+                    faculty_id: $("#faculty").val()
+                }
+            }).done(function (msg) {
+                $("#department").html("<option value=''>--select--</option><option value='%'>--All--</option>" + msg);
+                $("#programme").val("");
+                $("#level").val("");
+                $("#session").val("");
+            });
+        });
+
+        //Return programme types on select of department
+        $(document).on("change", "#department", function (event) {
+            $("#progtype").html("<option value=''>Loading...</option>");
+            $.ajax({
+                url: '{{route("filter.programme_types")}}',
+                type: 'GET',
+                data: {
+                    permission: '{{Route::currentRouteName()}}',
+                    department_id: $("#department").val(),
+                    faculty_id: $("#faculty").val(),
+                }
+            }).done(function (msg) {
+                $("#progtype").html("<option value=''>--select--</option><option value='%'>--All--</option>" + msg);
+                $("#programme").val("");
+                $("#level").val("");
+                $("#session").val("");
+            });
+        });
+
+        //Return programmes on select of programme type
+        $(document).on("change", "#progtype", function (event) {
+            $("#programme").html("<option value=''>Loading...</option>");
+            $.ajax({
+                url: '{{route("filter.programmes")}}',
+                type: 'GET',
+                data: {
+                    permission: '{{Route::currentRouteName()}}',
+                    department_id: $("#department").val(),
+                    programme_type_id: $("#progtype").val(),
+                    faculty_id: $("#faculty").val(),
+                }
+            }).done(function (msg) {
+                $("#programme").html("<option value=''>--select--</option><option value='%'>--All--</option>" + msg);
+                $("#level").val("");
+                $("#session").val("");
+            });
+        });
+
+        $(".btn-generate").click(function () {
+
+            $.ajax({
+                url: '{{route('reports.putme.screening')}}',
+                method: "GET",
+                data: {
+                    "_token": "{{ csrf_token() }}",
+                    "faculty": $('#faculty').val(),
+                    "department": $('#department').val(),
+                    "putmestatus": $('#putmestatus').val(),
+                    "programme": $('#programme').val(),
+                    "session": $('#session').val(),
+                    "candidatetype": $('#candidate_type').val(),
+                },
+                dataType: "text",
+                success: function (response) {
+                    // $(".loader").fadeOut();
+                    // alert(response);
+                    // console.log(response);
+                    $("#records").html(response);
+                    $('#reporttb').DataTable({
+                        "lengthMenu": [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+                        pageLength: 50,
+                        dom: "<'row'<'col-sm-12'B>>" +
+                            "<'row'<'col-sm-12 col-md-6'l><'col-sm-12 col-md-6'f>>" +
+                            "<'row'<'col-sm-12'tr>>" +
+                            "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+                        buttons: [
+                            {
+                                extend: 'excelHtml5',
+                                exportOptions: {
+                                    columns: ':visible'
+                                }
+                            },
+                            {
+                                extend: 'pdfHtml5',
+                                orientation: 'landscape',
+                                pageSize: 'LEGAL',
+                                exportOptions: {
+                                    columns: ':visible'
+                                }
+                            },
+                            {
+                                extend: 'print',
+                                messageTop: 'Candidates Report',
+                                orientation: 'landscape',
+                                pageSize: 'LEGAL'
+                            },
+                            {
+                                extend: 'colvis',
+                                columns: ':not(.noVis)',
+                                collectionLayout: 'fixed two-column',
+                                postfixButtons: [ {
+                                    extend:'colvisGroup',
+                                    text:'Show all',
+                                    show:':hidden'
+                                } ]
+                            }
+                        ],
+                        language: {
+                            buttons: {
+                                colvis: 'Show/Hide columns'
+                            }
+                        },
+                        "footerCallback": function (row, data, start, end, display) {
+                            var api = this.api();
+                            var json = api.ajax.json();
+                            // Remove the formatting to get integer data for summation
+                            var intVal = function ( i ) {
+                                return typeof i === 'string' ?
+                                    i.replace(/[\$,]/g, '')*1 :
+                                    typeof i === 'number' ?
+                                        i : 0;
+                            };
+
+                            // Total over all pages
+
+                            if (api.column(4).data().length){
+                                var total = api
+                                    .column( 4 )
+                                    .data()
+                                    .reduce( function (a, b) {
+                                        return intVal(a) + intVal(b);
+                                    } ) }
+                            else{ total = 0};
+
+                            // Total over this page
+
+                            if (api.column(4).data().length){
+                                var pageTotal = api
+                                    .column( 4, { page: 'current'} )
+                                    .data()
+                                    .reduce( function (a, b) {
+                                        return intVal(a) + intVal(b);
+                                    } ) }
+                            else{ pageTotal = 0};
+
+                            // Update footer
+                            $( api.column(4).footer() ).html(
+                                "Page Total: " + formatMoney(pageTotal) + "<br> Grand Total: " + formatMoney(total)
+                            );
+
+                        }
+                    });
+                }
+            });
+        });
+
+    </script>
+
+@endsection

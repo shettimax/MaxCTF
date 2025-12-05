@@ -1,0 +1,101 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Complex;;
+use App\Models\Configuration;;
+
+use App\Models\Employee;
+use App\Models\Faculty;;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+
+class ComplexController extends Controller
+{
+    //
+    public function __construct()
+    {
+        $this->middleware('auth:staff');
+    }
+
+    public function index()
+    {
+//        $details = Faculty::select('*')->orderby('name')->get();
+        //  TODO: revisit this code block
+//        if (!$this->access(Auth::user(), "faculty"))
+//            return view("pages.errors.nopermission");
+        $user = Auth::user();
+
+        return view('pages.staff.settings.managecomplex',compact('user'));
+    }
+
+    public function store(Request $request)
+    {
+//        try {
+            if (!$this->access(Auth::user(), 'complex')) {
+                return view("pages.staff.error.access");
+            }
+//            return $request;
+
+            $this->validate($request, [
+                'complex' => 'required',
+                'chairman' => 'required|exists:employees,personnel_no'
+            ]);
+
+            if ($request->complex_id > 0)
+                $DB = Complex::find($request->complex_id);
+            else if($DB = Complex::where('name',$request->complex)->first()){
+                $request->session()->flash('flash_error_message', 'Duplicate Complex Name');
+                return back();
+            }else
+                $DB = new Complex();
+
+            $DB->name = $request->complex;
+            $DB->chairman = $request->chairman;
+            $DB->save();
+
+            $employee = Employee::where('personnel_no',$request->chairman)->first();
+            if($employee){
+                $employeeUser = $employee->user();
+                $employeeUser->makeConfiguration("CCH",$DB->id,'Complex',"Complex Chairman","");
+            }
+
+            if ($request->complex_id > 0)
+                $request->session()->flash('flash_message', 'Complex has been updated');
+            else
+                $request->session()->flash('flash_message', 'Complex has been added');
+            return redirect()->back();
+//        } catch (\Exception $e) {
+//            return $e->getMessage() . $e->getTraceAsString();
+////            return view("pages.staff.error.technical");
+//        }
+    }
+
+    public function edit($id)
+    {
+        $model = Complex::find($id);
+        if (!$this->access(Auth::user(), "complex"))
+            return view("pages.errors.nopermission");
+
+        return view('pages.staff.settings.managecomplex', compact('model'));
+    }
+
+    public function getFaculties()
+    {
+        return Faculty::all();
+    }
+
+    public function configurationIndex(Request $request)
+    {
+        $configs = Configuration::select('*')->whereIn('name',["NOA","ADL","IDC","SCF","CSF","EXC","SEM","SES"])->orderby('effective_date')->get();
+        return view("pages.staff.settings.manage_config",compact('configs'));
+    }
+
+    public function searchStaff(Request $request)
+    {
+        return response()->json([["value"=>1,"text"=>"holey".$request->q]]);
+        $personnel_no = $request->personnel_no;
+        return Employee::whereRaw("personnel_no LIKE '%$personnel_no%'")->get();
+    }
+
+}

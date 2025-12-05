@@ -1,0 +1,252 @@
+<?php
+
+namespace App\Http\Controllers\Student;
+
+use App\Http\Controllers\Controller;
+use App\Models\Candidate;
+use App\Models\CandidateDocument;
+use App\Models\CandidateForm;
+use App\Services\ExternalFileService;
+use Exception;
+use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Contracts\View\Factory;
+use Illuminate\Contracts\View\View;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+
+class StudentDocumentsController extends Controller
+{
+    protected $externalFileService;
+
+    public function __construct()
+    {
+        $this->middleware(["auth:student"]);
+        $this->externalFileService = app(ExternalFileService::class);
+    }
+
+    public function index()
+    {
+        $documents = CandidateDocument::where('student_id', Auth::id())->first()->documents ?? [];
+
+        // Get external URLs for documents
+        $documentsWithUrls = [];
+        foreach ($documents as $doc) {
+            $doc['external_url'] = $this->externalFileService->getUrl($doc['document']);
+            $documentsWithUrls[] = $doc;
+        }
+
+        return view('pages.student.documents.documents', compact('documentsWithUrls','documents'));
+    }
+
+    public function hasNoDoc()
+    {
+        return view('pages.student.documents.has-no-documents');
+    }
+
+    public function upload(Request $request)
+    {
+        try {
+            $request->validate([
+                'file' => 'required|file|mimes:jpg,jpeg,png,pdf|max:200',
+                'type' => 'required|string|max:255',
+            ]);
+
+            $student = Auth::user();
+            $type = $request->input('type');
+
+            // this gets candidateForm using either application number or student id
+            $storeDocId = $student->id . '-stud-token';
+            $candidate_id = null;
+
+            if (!empty($student->application_number)) {
+                $candidateForm = CandidateForm::where('id', $student->application_number)->first();
+
+                if($candidateForm) {
+                    $candidate_id = $candidateForm->candidate_id;
+                    $storeDocId = $candidate_id;
+                }
+            }
+
+            $extension = $request->file('file')->getClientOriginalExtension();
+            $docName = $storeDocId . '-stud-' . strtolower(str_replace(' ', '-', $type)) . '.' . $extension;
+            $documentPath = "student/documents/{$docName}";
+
+
+
+            // Upload to external server
+            $result = $this->externalFileService->uploadWithRetry($request->file('file'), $documentPath, [
+                'category' => 'student_document',
+                'student_id' => $student->id,
+                'candidate_id' => $candidate_id,
+                'document_type' => $type,
+                'original_name' => $docName,
+                'size' => $request->file('file')->getSize(),
+                'mime_type' => $request->file('file')->getMimeType()
+            ]);
+
+            if (!$result['success']) {
+                Log::error('Failed to upload student document to external server', [
+                    'student_id' => $student->id,
+                    'type' => $type,
+                    'error' => $result['error']
+                ]);
+
+                return redirect()->back()->with('error', 'Failed to upload document: ' . $result['error']);
+            }
+
+            // Check and delete existing "dummy" record (candidate_id = 0)
+            CandidateDocument::where('candidate_id', 0)->where('student_id', $student->id)->delete();
+            $candidateDocs = CandidateDocument::firstOrCreate(['candidate_id' => $candidate_id, 'student_id' => $student->id], ['documents' => []]);
+
+            $docs = $candidateDocs->documents ?? [];
+
+            $replaced = false;
+            foreach ($docs as &$doc) {
+                if ($doc['type'] == $type) {
+                    $doc['document'] = $documentPath;
+                    $doc['external_id'] = $result['external_id'];
+                    $doc['external_url'] = $result['url'];
+                    $doc['uploaded_at'] = now()->toISOString();
+                    $replaced = true;
+                    break;
+                }
+            }
+
+            if (!$replaced) {
+                $docs[] = [
+                    'document' => $documentPath,
+                    'external_id' => $result['external_id'],
+                    'external_url' => $result['url'],
+                    'type' => $type,
+                    'uploaded_at' => now()->toISOString(),
+                ];
+            }
+
+            $candidateDocs->documents = $docs;
+            $candidateDocs->save();
+
+            Log::info('Student document uploaded successfully to external server', [
+                'student_id' => $student->id,
+                'type' => $type,
+                'external_id' => $result['external_id'],
+                'url' => $result['url']
+            ]);
+
+            return redirect()->back()->with('success', 'Document uploaded successfully to external server.');
+
+        } catch (Exception $e) {
+            Log::error('Exception during student document upload', [
+                'student_id' => Auth::id(),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return redirect()->back()->with('error', 'Upload failed: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Delete document from external server and database
+     */
+    public function delete(Request $request): RedirectResponse
+    {
+        try {
+            $request->validate([
+                'document_path' => 'required|string',
+                'type' => 'required|string'
+            ]);
+
+            $student = Auth::user();
+            $documentPath = $request->input('document_path');
+            $type = $request->input('type');
+
+
+
+            // Delete from external server
+            if ($this->externalFileService->delete($documentPath)) {
+                // Remove from database
+                $candidateDocs = CandidateDocument::where('student_id', $student->id)->first();
+                if ($candidateDocs) {
+                    $docs = $candidateDocs->documents ?? [];
+                    $docs = array_filter($docs, function($doc) use ($type) {
+                        return $doc['type'] !== $type;
+                    });
+
+                    $candidateDocs->documents = array_values($docs);
+                    $candidateDocs->save();
+                }
+
+                Log::info('Student document deleted successfully from external server', [
+                    'student_id' => $student->id,
+                    'type' => $type,
+                    'path' => $documentPath
+                ]);
+
+                return redirect()->back()->with('success', 'Document deleted successfully.');
+            } else {
+                return redirect()->back()->with('error', 'Failed to delete document from external server.');
+            }
+
+        } catch (Exception $e) {
+            Log::error('Exception during student document deletion', [
+                'student_id' => Auth::id(),
+                'error' => $e->getMessage()
+            ]);
+
+            return redirect()->back()->with('error', 'Deletion failed: ' . $e->getMessage());
+        }
+    }
+
+    /*
+    ---------------------------------------------------------------------
+    | This checks if the passed document already exists for this student
+    ---------------------------------------------------------------------
+    */
+    public function uploadedThis(string $type): bool
+    {
+        $student_id = Auth::id();
+        $docs = CandidateDocument::where('student_id', $student_id)->first();
+        return $docs && collect($docs->documents)->contains('type', $type);
+    }
+
+    /*
+    -----------------------------------------------------------------------
+    | This checks if the active student already has the documents uploaded
+    -----------------------------------------------------------------------
+    */
+    public function hasDocument()
+    {
+        $student = Auth::user();
+
+        if ($student->entry_session >= 2024 && $student->mode_of_entry == 'UG') {
+
+            // Retrieve the candidate form
+            $candidateForm = CandidateForm::where('id', $student->application_number)
+                            ->orWhere('student_id', $student->id)
+                            ->first();
+
+            if ($candidateForm) {
+                $candidateDocument = CandidateDocument::where('candidate_id', $candidateForm->candidate_id)->first();
+
+                if ($candidateDocument && is_null($candidateDocument->student_id)) {
+                    $candidateDocument->update(['student_id' => $student->id]);
+                }
+            }
+
+            return 'not-applied';
+        } elseif ($student->entry_session >= 2021 && $student->mode_of_entry == 'UG') {
+            return CandidateDocument::where('student_id', $student->id)->exists()
+            ? 'has-documents'
+            : 'has-no-documents';
+        } elseif ($student->enable_upload == 'Yes' && $student->mode_of_entry == 'UG') {
+            return CandidateDocument::where('student_id', $student->id)->exists()
+            ? 'has-documents'
+            : 'has-no-documents';
+        }
+    }
+}

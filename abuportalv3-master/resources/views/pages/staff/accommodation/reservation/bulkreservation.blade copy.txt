@@ -1,0 +1,152 @@
+@extends("layout.staff.master")
+
+@section("pageTitle")
+Upload: Reservation Records for Bulk Upload
+@endsection
+
+@section("content")
+<section>
+    <div class="container pt-30 pb-30 pl-30 pr-30">
+        <div class="row">
+            <div class="col-md-12 pull-right flip sm-pull-none">
+                <div class="blog-posts">
+                    <div class="col-md-12">
+
+                        @if ($message = Session::get('success'))
+                        <div class="alert alert-success" role="alert">
+                            <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span
+                                    aria-hidden="true">&times;</span></button>
+                            {{ $message }}
+                        </div>
+                        @endif
+                        @if ($message = Session::get('error'))
+                        <div class="alert alert-danger" role="alert">
+                            <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span
+                                    aria-hidden="true">&times;</span></button>
+                            {{ $message }}
+                        </div>
+                        @endif
+
+                        <section class="bg-white-f7 pr-30 pl-30 pb-30"
+                            style="border-left:2px solid #43B14B;border-right:2px solid #43B14B;">
+                            <div class="row">
+                                <h2 class="display-6 text-center">Upload Records for Reservation</h2>
+                                <div class="double-line-bottom-centered-theme-colored-2"></div>
+                                <div class="col-md-8 col-md-offset-2">
+                                    <form action="" method="post" enctype="multipart/form-data">
+                                        @csrf
+                                        <div class="form-row mb-20">
+                                            <h4 class="text-danger">Upload Format:</h4>
+                                            <p class="text-danger">
+                                                The reservation records must follow
+                                                <strong>EXACTLY</strong> the template format.
+                                            </p>
+                                            <a href="{{ route('staff.bulkreservation.template.download') }}"
+                                                class="btn btn-primary btn-sm" target="_blank">
+                                                <i class="fa fa-download"></i> Download Template
+                                            </a>
+                                        </div>
+
+                                        <div class="form-row mt-20">
+                                            <div class="col-md-6 mb-20">
+                                                <input type="file" name="file" class="form-control" required
+                                                    accept=".xlsx,.xls" />
+                                            </div>
+                                        </div>
+
+                                        <div class="form-row">
+                                            <div class="col-md-12">
+                                                <button type="submit" class="btn btn-success btn-flat">Upload</button>
+                                            </div>
+                                        </div>
+
+                                    </form>
+                                </div>
+                            </div>
+                        </section>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+@endsection
+
+@section("js")
+
+<script>
+$(document).ready(function() {
+    //Load hostels
+    $.ajax({
+        url: '{{route("hostels.dropdown")}}'
+    }).done(function(msg) {
+        $("#hostel").html("<option value=''>Select Hostel</option>" + msg);
+    });
+
+
+    const blockRouteTemplate = "{{ route('blocks.dropdown', ['hostel' => '__HOSTEL__']) }}";
+    const roomRouteTemplate = "{{ route('rooms.dropdown', ['block' => '__BLOCK__']) }}";
+
+    const $block = $('#block');
+    const $room = $('#room');
+
+    $('#hostel').on('change', function() {
+        const hostelId = $(this).val();
+        const blockUrl = blockRouteTemplate.replace('__HOSTEL__', hostelId);
+
+        $.ajax({
+            url: blockUrl,
+            method: 'GET',
+            beforeSend: () => {
+                toastr.info('Loading blocks...');
+                $block.prop('disabled', true);
+                $block.html('<option value="">Select Block</option>');
+                $room.html('<option value="">Select Room</option>').prop('disabled', true);
+            },
+            success: function(data) {
+                $.each(data, function(_, block) {
+                    $block.append(
+                        `<option value="${block.id}">${block.name}</option>`);
+                });
+                $block.prop('disabled', false);
+                toastr.success('Blocks loaded.');
+            },
+            error: function() {
+                toastr.error('Failed to load blocks.');
+            }
+        });
+    });
+
+    $('#block').on('change', function() {
+        const blockId = $(this).val();
+        const roomUrl = roomRouteTemplate.replace('__BLOCK__', blockId);
+
+        $.ajax({
+            url: roomUrl,
+            method: 'GET',
+            beforeSend: () => {
+                toastr.info('Loading rooms...');
+                $room.prop('disabled', true);
+                $room.html('<option value="">Select Room</option>');
+            },
+            success: function(data) {
+                $.each(data, function(_, room) {
+                    $room.append(
+                        `<option value="${room.id}">${room.room_no}</option>`);
+                });
+                $room.prop('disabled', false);
+                toastr.success('Rooms loaded.');
+            },
+            error: function() {
+                toastr.error('Failed to load rooms.');
+            }
+        });
+    });
+
+
+
+});
+</script>
+
+@endsection

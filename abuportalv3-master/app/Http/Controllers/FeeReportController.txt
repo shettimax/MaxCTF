@@ -1,0 +1,344 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use App\Models\FeeItem;
+use App\Models\Faculty;
+use App\Models\Department;
+use App\Models\Programme;
+use App\Models\ProgrammeType;
+
+class FeeReportController extends Controller
+{
+
+    public function __construct()
+    {
+        $this->middleware('auth:staff');
+    }
+
+    public function feeCollectionReport(Request $request)
+    {
+        $feeItems = FeeItem::all();
+        $faculties = Faculty::all();
+        $programmeTypes = ProgrammeType::all();
+
+        $data = [];
+        $selectedFeeItem = $request->fee_item_id;
+        $session = $request->session;
+        $programmeType = $request->programme_type;
+        $entryMode = $request->entry_mode;
+
+        if ($selectedFeeItem || $request->has('generate')) {
+            $data = $this->generateFeeCollectionData($request);
+        }
+
+        return view('pages.staff.reports.payments.fee-collection', compact(
+            'feeItems', 'faculties', 'programmeTypes', 'data',
+            'selectedFeeItem', 'session', 'programmeType', 'entryMode'
+        ));
+    }
+
+    public function programmeFeeReport(Request $request)
+    {
+        $programmeTypes = ProgrammeType::all();
+        $programmes = Programme::with(['getdepartment.__faculty'])->get();
+
+        $data = [];
+        $session = $request->session;
+        $programmeType = $request->programme_type;
+        $entryMode = $request->entry_mode;
+
+        if ($request->has('generate') && $session) {
+            $data = $this->generateProgrammeFeeData($request);
+        }
+
+        return view('pages.staff.reports.payments.programme-fees', compact(
+            'programmeTypes', 'programmes', 'data',
+            'session', 'programmeType', 'entryMode'
+        ));
+    }
+
+    private function generateFeeCollectionData($request)
+    {
+        $session = $request->session;
+        $programmeType = $request->programme_type;
+        $entryMode = $request->entry_mode;
+        $selectedFeeItem = $request->fee_item_id;
+
+        $query = DB::table('payment_logs as pl')
+            ->join('transactions as t', 'pl.transaction_id', '=', 't.id')
+            ->join('students as s', 't.student_id', '=', 's.id')
+            ->join('session_regs as sr', function($join) use ($session) {
+                $join->on('s.id', '=', 'sr.student_id')
+                     ->where('sr.session', '=', $session);
+            })
+            ->join('programmes as p', 'sr.programme_id', '=', 'p.id')
+            ->join('departments as d', 'p.department_id', '=', 'd.id')
+            ->join('faculties as f', 'd.faculty_id', '=', 'f.id')
+            ->join('fee_items as fi', 'pl.feeitemid', '=', 'fi.id')
+            ->join('programme_types as pt', 'p.programme_type_id', '=', 'pt.id')
+            ->where('t.payment_status', 'Paid')
+            ->where('t.code', 'REG'); // Only registration fees
+
+        // Apply filters
+        if ($session) {
+            $query->where('pl.session', $session);
+        }
+
+        if ($programmeType) {
+            $query->where('pt.prog_type_code', $programmeType);
+        }
+
+        if ($entryMode) {
+            $query->where('s.mode_of_entry', $entryMode);
+        }
+
+        if ($selectedFeeItem) {
+            // Single fee item report
+            $query->where('pl.feeitemid', $selectedFeeItem);
+
+            return $query->select(
+                'f.name as faculty_name',
+                'd.name as department_name',
+                'p.name as programme_name',
+                'fi.item_name',
+                DB::raw('SUM(CAST(pl.amount as DECIMAL(10,2))) as total_collected'),
+                DB::raw('COUNT(DISTINCT t.student_id) as student_count')
+            )
+            ->groupBy('f.id', 'd.id', 'p.id', 'fi.id')
+            ->orderBy('f.name', 'd.name', 'p.name')
+            ->get();
+        } else {
+            // All fee items report (matrix format)
+            $feeItems = FeeItem::all();
+            $programmes = Programme::with(['getdepartment.__faculty'])->get();
+
+            $result = [];
+            foreach ($programmes as $programme) {
+                $row = [
+                    'faculty_name' => $programme->department()->faculty()->name,
+                    'department_name' => $programme->department()?->name,
+                    'programme_name' => $programme->name,
+                ];
+
+                foreach ($feeItems as $feeItem) {
+                    $amount = $query->clone()
+                        ->where('sr.programme_id', $programme->id)
+                        ->where('pl.feeitemid', $feeItem->id)
+                        ->sum(DB::raw('CAST(pl.amount as DECIMAL(10,2))'));
+
+                $row['fee_' . $feeItem->id] = $amount ?: 0;
+            }
+
+            $result[] = $row;
+        }
+
+        return collect($result);
+    }
+}
+
+private function generateProgrammeFeeData($request)
+{
+    $session = $request->session;
+    $programmeType = $request->programme_type;
+    $entryMode = $request->entry_mode;
+
+    // Get all programmes based on filters
+    $programmesQuery = DB::table('programmes as p')
+        ->join('departments as d', 'p.department_id', '=', 'd.id')
+        ->join('faculties as f', 'd.faculty_id', '=', 'f.id')
+        ->join('programme_types as pt', 'p.programme_type_id', '=', 'pt.id');
+
+    if ($programmeType) {
+        $programmesQuery->where('pt.prog_type_code', $programmeType);
+    }
+
+    $programmes = $programmesQuery->select(
+        'p.*', 'f.name as faculty_name', 'd.name as department_name',
+        'pt.prog_type_code', 'pt.prog_type_name','d.faculty_id'
+    )->get();
+
+    $result = [];
+
+    foreach ($programmes as $programme) {
+        // Build the fee query similar to your computeFee method
+        $feeQuery = DB::table("payment_for_whats as pfw")
+            ->join("fee_items as fi", "pfw.fee_item_id", "=", "fi.id")
+            ->join("fee_settings as fs", "pfw.id", "=", "fs.payment_for_what_id")
+            ->join("sessional_fees_settings as sfs", "fs.effective_session", "=", "sfs.fee_session")
+            ->where("sfs.session", "=", $session)
+            ->where("sfs.fee_type", "=", "REG")
+            ->where("sfs.programme_type", "=", $programme->prog_type_code);
+
+        // Apply filters similar to computeFee
+        if ($entryMode) {
+            $newReturning = $entryMode == 'New' ? '1' : '2';
+            $feeQuery->whereIn('pfw.new_returning', ['0', $newReturning]);
+        } else {
+            $feeQuery->whereIn('pfw.new_returning', ['0', '1', '2']);
+        }
+
+        // Apply programme, department, faculty filters
+        $feeQuery->whereIn('pfw.faculty_id', ['0', $programme->faculty_id])
+            ->whereIn('pfw.programme_id', ['0', $programme->id])
+            ->whereIn('pfw.department_id', ['0', $programme->department_id])
+            ->whereIn('pfw.prog_type', ['All', $programme->prog_type_code])
+            ->whereIn('pfw.residency', ['0', '1', '2', '3']) // All residency types
+            ->whereIn('pfw.religion', ['0', 'I', 'C', 'CC', 'OT']) // All religions
+            ->whereIn('pfw.art_science', ['0', ($programme->art_science == 'Arts' ? '1' : '2')])
+            ->whereIn('pfw.programme_mode', ['0', ($programme->mode == 'Academic' ? '1' : '2')]);
+
+        $fees = $feeQuery->select(
+            'fi.item_name',
+            'fs.amount',
+            'pfw.programme_id',
+            'pfw.department_id',
+            'pfw.faculty_id',
+            'pfw.fee_item_id'
+        )->get();
+
+        // Apply the same prioritization logic as in computeFee
+        $prioritizedFees = [];
+        foreach ($fees as $fee) {
+            $index = $fee->fee_item_id;
+            if (isset($prioritizedFees[$index])) {
+                // Programme takes priority over department over faculty
+                if ($prioritizedFees[$index]->programme_id != 0) {
+                    continue; // Keep programme-specific fee
+                } elseif ($prioritizedFees[$index]->department_id != 0) {
+                    if ($fee->programme_id != 0) {
+                        $prioritizedFees[$index] = $fee; // Replace with programme-specific
+                    }
+                } elseif ($prioritizedFees[$index]->faculty_id != 0) {
+                    if ($fee->programme_id != 0 || $fee->department_id != 0) {
+                        $prioritizedFees[$index] = $fee; // Replace with more specific
+                    }
+                } else {
+                    if ($fee->programme_id != 0 || $fee->department_id != 0 || $fee->faculty_id != 0) {
+                        $prioritizedFees[$index] = $fee; // Replace with more specific
+                    }
+                }
+            } else {
+                $prioritizedFees[$index] = $fee;
+            }
+        }
+
+        if (!empty($prioritizedFees)) {
+            $result[$programme->faculty_name][$programme->department_name][$programme->name] = collect(array_values($prioritizedFees))->map(function($fee) use ($programme) {
+                return (object)[
+                    'item_name' => $fee->item_name,
+                    'amount' => $fee->amount,
+                    'prog_type_name' => $programme->prog_type_name
+                ];
+            });
+        }
+    }
+
+    return collect($result);
+}
+
+public function feeStructureReport(Request $request)
+{
+    $programmeTypes = ProgrammeType::all();
+    $feeItems = FeeItem::all();
+
+    $data = [];
+    $session = $request->session;
+    $programmeType = $request->programme_type;
+    $entryMode = $request->entry_mode;
+
+    if ($request->has('generate') && $session) {
+        $data = $this->generateFeeStructureData($request);
+    }
+
+    return view('pages.staff.reports.payments.fee-structure', compact(
+        'programmeTypes', 'feeItems', 'data',
+        'session', 'programmeType', 'entryMode'
+    ));
+}
+
+private function generateFeeStructureData($request)
+{
+    $session = $request->session;
+    $programmeType = $request->programme_type;
+    $entryMode = $request->entry_mode;
+
+    // Get sessional fee settings for the session
+    $sessionalSettings = DB::table('sessional_fees_settings')
+        ->where('session', $session)
+        ->where('fee_type', 'REG');
+
+    if ($programmeType) {
+        $sessionalSettings->where('programme_type', $programmeType);
+    }
+
+    $sessionalSettings = $sessionalSettings->get();
+
+    $result = [];
+
+    foreach ($sessionalSettings as $setting) {
+        // Get fee structure for this programme type and session
+        $feeQuery = DB::table("payment_for_whats as pfw")
+            ->join("fee_items as fi", "pfw.fee_item_id", "=", "fi.id")
+            ->join("fee_settings as fs", "pfw.id", "=", "fs.payment_for_what_id")
+            ->join("programmes as p", "pfw.programme_id", "=", "p.id")
+            ->join("departments as d", "p.department_id", "=", "d.id")
+            ->join("faculties as f", "d.faculty_id", "=", "f.id")
+            ->where("fs.effective_session", "=", $setting->fee_session)
+            ->where("pfw.prog_type", "=", $setting->programme_type);
+
+        if ($entryMode) {
+            $newReturning = $entryMode == 'New' ? '1' : '2';
+            $feeQuery->whereIn('pfw.new_returning', ['0', $newReturning]);
+        }
+
+        $fees = $feeQuery->select(
+            'f.name as faculty_name',
+            'd.name as department_name',
+            'p.name as programme_name',
+            'fi.item_name',
+            'fs.amount',
+            'pfw.programme_id',
+            'pfw.department_id',
+            'pfw.faculty_id',
+            'pfw.fee_item_id',
+            'pfw.new_returning'
+        )->get();
+
+        // Group and prioritize fees
+        $groupedFees = [];
+        foreach ($fees as $fee) {
+            $key = $fee->faculty_name . '|' . $fee->department_name . '|' . $fee->programme_name;
+            if (!isset($groupedFees[$key])) {
+                $groupedFees[$key] = [
+                    'faculty_name' => $fee->faculty_name,
+                    'department_name' => $fee->department_name,
+                    'programme_name' => $fee->programme_name,
+                    'fees' => []
+                ];
+            }
+
+            $feeIndex = $fee->fee_item_id;
+            if (!isset($groupedFees[$key]['fees'][$feeIndex])) {
+                $groupedFees[$key]['fees'][$feeIndex] = $fee;
+            } else {
+                // Apply prioritization logic
+                $existing = $groupedFees[$key]['fees'][$feeIndex];
+                if ($existing->programme_id == 0 && $fee->programme_id != 0) {
+                    $groupedFees[$key]['fees'][$feeIndex] = $fee;
+                } elseif ($existing->department_id == 0 && $fee->department_id != 0 && $existing->programme_id == 0) {
+                    $groupedFees[$key]['fees'][$feeIndex] = $fee;
+                } elseif ($existing->faculty_id == 0 && $fee->faculty_id != 0 && $existing->department_id == 0 && $existing->programme_id == 0) {
+                    $groupedFees[$key]['fees'][$feeIndex] = $fee;
+                }
+            }
+        }
+
+        $result = array_merge($result, array_values($groupedFees));
+    }
+
+    return collect($result);
+}
+}

@@ -1,0 +1,64 @@
+<?php
+
+namespace App\Http\Controllers\Form;
+
+use App\Models\CandidateBiodata;
+use App\Models\CandidateContact;
+use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
+use Auth;
+
+class CandidateContactController extends Controller
+{
+
+    public function __construct()
+    {
+        $this->middleware(["auth:candidate","hasEmail"]);
+    }
+
+
+    public function index()
+    {
+
+
+        try{
+            $candidateid = Auth::id();
+            $candidate=CandidateBiodata::where(["candidate_id"=>$candidateid])->first();
+            $contacts=CandidateContact::where(["candidate_id"=>$candidateid])->first();
+            return view("pages.forms.profile.contact", compact("candidate", "contacts"));
+        }catch (\Exception $e){
+            return redirect()->back()->with("error", $e->getMessage());
+        }
+
+    }
+
+    public function createContact(Request $request){
+      //return $request;
+
+        $errmsg = $this->validate($request,CandidateContact::$rules);
+        try{
+            $candidateid = Auth::id();
+            $candContact = CandidateContact::where(["candidate_id"=>$candidateid])->first();
+            if(!isset($candContact->id)){
+                $candContact = new CandidateContact;
+            }
+            $candContact->candidate_id = $candidateid;
+            $candContact->gsm = $request->gsm;
+            $candContact->other_phone = $request->otherphone;
+            $candContact->nok_name = $request->nok_name;
+            $candContact->relationship = $request->relationship;
+            $candContact->nok_gsm = $request->nok_gsm;
+            $candContact->nok_email = $request->nokemail;
+            $candContact->current_contact = $request->current_contact;
+            $candContact->permanent_address = $request->permanentaddress;
+
+            $candContact->save();
+            return redirect()->back()->with("success", 'your contact information created successfully!');
+
+        }catch(\Exception $e){
+            return redirect()->back()->with($errmsg, $e->getMessage());
+        }
+    }
+
+
+}

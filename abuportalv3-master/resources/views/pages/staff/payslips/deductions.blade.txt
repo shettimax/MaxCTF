@@ -1,0 +1,143 @@
+@extends("layout.staff.master")
+
+@section("pageTitle")
+    Deduction Analysis
+@endsection
+
+@section("content")
+<section>
+    <div class="container pt-10">
+        <div class="row">
+            <div class="col-md-12">
+                <h2 class="text-center mb-30">Deduction Analysis by Year and Month</h2>
+
+                @php $collapseId = 0; @endphp
+
+                @foreach($yearlyDeductions as $year => $months)
+                    <div class="panel panel-default mb-20">
+                        <div class="panel-heading">
+                            <h3 class="panel-title">
+                                <a class="collapsed" data-toggle="collapse" href="#year{{ $year }}">
+                                    <span class="open-sub"></span>
+                                    <strong>{{ $year }}</strong>
+                                </a>
+                            </h3>
+                        </div>
+                        <div id="year{{ $year }}" class="panel-collapse collapse" aria-expanded="false">
+                            <div class="panel-body">
+                                @foreach($months as $month => $deductions)
+                                    <div class="panel panel-info mb-15">
+                                        <div class="panel-heading">
+                                            <h4 class="panel-title">
+                                                <a class="collapsed" data-toggle="collapse" href="#month{{ ++$collapseId }}">
+                                                    <span class="open-sub"></span>
+                                                    <strong>{{ $month }}</strong>
+                                                </a>
+                                            </h4>
+                                        </div>
+                                        <div id="month{{ $collapseId }}" class="panel-collapse collapse" aria-expanded="false">
+                                            <div class="panel-body">
+                                                <div class="row">
+                                                    @foreach($deductions as $index => $deduction)
+                                                        <div class="col-md-6 col-lg-4 mb-20">
+                                                            <div class="card" style="border: 1px solid #ddd; border-radius: 8px; padding: 15px; background: #f9f9f9;">
+                                                                <div class="card-header" style="background: #007bff; color: white; padding: 10px; margin: -15px -15px 15px -15px; border-radius: 8px 8px 0 0;">
+                                                                    <h4 class="card-title" style="margin: 0; font-size: 16px;">
+                                                                        {{ $index + 1 }}. {{ $deduction['name'] }}
+                                                                    </h4>
+                                                                </div>
+                                                                <div class="card-body">
+                                                                    <div class="deduction-details">
+                                                                        <div class="mb-10">
+                                                                            <strong>a. Deduction:</strong>
+                                                                            <span class="text-primary" style="font-size: 18px; font-weight: bold;">
+                                                                                ₦{{ number_format(str_replace(',', '', $deduction['amount']), 2) }}
+                                                                            </span>
+                                                                        </div>
+
+                                                                        <div class="mb-10">
+                                                                            <strong>b. My Total Deductions for the Year:</strong>
+                                                                            <span class="text-success" style="font-size: 16px; font-weight: bold;">
+                                                                                ₦{{ $deduction['staff_total'] }}
+                                                                            </span>
+                                                                        </div>
+
+                                                                        <div class="mb-10">
+                                                                            <strong>c. Monthly Collection:</strong>
+                                                                            <span class="text-info" style="font-size: 16px; font-weight: bold;">
+                                                                                ₦{{ $deduction['monthly_total'] }}
+                                                                            </span>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    @endforeach
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    </div>
+                @endforeach
+
+                @if(empty($yearlyDeductions))
+                    <div class="alert alert-info text-center">
+                        <h4>No Deduction Data Available</h4>
+                        <p>There are no payslips with deduction information available for your account.</p>
+                    </div>
+                @endif
+            </div>
+        </div>
+    </div>
+</section>
+@endsection
+
+@section("css")
+<style>
+    .card {
+        transition: transform 0.2s ease-in-out;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    }
+
+    .deduction-details {
+        font-size: 14px;
+    }
+
+    .panel-heading {
+        background: linear-gradient(135deg, #28a745 0%, #008800 100%);
+        color: white;
+    }
+
+    .text-primary {
+        color: #007bff !important;
+    }
+
+    .text-success {
+        color: #28a745 !important;
+    }
+
+    .text-info {
+        color: #17a2b8 !important;
+    }
+
+    .mb-10 {
+        margin-bottom: 10px;
+    }
+
+    .mb-20 {
+        margin-bottom: 20px;
+    }
+
+    .mb-30 {
+        margin-bottom: 30px;
+    }
+</style>
+@endsection

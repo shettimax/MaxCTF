@@ -1,0 +1,315 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use App\Models\Faculty;
+use App\Models\User;
+use App\Models\FormSetting;
+use App\Models\CandidateForm;
+use App\Models\Student;
+use Carbon\Carbon;
+
+class AdmissionAnalyticsController extends Controller
+{
+    public function index()
+    {
+        $faculties = Faculty::orderBy('name')->get();
+        $sessions = FormSetting::select('session')->distinct()->orderBy('session', 'desc')->get();
+        
+        // Get last 5 sessions for trend analysis
+        $lastFiveSessions = FormSetting::select('session')
+            ->distinct()
+            ->orderBy('session', 'desc')
+            ->limit(5)
+            ->pluck('session');
+            
+        // Get overall statistics
+        $overallStats = $this->getOverallStatistics();
+        
+        // Get faculty comparison data
+        $facultyComparison = $this->getFacultyComparisonData();
+        
+        // Get gender distribution
+        $genderDistribution = $this->getGenderDistribution();
+        
+        // Get admission trend data
+        $admissionTrend = $this->getAdmissionTrend($lastFiveSessions);
+        
+        return view('pages.staff.reports.students.analytics', compact(
+            'faculties', 
+            'sessions', 
+            'overallStats', 
+            'facultyComparison', 
+            'genderDistribution',
+            'admissionTrend',
+            'lastFiveSessions'
+        ));
+    }
+    
+    private function getOverallStatistics()
+    {
+        // Get current session
+        $currentSession = FormSetting::select('session')
+            ->distinct()
+            ->orderBy('session', 'desc')
+            ->first()->session;
+            
+        // Total applicants in current session
+        $totalApplicants = DB::table('candidate_forms as cf')
+            ->join('form_settings as fs', 'cf.form_setting_id', '=', 'fs.id')
+            ->where('fs.session', $currentSession)
+            ->count();
+            
+        // Total admitted in current session
+        $totalAdmitted = DB::table('candidate_forms as cf')
+            ->join('form_settings as fs', 'cf.form_setting_id', '=', 'fs.id')
+            ->where('fs.session', $currentSession)
+            ->where('cf.admission_status', 'admitted')
+            ->count();
+            
+        // Total registered in current session
+        $totalRegistered = DB::table('students as s')
+            ->join('candidate_forms as cf', 's.id', '=', 'cf.student_id')
+            ->join('form_settings as fs', 'cf.form_setting_id', '=', 'fs.id')
+            ->where('fs.session', $currentSession)
+            ->count();
+            
+        // Admission rate
+        $admissionRate = $totalApplicants > 0 ? round(($totalAdmitted / $totalApplicants) * 100, 2) : 0;
+        
+        // Registration rate
+        $registrationRate = $totalAdmitted > 0 ? round(($totalRegistered / $totalAdmitted) * 100, 2) : 0;
+        
+        // Average JAMB score
+        $avgJambScore = DB::table('candidate_forms')
+            ->join('form_settings as fs', 'candidate_forms.form_setting_id', '=', 'fs.id')
+            ->where('fs.session', $currentSession)
+            ->avg('jamb_score') ?? 0;
+            
+        return [
+            'currentSession' => $currentSession,
+            'totalApplicants' => $totalApplicants,
+            'totalAdmitted' => $totalAdmitted,
+            'totalRegistered' => $totalRegistered,
+            'admissionRate' => $admissionRate,
+            'registrationRate' => $registrationRate,
+            'avgJambScore' => round($avgJambScore, 2)
+        ];
+    }
+    
+    private function getFacultyComparisonData()
+    {
+        // Get current session
+        $currentSession = FormSetting::select('session')
+            ->distinct()
+            ->orderBy('session', 'desc')
+            ->first()->session;
+            
+        return DB::table('faculties')
+            ->select([
+                'faculties.name as faculty_name',
+                DB::raw('COUNT(DISTINCT cf.id) as applicants'),
+                DB::raw('COUNT(DISTINCT CASE WHEN cf.admission_status = "admitted" THEN cf.id END) as admitted'),
+                DB::raw('COUNT(DISTINCT s.id) as registered')
+            ])
+            ->leftJoin('departments', 'faculties.id', '=', 'departments.faculty_id')
+            ->leftJoin('programmes', 'departments.id', '=', 'programmes.department_id')
+            ->leftJoin('form_settings as fs', 'programmes.id', '=', 'fs.programme_id')
+            ->leftJoin('candidate_forms as cf', 'fs.id', '=', 'cf.form_setting_id')
+            ->leftJoin('students as s', function($join) {
+                $join->on('cf.programme_admitted_id', '=', 'programmes.id')
+                    ->on('cf.student_id', '=', 's.id');
+            })
+            ->where('fs.session', $currentSession)
+            ->groupBy('faculties.name')
+            ->orderBy('applicants', 'desc')
+            ->get();
+    }
+    
+    private function getGenderDistribution()
+    {
+        // Get current session
+        $currentSession = FormSetting::select('session')
+            ->distinct()
+            ->orderBy('session', 'desc')
+            ->first()->session;
+            
+        $maleCount = DB::table('students')
+            ->join('candidate_forms as cf', 'students.id', '=', 'cf.student_id')
+            ->join('form_settings as fs', 'cf.form_setting_id', '=', 'fs.id')
+            ->where('fs.session', $currentSession)
+            ->where('students.gender', 'Male')
+            ->count();
+            
+        $femaleCount = DB::table('students')
+            ->join('candidate_forms as cf', 'students.id', '=', 'cf.student_id')
+            ->join('form_settings as fs', 'cf.form_setting_id', '=', 'fs.id')
+            ->where('fs.session', $currentSession)
+            ->where('students.gender', 'Female')
+            ->count();
+            
+        return [
+            'male' => $maleCount,
+            'female' => $femaleCount
+        ];
+    }
+    
+    private function getAdmissionTrend($sessions)
+    {
+        $trendData = [];
+        
+        foreach ($sessions as $session) {
+            $applicants = DB::table('candidate_forms as cf')
+                ->join('form_settings as fs', 'cf.form_setting_id', '=', 'fs.id')
+                ->where('fs.session', $session)
+                ->count();
+                
+            $admitted = DB::table('candidate_forms as cf')
+                ->join('form_settings as fs', 'cf.form_setting_id', '=', 'fs.id')
+                ->where('fs.session', $session)
+                ->where('cf.admission_status', 'admitted')
+                ->count();
+                
+            $registered = DB::table('students as s')
+                ->join('candidate_forms as cf', 's.id', '=', 'cf.student_id')
+                ->join('form_settings as fs', 'cf.form_setting_id', '=', 'fs.id')
+                ->where('fs.session', $session)
+                ->count();
+                
+            $trendData[] = [
+                'session' => $session,
+                'applicants' => $applicants,
+                'admitted' => $admitted,
+                'registered' => $registered
+            ];
+        }
+        
+        return $trendData;
+    }
+    
+    public function getProgrammePerformance(Request $request)
+    {
+        $facultyId = $request->faculty_id;
+        $session = $request->session ?? FormSetting::select('session')
+            ->distinct()
+            ->orderBy('session', 'desc')
+            ->first()->session;
+            
+        $programmePerformance = DB::table('programmes')
+            ->select([
+                'programmes.name as programme_name',
+                DB::raw('COUNT(DISTINCT cf.id) as applicants'),
+                DB::raw('COUNT(DISTINCT CASE WHEN cf.admission_status = "admitted" THEN cf.id END) as admitted'),
+                DB::raw('AVG(cf.jamb_score) as avg_jamb_score'),
+                DB::raw('MAX(cf.jamb_score) as max_jamb_score'),
+                DB::raw('MIN(cf.jamb_score) as min_jamb_score')
+            ])
+            ->join('departments', 'programmes.department_id', '=', 'departments.id')
+            ->join('form_settings as fs', 'programmes.id', '=', 'fs.programme_id')
+            ->leftJoin('candidate_forms as cf', 'fs.id', '=', 'cf.form_setting_id')
+            ->where('fs.session', $session)
+            ->when($facultyId, function($query) use ($facultyId) {
+                return $query->where('departments.faculty_id', $facultyId);
+            })
+            ->groupBy('programmes.name')
+            ->orderBy('applicants', 'desc')
+            ->limit(10)
+            ->get();
+            
+        return response()->json($programmePerformance);
+    }
+    
+    public function getMonthlyApplications(Request $request)
+    {
+        $session = $request->session ?? FormSetting::select('session')
+            ->distinct()
+            ->orderBy('session', 'desc')
+            ->first()->session;
+            
+        $monthlyData = DB::table('candidate_forms as cf')
+            ->select([
+                DB::raw('MONTH(cf.date_started) as month'),
+                DB::raw('COUNT(*) as applications')
+            ])
+            ->join('form_settings as fs', 'cf.form_setting_id', '=', 'fs.id')
+            ->where('fs.session', $session)
+            ->groupBy(DB::raw('MONTH(cf.date_started)'))
+            ->orderBy(DB::raw('MONTH(cf.date_started)'))
+            ->get();
+            
+        $formattedData = [];
+        
+        foreach ($monthlyData as $data) {
+            $monthName = date('F', mktime(0, 0, 0, $data->month, 10));
+            $formattedData[] = [
+                'month' => $monthName,
+                'applications' => $data->applications
+            ];
+        }
+        
+        return response()->json($formattedData);
+    }
+    
+    public function getJambScoreDistribution(Request $request)
+    {
+        $session = $request->session ?? FormSetting::select('session')
+            ->distinct()
+            ->orderBy('session', 'desc')
+            ->first()->session;
+            
+        $ranges = [
+            '100-150' => [100, 150],
+            '151-200' => [151, 200],
+            '201-250' => [201, 250],
+            '251-300' => [251, 300],
+            '301-350' => [301, 350],
+            '351-400' => [351, 400]
+        ];
+        
+        $distribution = [];
+        
+        foreach ($ranges as $label => $range) {
+            $count = DB::table('candidate_forms as cf')
+                ->join('form_settings as fs', 'cf.form_setting_id', '=', 'fs.id')
+                ->where('fs.session', $session)
+                ->whereBetween('cf.jamb_score', $range)
+                ->count();
+                
+            $distribution[] = [
+                'range' => $label,
+                'count' => $count
+            ];
+        }
+        
+        return response()->json($distribution);
+    }
+    
+    public function getAdmissionRateByFaculty(Request $request)
+    {
+        $session = $request->session ?? FormSetting::select('session')
+            ->distinct()
+            ->orderBy('session', 'desc')
+            ->first()->session;
+            
+        $facultyRates = DB::table('faculties')
+            ->select([
+                'faculties.name as faculty_name',
+                DB::raw('COUNT(DISTINCT cf.id) as applicants'),
+                DB::raw('COUNT(DISTINCT CASE WHEN cf.admission_status = "admitted" THEN cf.id END) as admitted'),
+                DB::raw('ROUND((COUNT(DISTINCT CASE WHEN cf.admission_status = "admitted" THEN cf.id END) / COUNT(DISTINCT cf.id)) * 100, 2) as admission_rate')
+            ])
+            ->leftJoin('departments', 'faculties.id', '=', 'departments.faculty_id')
+            ->leftJoin('programmes', 'departments.id', '=', 'programmes.department_id')
+            ->leftJoin('form_settings as fs', 'programmes.id', '=', 'fs.programme_id')
+            ->leftJoin('candidate_forms as cf', 'fs.id', '=', 'cf.form_setting_id')
+            ->where('fs.session', $session)
+            ->groupBy('faculties.name')
+            ->having(DB::raw('COUNT(DISTINCT cf.id)'), '>', 0)
+            ->orderBy('admission_rate', 'desc')
+            ->get();
+            
+        return response()->json($facultyRates);
+    }
+}

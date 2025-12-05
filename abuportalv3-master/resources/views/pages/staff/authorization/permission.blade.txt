@@ -1,0 +1,49 @@
+
+@forelse($permissions88 as $key=>$perms)
+    @php $index = $loop->index;@endphp
+    <div class="col-md-6">
+        <div class="card card-stats mb-4 mb-xl-0" style="box-shadow: 0 0 0 1px rgb(45,219,159);">
+            <div class="card-body table-responsive">
+                <div class="row">
+                    <div class="col">
+                        <h5 class="card-title text-uppercase text-muted mb-0">Permission Category</h5>
+                        <span class="h3 font-weight-bold mb-0">
+                            <strong> {{ ucfirst($key)}}</strong>
+                            <input type="checkbox" key="{{$key}}Cls" class="checkAller">
+                        </span>
+                    </div>
+                </div>
+                <table class="table">
+
+                    @csrf
+                    <input type="hidden" name="role_id" value="{{$id}}">
+                    @foreach($perms as $permission)
+                        <tr>
+                            @if($form)
+                                <th>
+                                    <input type="checkbox" name="permissions[]" class="check-circle addPermCheck {{$key}}Cls"
+                                           value="{{$permission->id}}" {{ $permission->pivot?" checked":"" }}>
+                                </th>
+                                <th style="padding-left: 8px;">
+                                    <a href="">
+                                        {{$permission->name}}
+                                    </a>
+                                </th>
+                            @else
+                                <th style="padding-left: 8px;">
+                                    {{$permission->name}}
+                                </th>
+                            @endif
+                        </tr>
+                    @endforeach
+                </table>
+            </div>
+        </div>
+    </div>
+@empty
+    <p class="alert alert-info">
+        No permissions assign to this role yet.
+    </p>
+    @endforelse
+
+    </div>

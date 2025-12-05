@@ -1,0 +1,223 @@
+@extends("layout.staff.master")
+
+@section("pageTitle")
+    Dashboard
+@endsection
+
+
+@section("css")
+    <link rel="stylesheet" href="{{asset('js/datatables/jquery.dataTables.min.css')}}">
+@endsection
+
+@section("content")
+    <section>
+        <div class="container pt-10">
+            <div class="row" style="background: #f5f5f5;">
+                <div class="col-lg-12">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="card mb-4">
+                                <div class="card-body pl-5 pr-5">
+                                    <div class="d-flex align-items-center justify-content-between">
+                                        <div class="">
+                                            <h2 class="mb-2"> </h2>
+                                            <form action="{{route('sessional.fees.post')}}" method="post" >
+                                                @csrf
+                                                <div class="form-group">
+                                                    <select name="session" class="form-control form-control-sm">
+                                                        <option value="">Current Session</option>
+                                                        @for($session=date('Y');$session > 2017;$session--)
+                                                            <option value="{{$session}}">{{$session."/".($session +1)}}</option>
+                                                        @endfor
+                                                    </select>
+                                                </div>
+
+                                                <div class="form-group">
+                                                    <select name="programmetypes" class="form-control form-control-sm">
+                                                        <option value="">Programme Type</option>
+                                                        @foreach($programmes as $programme)
+                                                            <option value="{{$programme['prog_type_code']}}">{{$programme['prog_type_code']}}</option>
+                                                        @endforeach
+                                                    </select>
+                                                </div>
+
+                                                <div class="form-group">
+                                                    <select name="feecategory" class="form-control form-control-sm">
+                                                        <option>Fee Type</option>
+                                                        <option value="REG">REG</option>
+                                                        <option value="ACC">ACC</option>
+                                                        <option value="FRM">FRM</option>
+                                                    </select>
+                                                </div>
+
+                                                <div class="form-group">
+                                                    <select name="sessionfee" class="form-control form-control-sm">
+                                                        <option value="">Previous Fee Session</option>
+                                                        @foreach($sessionfees as $sessionfee)
+                                                            <option value="{{$sessionfee['fee_session']}}">{{$sessionfee['fee_session']-1}}|{{$sessionfee['fee_session']}}</option>
+                                                        @endforeach
+                                                    </select>
+
+                                                </div>
+
+                                                <button type="submit" class="btn btn-primary mb-2">Save Record</button>
+                                            </form>
+
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+
+
+
+                        <div class="col-md-9">
+                            <div class="card mb-12">
+                                <div class="card-body pl-5 pr-5 pt-5">
+                                    <!--begin update alert-->
+                                    @if ($message1 = Session::get('success'))
+                                        <div class="alert alert-info" role="alert">
+                                            <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                                            {{ $message1 }}
+                                        </div>
+                                    @endif
+                                    @if ($message1 = Session::get('error'))
+                                        <div class="alert alert-danger" role="alert">
+                                            <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                                            {{ $message1 }}
+                                        </div>
+                                @endif
+                                <!--end alert -->
+                                    <table id="registrationtb" class="table table-hover table-bordered table-striped datatable" style="width:100%">
+                                        <thead>
+                                        <tr>
+                                            <th>S/N</th>
+                                            <th>Current Session</th>
+                                            <th>Programme Type</th>
+                                            <th>Fee Type</th>
+                                            <th>Fees Session</th>
+                                            <th>Action</th>
+                                        </tr>
+                                        </thead>
+                                            <tbody>
+                                            @foreach($dataitems as $dataitem)
+                                            <tr>
+                                                <td>{{$loop->iteration }}</td>
+                                                <td>{{$dataitem->session}}</td>
+                                                <td>{{$dataitem->programme_type}}</td>
+                                                <td>{{$dataitem->fee_type}}</td>
+                                                <td>{{$dataitem->fee_session}}</td>
+                                                <td>
+                                                    <a href=""  class="btn btn-info btn-sm editSession" data-toggle="modal" data-target="#myModalE" session-id="{{$dataitem->id}}" >Edit <i  class="icon icon_pencil-edit"></i></a>
+                                                    <a href="" data-toggle="modal" data-target="#myModalD"  class="btn btn-danger btn-sm deletesessionalfee" session-idd="{{$dataitem->id}}" id="deletesessionalfee-{{$dataitem->id}}"  >Delete <i  class="icon icon_trash_alt"></i></a>
+                                                </td>
+                                            </tr>
+                                            @endforeach
+                                            </tbody>
+                                    </table>
+                                    </div>
+
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!--  begin Modal -->
+            <div id="myModalE" class="modal fade" role="dialog">
+                <div class="modal-dialog">
+                    <!-- Modal content-->
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <button type="button" class="close" data-dismiss="modal">&times;</button>
+                            <h4 class="modal-title">Edit Sessiona Fees Setting</h4>
+                        </div>
+                        <div class="modal-body" id="editfeesetting">
+
+                        </div>
+
+                    </div>
+
+                </div>
+            </div>
+            <!--end of popup modal -->
+
+
+            <!--  Delete begin Modal -->
+            <div id="myModalD" class="modal fade" role="dialog">
+                <div class="modal-dialog">
+                    <!-- Modal content-->
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <button type="button" class="close" data-dismiss="modal">&times;</button>
+                            <h4 class="modal-title">Delete Sessiona Fees Setting</h4>
+                        </div>
+
+                        <form id="deleteFormID" action="{{route('sessional.fee.delete')}}" method="post">
+                            @csrf
+                            <input type="hidden" id="deletesessionfee_id"  name="deletesessionfeeid" >
+                            <div class="modal-body" id="deletefeesetting">
+                                <p>Are you sure ! you want to Delete this record ?</p>
+
+                           </div>
+                            <div class="modal-footer" >
+                                <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+                                <button type="submit" class="btn btn-primary">Delete Sessional Fee Setting</button>
+                            </div>
+                        </form>
+
+                        </div>
+
+                </div>
+            </div>
+            <!--end of popup modal -->
+
+        </div>
+    </section>
+
+@endsection
+
+@section("js")
+    <script src="{{asset('js/datatables/jquery.dataTables.min.js')}}"></script>
+
+
+
+
+    <script type="text/javascript">
+
+
+        $(function(){
+
+            $(".datatable").DataTable();
+
+            $("#saveSetSession").on("click",function (e) {
+                $("#Editform").submit();
+            });
+
+            $(".editSession").on("click",function (e) {
+                e.preventDefault();
+                let dis = $(this);
+                $.ajax({
+                    type: 'get',
+                    url: '{{route("sessional.fee.edit", ["feesSetting"=>0])}}' + dis.attr("session-id")
+
+                }).done(function (data) {
+                   console.log(data);
+                    $('#editfeesetting').html(data);
+                });
+            });
+        });
+
+        $(".deletesessionalfee").on("click",function (e) {
+            e.preventDefault();
+            $("#modaldeletesessionalfee").modal();
+            let DId = $(this).attr("session-idd");
+            $('#deletesessionfee_id ').val(DId);
+            //console.log(id);
+        });
+
+    </script>
+@endsection
+

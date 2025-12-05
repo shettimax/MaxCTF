@@ -1,0 +1,283 @@
+@extends("layout.candidate.master")
+@section("css")
+    <link rel="stylesheet" href="{{ asset('js/datatables/jquery.dataTables.min.css')}}"/>
+    <style>
+        label {
+            width: 100%;
+            color: #0f1824;
+            text-align: left;
+        }
+    </style>
+@endsection
+@section("pageTitle")
+   Candidate A-Levels
+@endsection
+@section("content")
+    <section>
+        <div class="main-section">
+            <div class="container">
+                <div class="row justify-content-center">
+                    <div class="col-md-12">
+                        <div class="card">
+                            <div class="card-body">
+                                @if (session('status')==1)
+                                    <div class="alert alert-success" role="alert">
+                                        {{ session('status') }}
+                                    </div>
+                                @endif
+                                @if (isset($errors))
+                                    <ul>
+                                        @foreach($errors as $error)
+                                            <li>{{$error}}</li>
+                                        @endforeach
+                                    </ul>
+                                @endif
+                                @if(Session::has('flash_message'))
+                                    <div class="alert alert-success">
+                                        {{ Session::get('flash_message') }}
+                                    </div>
+                                @endif
+
+                                <div class="mb-70 mr-30 mt-30">
+                                    <!-- Button trigger modal -->
+                                    <button type="button" class="btn btn-default pull-right add" data-toggle="modal"
+                                            data-target="#myModal">
+                                        Add New
+                                    </button>
+                                    <!-- Modal -->
+                                    <div class="modal fade" id="myModal" tabindex="-1" role="dialog"
+                                         aria-labelledby="myModalLabel">
+                                        <div class="modal-dialog" role="document">
+                                            <div class="modal-content">
+                                                <div class="modal-header">
+                                                    <button type="button" class="close" data-dismiss="modal"
+                                                            aria-label="Close"><span aria-hidden="true">&times;</span>
+                                                    </button>
+                                                    <h4 class="modal-title text-left" id="myModalLabel">Add A-Level
+                                                        <div class="double-line-bottom-theme-colored-2"></div>
+                                                    </h4>
+                                                </div>
+                                                @php if(!isset($model))
+                                                      $model = null
+                                                @endphp
+                                                <form class="form" action="{{route('alevel.store')}}" method="POST" style="width: 100%; margin-top: 3vh;" enctype="multipart/form-data">
+                                                    @csrf
+                                                    <div class="modal-body">
+                                                        <div class="row">
+                                                            <div class="form-group col-md-12">
+                                                                <label for="inst">Institution:</label>
+                                                                <input type="text" id="inst"
+                                                                       class="form-control {{ $errors->has('inst')?'is-invalid':'is-valid' }}"
+                                                                       name="inst"
+                                                                       value="" placeholder="Institution Attended" required>
+                                                            </div>
+                                                            <div class="form-group col-md-4">
+                                                                <label for="fromyear">From Year:</label>
+                                                                <select id="fromyear" class="form-control {{ $errors->has('fromyear')?'is-invalid':'is-valid' }}" name="fromyear" placeholder="From Year" required>
+                                                                    <option value="">From Year</option>
+                                                                    @foreach(range(date("Y")-50,date("Y")) as $year)
+                                                                        <option value="{{$year}}">{{$year}}</option>
+                                                                    @endforeach
+                                                                </select>
+                                                            </div>
+                                                            <div class="form-group col-md-4">
+                                                                <label for="toyear">To Year:</label>
+                                                                <select id="toyear" class="form-control {{ $errors->has('toyear')?'is-invalid':'is-valid' }}" name="toyear" placeholder="To Year" required>
+                                                                    <option value="">To Year</option>
+                                                                    @foreach(range(date("Y")-50,date("Y")) as $year)
+                                                                        <option value="{{$year}}">{{$year}}</option>
+                                                                    @endforeach
+                                                                </select>
+                                                            </div>
+                                                            <div class="form-group col-md-4">
+                                                                <label for="qual">Qualification:</label>
+                                                                <select class="form-control {{ $errors->has('qual')?'is-invalid':'is-valid' }}" name="qual" id="qual"
+                                                                    placeholder="Qualification Obtained" required>
+                                                                    <option value="">Select...</option>
+                                                                    @foreach(\App\Models\Qualification::select('*')->orderby('qualification')->get() as $qualifications)
+                                                                        <option value="{{$qualifications->id}}">{{$qualifications->qualification}}</option>
+                                                                    @endforeach
+                                                                </select>
+                                                                <div id="qual_error" class="text text-danger">
+                                                                </div>
+                                                            </div>
+                                                            <div class="form-group col-md-4">
+                                                                <label for="course">Course:</label>
+                                                                <input type="text" id="course" class="form-control {{ $errors->has('course')?'is-invalid':'is-valid' }}"
+                                                                       name="course" value="" placeholder="Course Read" required>
+                                                            </div>
+                                                            <div class="form-group col-md-4">
+                                                                <label for="degree">Qualification Class:</label>
+                                                                <select class="form-control {{ $errors->has('degree')?'is-invalid':'is-valid' }}" name="degree" id="degree"
+                                                                        placeholder="Qualification  Class" required>
+                                                                    <option value="">Select...</option>
+                                                                    @foreach(\App\Models\QualificationGrade::select('*')->orderby('grade')->get() as $grades)
+                                                                        <option value="{{$grades->id}}">{{$grades->grade}}</option>
+                                                                    @endforeach
+                                                                </select>
+                                                                <div id="qual_error" class="text text-danger">
+                                                                </div>
+                                                            </div>
+                                                            <div class="form-group col-md-4">
+                                                                <label for="cgpa">CGPA:</label>
+                                                                <input type="text" id="cgpa" class="form-control {{ $errors->has('cgpa')?'is-invalid':'is-valid' }}"
+                                                                       name="cgpa" value="" placeholder="CGPA" required>
+                                                            </div>
+                                                            <div class="form-group col-md-12">
+                                                                <label>Select A-Level to upload: </label>
+                                                                    <input type="file" name="file" id="file" class="form-control-file"/>
+                                                                <input type="hidden" value="{{csrf_token()}}" name="_token"/>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <div class="form-group">
+                                                            <button type="button" class="btn btn-danger" data-dismiss="modal">Close</button>
+                                                            <button type="submit" name="add" id="addbtn" class="btn btn-success"><span class="icon icon_floppy"></span> &nbsp;Save</button>
+                                                        </div>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mb-30 ml-30 mr-30 mt-30">
+                                    <table id="qualification" align="center" class="table table-bordered table-striped table-condensed">
+                                        <thead>
+                                        <tr>
+                                            <th scope="col">S/N</th>
+                                            <th scope="col">Institution Name</th>
+                                            <th scope="col">Year</th>
+                                            <th scope="col">Qualification</th>
+                                            <th scope="col">Class</th>
+                                            <th>Course</th>
+                                            <th>CGPA</th>
+                                            <th>A-level Doc</th>
+                                            <th scope="col">Action</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        @forelse($alevels as $alevel)
+                                            <tr>
+                                                <th>{{$loop->index + 1 }}</th>
+                                                <td>{{$alevel->institution_name }}</td>
+                                                <td>{{$alevel->from_year }} - {{$alevel->to_year }}</td>
+                                                <td>{{$alevel->qualification()->first()->qualification }}</td>
+                                                <td>{{$alevel->alevelGrades()->first()->grade }}</td>
+                                                <td>{{$alevel->course }}</td>
+                                                <td>{{$alevel->cgpa }}</td>
+                                                <td><img src="{{ route('candidate.alevel.doc',[time()]) }}" class="rounded float-left" alt="A Level" width="100" height="133"></td>
+                                                <td>
+                                                    <a class="btn btn-info btn-sm ml-5 edit"
+                                                       href="#" data-toggle="modal"
+                                                       data-target="#myModal"
+                                                       data-id="{{$alevel->id}}"
+                                                       data-institution_name="{{$alevel->institution_name}}"
+                                                       data-from_year="{{$alevel->from_year}}"
+                                                       data-to_year="{{$alevel->to_year}}"
+                                                       data-qualification_id="{{$alevel->qualification()->first()->id}}"
+                                                       data-degree_class_id="{{$alevel->degree_class_id}}"
+                                                       data-course="{{$alevel->course}}"
+                                                       data-cgpa="{{$alevel->cgpa}}"
+                                                    >Edit <span class="icon icon_pencil-edit"></span> </a>
+                                                    |
+                                                    <a class="remove-record btn btn-danger btn-sm ml-5 delete"
+                                                       href="return void();" data-id="{{$alevel->id}}"
+                                                       data-toggle="modal"
+                                                       data-target="#confirm-delete-modal" >Delete<span class="icon icon_trash_alt"></span></a>
+                                                </td>
+                                            </tr>
+                                        @empty
+                                            <div>
+                                                No record found.
+                                            </div>
+                                        @endforelse
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="confirm-delete-modal" role="dialog">
+            <div class="modal-dialog">
+                <!-- Modal content-->
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal">&times;</button>
+                        <h4 class="modal-title">Confirm Delete</h4>
+                    </div>
+                    <div class="modal-body">
+                        <h4>Are you sure you want delete this result?</h4>
+                        <input type="hidden" id = "alevelid" value = "">
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-default waves-effect" data-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-danger waves-effect waves-light" id = "delete">Delete</button>
+
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+@endsection
+
+@section("js")
+    <script src="{{asset('js/datatables/jquery.dataTables.min.js')}}"></script>
+    <script>
+        $(document).on('click', '.add', function () {
+            $(".modal-body #inst").val('');
+
+        });
+
+        $(document).on('click', '.edit', function () {
+            const id = $(this).data('id'),
+                institution_name = $(this).data('institution_name'),
+                from_year = $(this).data('from_year'),
+                to_year = $(this).data('to_year'),
+                qualification_id = $(this).data('qualification_id'),
+                degree_class_id = $(this).data('degree_class_id'),
+                course = $(this).data('course'),
+                cgpa = $(this).data('cgpa');
+            console.log(qualification_id);
+
+            $(".modal-body #inst").val(institution_name);
+            $(".modal-body #fromyear").val(from_year),
+            $(".modal-body #toyear").val(to_year),
+            $(".modal-body #qual").val(qualification_id),
+            $(".modal-body #degree").val(degree_class_id),
+            $(".modal-body #course").val(course),
+            $(".modal-body #cgpa").val(cgpa);
+        });
+
+        $(document).ready(function(){
+
+            $('.remove-record').click(function() {
+                var id = $(this).attr('data-id');
+                $("#alevelid").val(id);
+            });
+            $('#delete').click(function() {
+                // alert('Juwa');
+                $.ajax({type: 'GET',
+                    url: '{{ route('alevel.destroy',['']) }}/'+$("#alevelid").val(),
+                    success: function(data){
+                        // console.log(data);
+                        window.location.reload();
+                    }
+                });
+            });
+
+            $('.remove-data-from-delete-form').click(function() {
+                $('body').find('.remove-record-model').find( "input" ).remove();
+            });
+            $('.modal').click(function() {
+            });
+        });
+    </script>
+@endsection
+

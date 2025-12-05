@@ -1,0 +1,1002 @@
+<link href="css/bootstrap.min.css" rel="stylesheet" type="text/css">
+<style>
+    table {
+        border: 0.3px solid black;
+        page-break-inside: auto !important;
+    }
+</style>
+<h1 align="center">CURRICULUM VITAE</h1>
+{{--<table class="table table-bordered">
+    <tr>
+        <td>1.</td>
+        <td width="48%"><strong>Name in Full:</strong></td>
+        <td width="48%">{{ $employee->surname }}, {{ $employee->firstname }} {{ isset($employee->othernames)?$employee->othernames:'' }}</td>
+    </tr>
+    <tr>
+        <td>2.</td>
+        <td><strong>Personnel No:</strong></td>
+        <td>{{ $employee->personnel_no }}</td>
+    </tr>
+    <tr>
+        <td>3.</td>
+        <td><strong>Department:</strong></td>
+        <td>{{ isset($employee->department->name)?$employee->department->name:'' }}</td>
+    </tr>
+    <tr>
+        <td>4.</td>
+        <td><strong>Date and Place of Birth:</strong></td>
+        <td>{{ $employee->date_of_birth }} / {{ $employee->place_of_birth }}</td>
+    </tr>
+    <tr>
+        <td>5.</td>
+        <td><strong>State of Origin:</strong></td>
+        <td>{{ isset($employee->state->name)?$employee->state->name:'' }}</td>
+    </tr>
+    <tr>
+        <td>6.</td>
+        <td><strong>Local Government of Origin:</strong></td>
+        <td>{{ isset($employee->lga->name)?$employee->lga->name:'' }}</td>
+    </tr>
+    <tr>
+        <td>7.</td>
+        <td><strong>Nationality:</strong></td>
+        <td>{{ isset($employee->country->name)?$employee->country->name:'' }}</td>
+    </tr>
+    <tr>
+        <td>8.</td>
+        <td><strong>Marital Status:</strong></td>
+        <td>{{ $employee->marital_status }}</td>
+    </tr>
+    <tr>
+        <td>9.</td>
+        <td><strong>Gender:</strong></td>
+        <td>{{ $employee->gender }}</td>
+    </tr>
+    <tr>
+        <td>10.</td>
+        <td><strong>Languages Spoken:</strong></td>
+        <td>
+            @foreach($employee->languageSpoken as $language)
+                {{ $language->name }},
+            @endforeach
+        </td>
+    </tr>
+    <tr>
+        <td>11.</td>
+        <td><strong>Current Contact Address:</strong></td>
+        <td></td>
+    </tr>
+    <tr>
+        <td>12.</td>
+        <td><strong>Permanent Home Address:</strong></td>
+        <td>{{ $employee->permanent_address }}</td>
+    </tr>
+    <tr>
+        <td>13.</td>
+        <td><strong>Date of First Appointment with the University:</strong></td>
+        <td>{{ isset($employee->date_of_first_appointment)?date('d-m-Y', strtotime($employee->date_of_first_appointment)):'' }}</td>
+    </tr>
+    <tr>
+        <td>14.</td>
+        <td><strong>Date of Last Promotion:</strong></td>
+        <td>{{ isset($employee->date_of_last_promotion)?date('d-m-Y', strtotime($employee->date_of_last_promotion)):'' }}</td>
+    </tr>
+
+    <tr>
+        <td>15.</td>
+        <td><strong>Date of Confirmation:</strong></td>
+        <td>{{ isset($employee->date_of_confirmation)?$employee->date_of_confirmation:'' }}</td>
+    </tr>
+    <tr>
+        <td>16.</td>
+        <td><strong>Present Rank and Salary:</strong></td>
+        <td>{{ isset($employee->rank->name)?$employee->rank->name:'' }}</td>
+    </tr>
+    <tr>
+        <td>17.</td>
+        <td><strong>Qualifications, Educational Institutions with Dates:</strong></td>
+        <td>
+            @php $sno = 1 @endphp
+            @foreach($employee->qualifications as $qualification)
+                @if($qualification->category == 'Academic')
+                    {{ $sno }}.
+                    ({{ $qualification->category }})
+                    {{ $qualification->course }},
+                    {{ $qualification->institution }}
+                    ({{ $qualification->type }}) passed with
+                    {{ strtoupper($qualification->grade->grade) }} on
+                    <strong>{{ date('d-m-Y',strtotime($qualification->date)) }}</strong>
+                    @php $sno +=1 @endphp
+                @endif
+            @endforeach
+        </td>
+    </tr>
+    <tr>
+        <td>18.</td>
+        <td><strong>Additional Qualifications/Education with Addresses & Dates</strong></td>
+        <td>
+            @php $sno = 1 @endphp
+            @foreach($employee->qualifications as $qualification)
+                @if($qualification->category == 'Professional')
+                    {{ $sno }}.
+                    ({{ $qualification->category }})
+                    {{ $qualification->course }},
+                    {{ $qualification->institution }}
+                    ({{ $qualification->type }}) passed with
+                    {{ strtoupper($qualification->grade->grade) }} on
+                    <strong>{{ date('d-m-Y',strtotime($qualification->date)) }}</strong>
+                    @php $sno +=1 @endphp
+                @endif
+            @endforeach
+        </td>
+    </tr>
+    <tr>
+        <td>19.</td>
+        <td><strong>Working Experience with Dates:</strong></td>
+        <td>
+            @php $sno = 1 @endphp
+            @foreach($employee->workExperiences as $experience)
+                {{ $sno }}.
+                {{ $experience->position }}
+                at {{ $experience->place }},
+                from <strong>{{ date('d-m-Y',strtotime($experience->from)) }}</strong>
+                to <strong>{{ date('d-m-Y',strtotime($experience->to)) }}</strong>
+                @php $sno +=1 @endphp
+            @endforeach
+        </td>
+    </tr>
+    <tr>
+        <td>20.</td>
+        <td colspan = '2'>
+            <span><strong>Routine Teaching Experience with Dates</strong></span>
+            <br>
+            <table width="100%">
+                <tr>
+                    <th>S/N</th>
+                    <th style="vertical-align: top;text-align: left;">Course Code</th>
+                    <th>Course Title</th>
+                    <th>Session</th>
+                </tr>
+                @php $sno = 1; @endphp
+                @foreach($employee->teachings as $teaching)
+                    <tr>
+                        <td>{{ $sno }}</td>
+                        <td>{{ isset($teaching->course->coursecode)?$teaching->course->coursecode:'' }}</td>
+                        <td>{{ isset($teaching->course->coursetitle)?$teaching->course->coursetitle:'' }}</td>
+                        <td>{{ $teaching->session }}</td>
+                    </tr>
+                    @php $sno +=1 @endphp
+                @endforeach
+            </table>
+        </td>
+    </tr>
+    <tr>
+        <td>21.</td>
+        <td colspan = '2'>
+            <span><strong>Supervisions</strong></span>
+            <br>
+            <table width="100%">
+                <tr>
+                    <th>SNo</th>
+                    <th>Matric Number</th>
+                    <th>Full Name</th>
+                    <th>Title</th>
+                    <th>Year</th>
+                    <th>Status</th>
+                    <th>Supervisor Type</th>
+                    <th>Programme</th>
+                </tr>
+                @php $sno = 1 @endphp
+                @foreach($employee->supervisions as $supervision)
+                    <tr>
+                        <td>{{ $sno }}</td>
+                        <td>{{ isset($supervision->student->matric_number)?$supervision->student->matric_number:'' }}</td>
+                        <td>
+                            {{ isset($supervision->student->surname)?$supervision->student->surname:'' }},
+                            {{ isset($supervision->student->firstname)?$supervision->student->firstname:'' }}
+                            {{ isset($supervision->student->othername)?$supervision->student->othernames:'' }}
+                        </td>
+                        <td>{{ $supervision->title }}</td>
+                        <td>{{ $supervision->year }}</td>
+                        <td>{{ $supervision->status }}</td>
+                        <td>{{ $supervision->supervisor_type }}</td>
+                        <td>{{ isset($supervision->student->getprogramme->name)?$supervision->student->getprogramme->name:'' }}</td>
+                    </tr>
+                    @php $sno +=1 @endphp
+                @endforeach
+            </table>
+        </td>
+    </tr>
+
+    <tr>
+        <td>22.</td>
+        <td><strong>Research/Extension Experience and Dates:</strong></td>
+        <td></td>
+    </tr>
+
+    <tr>
+        <td>23.</td>
+        <td><strong>Routine Administrative Duties with Dates:</strong></td>
+        <td>
+            @php $sno = 1 @endphp
+            @foreach($employee->postings as $posting)
+                {{ $sno }}.
+                {{ $posting->designation }},
+                {{ isset($posting->department->name)?$posting->department->name:'' }},
+                from <strong>{{ date('d-m-Y',strtotime($posting->from)) }}</strong>
+                to <strong>{{ date('d-m-Y',strtotime($posting->to)) }}</strong>
+                @php $sno +=1 @endphp
+            @endforeach
+        </td>
+    </tr>
+    <tr>
+        <td>24.</td>
+        <td><strong>Positions Held with Dates:</strong></td>
+        <td>
+            @php $sno = 1 @endphp
+            @foreach($employee->positionsHeld as $position)
+                {{ $sno }}.
+                {{ $position->position }}
+                ({{ $position->capacity }}),
+                {{ $position->organisation }}
+                from <strong>{{ date('d-m-Y',strtotime($position->from)) }}</strong>
+                to <strong>{{ date('d-m-Y',strtotime($position->to)) }}</strong>
+                @php $sno +=1 @endphp
+            @endforeach
+        </td>
+    </tr>
+    <tr>
+        <td>25.</td>
+        <td><strong>Professional Service / Honour Societies:</strong></td>
+        <td>
+            @php $sno = 1 @endphp
+            @foreach($employee->professionalBodies as $body)
+                {{ $sno }}.
+                {{ $body->type_of_membership }},
+                {{ $body->organisation }}
+                @php $sno +=1 @endphp
+            @endforeach
+        </td>
+    </tr>
+    <tr>
+        <td>26.</td>
+        <td><strong>Community Service:</strong></td>
+        <td>
+            @php $sno = 1 @endphp
+            @foreach($employee->communityServices as $service)
+                {{ $sno }}.
+                ({{ $service->service_level }})
+                <i>(for {{ $service->beneficiary }})</i>,
+                {{ $service->description }}
+                from <strong>{{ date('d-m-Y',strtotime($service->from)) }}</strong>
+                to <strong>{{ date('d-m-Y',strtotime($service->to)) }}</strong>
+                @php $sno +=1 @endphp
+            @endforeach
+        </td>
+    </tr>
+    <tr>
+        <td>27.</td>
+        <td><strong>Conferences Attended:</strong></td>
+        <td>
+            @php $sno = 1 @endphp
+            @foreach($employee->conferences as $conference)
+                @if($conference->type == 'International')
+                    {{ $sno }}.
+                    ({{ $conference->type }})
+                    {{ $conference->name }} organised by
+                    {{ $conference->organiser }}
+                    from <strong>{{ date('d-m-Y',strtotime($conference->from)) }}</strong>
+                    to <strong>{{ date('d-m-Y',strtotime($conference->to)) }}</strong>
+                    @php $sno +=1 @endphp
+                @endif
+            @endforeach
+        </td>
+    </tr>
+
+    <tr>
+        <td>28.</td>
+        <td><strong>Local Conferences Attended/Organized with Dates:</strong></td>
+        <td>
+            @php $sno = 1 @endphp
+            @foreach($employee->conferences as $conference)
+                @if($conference->type == 'Local')
+                    {{ $sno }}.
+                    ({{ $conference->type }})
+                    {{ $conference->name }} organised by
+                    {{ $conference->organiser }}
+                    from <strong>{{ date('d-m-Y',strtotime($conference->from)) }}</strong>
+                    to <strong>{{ date('d-m-Y',strtotime($conference->to)) }}</strong>
+                    @php $sno +=1 @endphp
+                @endif
+            @endforeach
+        </td>
+    </tr>
+
+    <tr>
+        <td>29.</td>
+        <td><strong>Publications/Articles:</strong></td>
+        <td>
+            @php $sno = 1 @endphp
+            @foreach($employee->publications as $publication)
+                {{ $sno }}.
+                ({{ $publication->type }})
+                {{ $publication->title }} by
+                {{ $publication->author }} published on
+                {{ $publication->date }} at
+                {{ $publication->where_published }}
+                @php $sno += 1 @endphp
+            @endforeach
+        </td>
+    </tr>
+
+    <tr>
+        <td>30.</td>
+        <td><strong>Invention/Innovation/Award:</strong></td>
+        <td>
+            @php $sno = 1 @endphp
+            @foreach($employee->awards as $award)
+                {{ $sno }}.
+                ({{ $award->category }})
+                {{ $award->description }},
+                {{ $award->year }} with patent
+                ({{ $award->patent_reference_no }})
+                @php $sno += 1 @endphp
+            @endforeach
+        </td>
+    </tr>
+    <tr>
+        <td>31.</td>
+        <td><strong>Citation in "Who-is-Who", etc:</strong></td>
+        <td>
+            @php $sno = 1 @endphp
+            @foreach($employee->citations as $citation)
+                {{ $sno }}.
+                {{ $citation->achievement }} (obtained on
+                <strong>{{ date('d-m-Y', strtotime($citation->date)) }}</strong>)
+                @php $sno += 1 @endphp
+            @endforeach
+        </td>
+    </tr>
+    <tr>
+        <td>32.</td>
+        <td><strong>Additional Publications since Last Promotion:</strong></td>
+        <td> </td>
+    </tr>
+    <tr>
+        <td>33.</td>
+        <td><strong>Hobbies:</strong></td>
+        <td>
+            @foreach($employee->hobbies as $hobby)
+                {{ $hobby->hobby }},
+            @endforeach
+        </td>
+    </tr>
+    <tr>
+        <td>34.</td>
+        <td><strong>Names and Addresses of Three Referees:</strong></td>
+        <td>
+            @php $sno = 1 @endphp
+            @foreach($employee->referees as $referees)
+                {{ $sno }}.
+                {{ $referees->title }}
+                {{ $referees->name }},
+                {{ $referees->address }},
+                {{ $referees->phone }},
+                {{ $referees->email }}
+                @php $sno += 1 @endphp
+            @endforeach
+        </td>
+    </tr>
+</table>--}}
+<table class="table table-bordered">
+    <tr>
+        <td>1.</td>
+        <td width="240"><strong>Name in Full:</strong></td>
+        <td>{{ $employee->surname }}
+            , {{ $employee->firstname }} {{ isset($employee->othernames)?$employee->othernames:'' }}</td>
+    </tr>
+    <tr>
+        <td>2.</td>
+        <td><strong>Personnel No:</strong></td>
+        <td>{{ $employee->personnel_no }}</td>
+    </tr>
+    <tr>
+        <td>3.</td>
+        <td><strong>Department:</strong></td>
+        <td>{{ isset($employee->department->name)?$employee->department->name:'' }}</td>
+    </tr>
+    <tr>
+        <td>4.</td>
+        <td><strong>Date and Place of Birth:</strong></td>
+        <td>{{ $employee->date_of_birth }}
+            | {{ $employee->place_of_birth }}</td>
+    </tr>
+    <tr>
+        <td>5.</td>
+        <td><strong>State of Origin:</strong></td>
+        @php
+            $lga=App\Models\Lga::find($employee->lga_id);
+            $state=App\Models\State::find($lga->state_id);
+        @endphp
+        <td>{{ isset($state->name)?$state->name:'' }}</td>
+    </tr>
+    <tr>
+        <td>6.</td>
+        <td><strong>Local Government of Origin:</strong></td>
+        <td>{{ isset($employee->lga->name)?$employee->lga->name:'' }}</td>
+    </tr>
+    <tr>
+        <td>7.</td>
+        <td><strong>Nationality:</strong></td>
+        <td>{{ isset($employee->country->name)?$employee->country->name:'' }}</td>
+    </tr>
+    <tr>
+        <td>8.</td>
+        <td><strong>Marital Status:</strong></td>
+        <td>{{ $employee->marital_status }}</td>
+    </tr>
+    <tr>
+        <td>9.</td>
+        <td><strong>Gender:</strong></td>
+        <td>{{ $employee->gender }}</td>
+    </tr>
+    <tr>
+        <td>10.</td>
+        <td><strong>International Languages Spoken:</strong></td>
+        <td>
+            @foreach($employee->languageSpoken as $language)
+                {{ $language->name }},
+            @endforeach
+        </td>
+    </tr>
+    <tr>
+        <td>11.</td>
+        <td><strong>Current Contact Address:</strong></td>
+        @php
+            $contact=\App\Models\EmployeeContactAddress::where("employee_id", "=", $employee->id)->first();
+        @endphp
+        <td>{{$contact?$contact->address:""}}</td>
+    </tr>
+    <tr>
+        <td>12.</td>
+        <td><strong>Permanent Home Address:</strong></td>
+        <td>{{ $employee->permanent_address }}</td>
+    </tr>
+    <tr>
+        <td>13.</td>
+        <td><strong>Date of First Appointment with the
+                University:</strong></td>
+        <td>{{ isset($employee->date_of_first_appointment)?$employee->date_of_first_appointment:'' }}</td>
+    </tr>
+    <tr>
+        <td>14.</td>
+        <td><strong>Date of Last Promotion/Redesignation/Upgrading:</strong></td>
+        <td>{{ isset($employee->date_of_last_promotion)?$employee->date_of_last_promotion:'' }}</td>
+    </tr>
+
+    <tr>
+        <td>15.</td>
+        <td><strong>Date of Confirmation:</strong></td>
+        <td>{{ isset($employee->date_of_confirmation)?$employee->date_of_confirmation:'' }}</td>
+    </tr>
+    <tr>
+        <td>16.</td>
+        <td><strong>Present Rank and Salary:</strong></td>
+        @php $slary=\App\Models\SalaryGradeLevel::find($employee->salary_grade_level_id)->grade @endphp
+        <td>{{ isset($employee->rank->name)?$employee->rank->name:'' }}{{isset($slary)?:'Not Updated'}}</td>
+    </tr>
+    <tr>
+        <td>17.</td>
+        <td><strong>Email:</strong></td>
+        <td>{{ isset($employee->email)?$employee->email:'' }}</td>
+    </tr>
+    <tr>
+        <td>18.</td>
+        <td><strong>Telephone Number(GSM):</strong></td>
+        <td>{{ isset($contact->phone)?$contact->phone:'' }}</td>
+    </tr>
+    <tr>
+        <td>19.</td>
+        <td><strong>Qualifications, Educational Institutions with Dates:</strong></td>
+        <td>
+            @php $sno = 1 @endphp
+            <table>
+                <tr><td>Academic</td></tr>
+                @foreach($employee->orderedQualification() as $qualification)
+                    @if($qualification->category == 'Academic')
+                        {{--<tr><td>{{ $qualification->category }}</td></tr>--}}
+                        <tr>
+                            <th style="padding-right: 8px;">{{$sno}}.</th>
+                            <td>({{ $qualification->qualifications->qualification }})
+                                {{ $qualification->course }},
+                                {{ $qualification->institution }}
+                                <strong>{{ date('d-m-Y',strtotime($qualification->date)) }}</strong>
+                            </td>
+                        </tr>
+                        {{--passed--}}
+                        {{--with--}}
+                        {{--{{ //strtoupper(optional($qualification->grades)->grade) }}--}}
+                        {{--on--}}
+                        @php $sno +=1 @endphp
+                    @endif
+                @endforeach
+            </table>
+
+        </td>
+    </tr>
+    <tr>
+        <td>20.</td>
+        <td><strong>Additional Qualifications/Education with Addresses & Dates</strong></td>
+        <td>
+            @php $sno = 1 @endphp
+            <table>
+                <tr><td>Professional</td></tr>
+                @foreach($employee->qualifications as $qualification)
+                    @if($qualification->category == 'Professional')
+                        {{--<tr><td>{{ $qualification->category }}</td></tr>--}}
+                        <tr>
+                            <th style="padding-right: 8px;">{{ $sno }}
+                                .
+                            </th>
+                            <td style="padding-left: 8px;display: block !important;">
+                                {{ $qualification->course }},
+                                {{ $qualification->institution }}
+                                ({{ $qualification->qualifications->qualification }}) passed
+                                with
+                                {{ strtoupper($qualification->grades->grade) }}
+                                on
+                                <strong>{{ $qualification->date }}</strong>
+                            </td>
+                        </tr>
+                        @php $sno +=1 @endphp
+                    @endif
+                @endforeach
+            </table>
+        </td>
+    </tr>
+    <tr>
+        <td>21.</td>
+        <td><strong>Working Experience with Dates:</strong></td>
+        <td>
+            @php $sno = 1 @endphp
+            <table cellspacing="10">
+                @foreach($employee->workExperiences as $experience)
+                    <tr>
+                        <th style="padding-right: 8px;">{{$sno}}.
+                        </th>
+                        <td>{{ $experience->position }}
+                            at {{ $experience->place }},
+                            from
+                            <strong>{{ date('d-m-Y',strtotime($experience->from)) }}</strong>
+                            to
+                            <strong>{{ date('d-m-Y',strtotime($experience->to)) }}</strong>
+                        </td>
+                    </tr>
+                    @php $sno +=1 @endphp
+                @endforeach
+            </table>
+        </td>
+    </tr>
+    @if($employee->teachings->count() > 0)
+        <tr>
+            <td>22.</td>
+            <td colspan='2'>
+                <span><strong>Teaching Experience with Dates:List Courses Taught/Examine, Theses, Supervised/Ongoing</strong></span>
+                <br>
+                <table width="100%">
+                    <tr>
+                        <th>S/N</th>
+                        <th style="vertical-align: top;text-align: left;">
+                            Course Code
+                        </th>
+                        <th>Course Title</th>
+                        <th>Session</th>
+                    </tr>
+                    @php $sno = 1; @endphp
+                    @foreach($employee->teachings as $teaching)
+                        <tr>
+                            <td>{{ $sno }}</td>
+                            <td>{{ isset($teaching->course->coursecode)?$teaching->course->coursecode:'' }}</td>
+                            <td>{{ isset($teaching->course->coursetitle)?$teaching->course->coursetitle:'' }}</td>
+                            <td>{{ $teaching->session }}</td>
+                        </tr>
+                        @php $sno +=1 @endphp
+                    @endforeach
+                </table>
+            </td>
+        </tr>
+    @endif
+    @if($employee->supervisions->count() > 0)
+        <tr>
+            <td>23.</td>
+            <td colspan='2'>
+                <span><strong>Supervisions</strong></span>
+                <br>
+                <table width="100%">
+                    <tr>
+                        <th>SNo</th>
+                        <th>Matric Number</th>
+                        <th>Full Name</th>
+                        <th>Title</th>
+                        <th>Year</th>
+                        <th>Status</th>
+                        <th>Supervisor Type</th>
+                        <th>Programme</th>
+                    </tr>
+                    @php $sno = 1 @endphp
+                    @foreach($employee->supervisions as $supervision)
+                        <tr>
+                            <td>{{ $sno }}</td>
+                            @if($supervision->student_id)
+                                <td>{{ isset($supervision->student->matric_number)?$supervision->student->matric_number:'' }}</td>
+                                <td>
+                                    {{ isset($supervision->student->surname)?$supervision->student->surname:'' }}
+                                    ,
+                                    {{ isset($supervision->student->firstname)?$supervision->student->firstname:'' }}
+                                    {{ isset($supervision->student->othername)?$supervision->student->othernames:'' }}
+                                </td>
+                            @else
+                                @php $student = json_decode($supervision->data);@endphp
+                                <td>{{ isset($student->matric_number)?$student->matric_number:'' }}</td>
+                                <td>
+                                    {{ isset($student->full_name)?$student->full_name:'' }}
+                                </td>
+                            @endif
+                            <td>{{ $supervision->title }}</td>
+                            <td>{{ $supervision->year }}</td>
+                            <td>{{ $supervision->status }}</td>
+                            <td>{{ $supervision->supervisor_type }}</td>
+                            @if($supervision->student_id)
+                                <td>{{ isset($supervision->student->getprogramme->name)?$supervision->student->getprogramme->name:'' }}</td>
+                            @else
+                                <td>{{ isset($student->programme)?$student->programme:'' }}</td>
+                            @endif
+                        </tr>
+                        @php $sno +=1 @endphp
+                    @endforeach
+                </table>
+            </td>
+        </tr>
+    @endif
+    <tr>
+        <td>24.</td>
+        <td><strong>Research/Extension Experience and
+                Dates:</strong></td>
+        <td></td>
+    </tr>
+
+    <tr>
+        <td>25.</td>
+        <td><strong>Routine Administrative Duties with
+                Dates:</strong></td>
+        <td>
+            @php $sno = 1 @endphp
+            <table>
+                @foreach($employee->postings as $posting)
+                    <tr>
+                        <th style="padding-right: 8px; ">{{ $sno }}.
+                        </th>
+                        <td>
+                            {{ $posting->designation }},
+                            {{ isset($posting->department->name)?$posting->department->name:'' }}
+                            ,
+                            from <strong>{{$posting->from }}</strong>
+                            to <strong>{{ $posting->to }}</strong>
+                        </td>
+                        @php $sno +=1 @endphp
+                    </tr>
+                @endforeach
+            </table>
+        </td>
+    </tr>
+    <tr>
+        <td>26.</td>
+        <td><strong>Positions Held with Dates:</strong></td>
+        <td>
+            @php $sno = 1 @endphp
+            <table>
+
+                @foreach($employee->positionsHeld as $position)
+                    <tr>
+                        <th style="padding-right: 8px; ">{{ $sno }}
+                            .
+                        </th>
+                        <td>
+                            {{ $position->position }}
+                            ({{ $position->capacity }}),
+                            {{ $position->organisation }}
+                            from
+                            <strong>{{ $position->from }}</strong>
+                            to <strong>{{ $position->to }}</strong>
+                        </td>
+                    </tr>
+                    @php $sno +=1 @endphp
+                @endforeach
+            </table>
+        </td>
+    </tr>
+    <tr>
+        <td>27.</td>
+        <td><strong>Professional Service / Honour
+                Societies:</strong></td>
+        <td>
+            @php $sno = 1 @endphp
+            <table>
+                @foreach($employee->professionalBodies as $body)
+                    <tr>
+                        <th style="padding-right: 8px; ">{{ $sno }}
+                            .
+                        </th>
+                        <td>
+                            {{ $body->type_of_membership }},
+                            {{ $body->organisation }}
+                        </td>
+                    </tr>
+                    @php $sno +=1 @endphp
+                @endforeach
+            </table>
+        </td>
+    </tr>
+    <tr>
+        <td>28.</td>
+        <td><strong>Community Service:</strong></td>
+        <td>
+            @php $levels = ['University','Local Government','State','National','International']; @endphp
+            @foreach($levels as $level)
+                @php $sno = 1;
+                                                                     $levelServices = \App\Models\EmployeeCommunityService::where('employee_id',$employee->id)->where('service_level', $level)->get();
+                @endphp
+                @if($levelServices->isNotEmpty())
+                    <table>
+                        <tr>
+                            <th colspan="2">{{ $level }}</th>
+                        </tr>
+                        @foreach($levelServices as $service)
+
+                            <tr>
+                                <th style="padding-right: 8px; ">
+                                    {{ $sno }}
+                                    .
+                                </th>
+                                <td style="padding-left: 8px;display: block !important;">
+                                    {{ $service->description }}
+                                    from
+                                    <strong>{{ date('d-m-Y',strtotime($service->from)) }}</strong>
+                                    to
+                                    <strong>{{ date('d-m-Y',strtotime($service->to)) }}</strong>
+                                    <i>(for {{ $service->beneficiary }})</i>
+                                </td>
+                            </tr>
+                            @php $sno +=1 @endphp
+                        @endforeach
+                    </table>
+                @endif
+            @endforeach
+        </td>
+
+
+    </tr>
+    <tr>
+        <td>29.</td>
+        <td><strong>International Conferences Attended/Organized with Dates:</strong></td>
+        <td>
+            @php $sno = 1 @endphp
+            <table>
+                @foreach($employee->conferences as $conference)
+                    @if($conference->type == 'International')
+                        <tr>
+                            <th style="padding-right: 8px; ">
+                                {{ $sno }}
+                                .
+                            </th>
+                            <td>
+                                {{ $conference->name }}
+                                <strong>organised by
+                                    {{ $conference->organiser }}</strong>
+                                @if($conference->start_date)
+                                    @if($conference->end_date )
+                                        from
+                                        <strong>{{ $conference->start_date }}</strong>
+                                        to
+                                        <strong>{{ $conference->end_date }}</strong>
+                                    @else
+                                        on
+                                        <strong>{{ $conference->start_date }}</strong>
+                                    @endif
+                                @endif
+                            </td>
+                        </tr>
+                        @php $sno +=1 @endphp
+                    @endif
+                @endforeach
+            </table>
+        </td>
+    </tr>
+
+    <tr>
+        <td>30.</td>
+        <td><strong>Local Conferences Attended/Organized with
+                Dates:</strong></td>
+        <td>
+            <table>
+                @php $sno = 1 @endphp
+                @foreach($employee->conferences as $conference)
+                    @if($conference->type == 'Local')
+                        <tr>
+                            <th style="padding-right: 8px; ">
+                                {{ $sno }}
+                                .
+                            </th>
+                            <td>
+                                {{ $conference->name }}
+                                organised by
+                                {{ $conference->organiser }}
+                                from
+                                <strong>{{ $conference->from }}</strong>
+                                to
+                                <strong>{{ $conference->to }}</strong>
+                            </td>
+                        </tr>
+                        @php $sno +=1 @endphp
+                    @endif
+                @endforeach
+            </table>
+        </td>
+    </tr>
+
+    <tr>
+        <td>31.</td>
+        <td><strong>Publications/Articles <i>for Teaching Staff Only</i>:</strong></td>
+        <td>
+            <table>
+                @php
+                    $pubs = [];
+                        foreach($employee->publications->sortByDesc('date') as $pub){
+                            $pubs[$pub->type][] = $pub;
+
+                    }
+                @endphp
+                @foreach($pubs as $key=>$publications)
+
+
+                    @php $sno = 1 ; @endphp
+                    @foreach($publications as $publication)
+                        @if($sno==1)
+                            <tr>
+                                <th colspan="2">{{$key}}</th>
+                            </tr>
+                        @endif
+                        <tr>
+                            <th style="padding-right: 8px; ">
+                                {{ $sno }}
+                                .
+                            </th>
+                            <td>
+                                {{ $publication->title }} by
+                                {{ $publication->author }}
+                                published
+                                on
+                                {{ $publication->date }} at
+                                {{ $publication->where_published }}
+                            </td>
+                        </tr>
+                        @php $sno += 1 @endphp
+                    @endforeach
+
+                @endforeach
+            </table>
+        </td>
+    </tr>
+
+    <tr>
+        <td></td>
+        <td><strong>Online Publication ID(s):</strong></td>
+        <td>
+            <table>
+                <tr>
+                    <td>Google Scholar:</td>
+                    <td>{{$employee->google_scholar_id}}</td>
+                </tr>
+                <tr>
+                    <td>Scupus ID:</td>
+                    <td>{{$employee->scopus_id}}</td>
+                </tr>
+                <tr>
+                    <td>ORCiD ID:</td>
+                    <td>{{$employee->orcid_id}}</td>
+                </tr>
+            </table>
+        </td>
+
+    <tr>
+        <td>32.</td>
+        <td><strong>Invention/Innovation/Award:</strong></td>
+        <td>
+            @php $sno = 1 @endphp
+            <table>
+                @foreach($employee->awards as $award)
+                    <tr>
+                        <th style="padding-right: 8px; ">
+                            {{ $sno }}
+                            .
+                        </th>
+                        <td>
+                            {{ $award->category }}:
+                            {{ $award->description }},
+                            {{ $award->year }} with patent
+                            ({{ $award->patent_reference_no }})
+                            @php $sno += 1 @endphp
+                        </td>
+                    </tr>
+                @endforeach
+            </table>
+        </td>
+    </tr>
+    <tr>
+        <td>33.</td>
+        <td><strong>Citation in "Who-is-Who", etc:</strong></td>
+        <td>
+            @php $sno = 1 @endphp
+            <table>
+                @foreach($employee->citations as $citation)
+                    <tr>
+                        <th style="padding-right: 8px; ">
+                            {{ $sno }}
+                            .
+                        </th>
+                        <td>
+                            {{ $citation->achievement }}
+                            (obtained
+                            on
+                            <strong>{{ $citation->date }}</strong>)
+                        </td>
+                    </tr>
+                    @php $sno += 1 @endphp
+                @endforeach
+            </table>
+        </td>
+    </tr>
+    <tr>
+        <td>34.</td>
+        <td><strong>Additional Publications since Last
+                Promotion:</strong></td>
+        <td></td>
+    </tr>
+    <tr>
+        <td>35.</td>
+        <td><strong>Hobbies:</strong></td>
+        <td>
+            @foreach($employee->hobbies as $hobby)
+                {{ $hobby->hobby }},
+            @endforeach
+        </td>
+    </tr>
+    <tr>
+        <td>36.</td>
+        <td><strong>Names and Addresses of Three
+                Referees:</strong>
+        </td>
+        <td>
+            @php $sno = 1 @endphp
+            <table>
+
+                @foreach($employee->referees as $referees)
+                    <tr>
+                        <th style="padding-right: 8px; ">
+                            {{ $sno }}
+                            .
+                        </th>
+                        <td>
+                            {{ $referees->title }}
+                            {{ $referees->name }},
+                            {{ $referees->address }},
+                            {{ $referees->phone }},
+                            {{ $referees->email }}
+                        </td>
+                    </tr>
+                    @php $sno += 1 @endphp
+                @endforeach
+            </table>
+        </td>
+    </tr>
+</table>

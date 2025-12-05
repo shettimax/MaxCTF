@@ -1,0 +1,85 @@
+@extends('layout.student.master')
+
+@section('content')
+    <section class="">
+        <div class="main-section pt-20 pb-20">
+            <!-- Page Section -->
+            <div class="page-section"
+                 style="margin-top: 0px;margin-bottom: 0px;border-top: 0px #e0e0e0 solid;border-bottom: 0px #e0e0e0 solid;">
+                <!-- Container Start -->
+                <div class="container">
+                    <h4>Evaluating:
+                        <strong>{{$employee->title}} {{ strtoupper($employee->surname) }}
+                            , {{ strtoupper($employee->firstname) }} {{ strtoupper($employee->othernames) }}</strong>
+                        on
+                        <strong>{{ $course->coursecode }} {{ strtoupper($courseGroup->grouptype)=="LT"?"Lecture":"Lab" }}
+                            Group {{ $courseGroup->groupno }}</strong></h4>
+                    <div class="">
+                        <hr>
+                        @if($errors->has("message"))
+                            <p class="alert alert-warning">
+                                {{$errors->first("message")}}
+                            </p>
+                        @endif
+                    </div>
+                    <form action="" method="post">
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-condensed table-stripped"
+                                   style="width:100%;font-size:14px;font-family: Calibri; text-align: left; color: #000000">
+                                <thead>
+                                <tr>
+                                    <th rowspan="2">S/N</th>
+                                    <th rowspan="2">Question</th>
+                                    <th colspan="5" class="text-center">Rating</th>
+                                    <th rowspan="2">Comment</th>
+                                </tr>
+                                <tr>
+                                    <th>Poor</th>
+                                    <th>Fair</th>
+                                    <th>Satisfactory</th>
+                                    <th>Good</th>
+                                    <th>Excellent</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                @foreach($questions as $key=>$value)
+                                    <tr>
+                                        <th></th>
+                                        <th colspan="7">{{ $key }}</th>
+                                    </tr>
+                                    @foreach($value as $question)
+                                        <tr>
+                                            <td>{{$loop->index+1}}</td>
+                                            <td>{{$question->question}}</td>
+                                            <td><input type="radio" name="response[{{$question->id}}]" value="1"></td>
+                                            <td><input type="radio" name="response[{{$question->id}}]" value="2"></td>
+                                            <td><input type="radio" name="response[{{$question->id}}]" value="3"></td>
+                                            <td><input type="radio" name="response[{{$question->id}}]" value="4"></td>
+                                            <td><input type="radio" name="response[{{$question->id}}]" value="5"></td>
+                                            <td><input name="comment[{{$question->id}}]" type="text"></td>
+                                        </tr>
+                                    @endforeach
+                                @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="col-md-4 col-md-offset-4">
+                            <button class="btn btn-info btn-dark">Save</button>
+                        </div>
+                        @csrf
+                        <input type="hidden" name="course_group_id" value="{{$courseGroup->id}}">
+                        <input type="hidden" name="employee_id" value="{{$employee->id}}">
+                    </form>
+
+
+                </div>
+            </div>
+        </div>
+    </section>
+@endsection
+<script>
+    function printContent(el) {
+
+    }
+</script>
+

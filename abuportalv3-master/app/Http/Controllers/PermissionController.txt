@@ -1,0 +1,61 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Permission;;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+
+class PermissionController extends Controller
+{
+    public function __construct()
+    {
+        $this->middleware(["auth:staff", "mmode"]);
+
+    }
+    public function index()
+    {
+        //$details = Faculty::select('*')->orderby('name')->get();
+        $model=null;
+        Auth::user();
+        return  view('pages.staff.authorization.permissions',compact('model'));
+    }
+
+
+    public function store(Request $request)
+    {
+        try {
+
+            if (!Auth::user()) {
+                return view("pages.staff.error.access");
+            }
+            $this->validate($request, [
+                'permission' => 'required|unique:permissions,name',
+            ]);
+            if ($request->has('permissionid')) {
+                $DB = Permission::find($request->permissionid);
+                $DB->name = $request->permission;
+                $DB->save();
+            } else {
+                Permission::create(['name' => $request->permission, 'guard_name' => config('auth.defaults.guard')]);
+            }
+//            app()->make(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+            if ($request->has('permissionid'))
+                $request->session()->flash('flash_message', 'Permission has been updated');
+            else
+                $request->session()->flash('flash_message', 'Permission has been added');
+            return redirect()->back();
+        } catch (\Exception $e) {
+            return view("pages.staff.error.technical");
+        }
+    }
+
+
+
+    public function edit($id)
+    {
+        $model = Permission::find($id);
+        Auth::user();
+        return  view('pages.staff.authorization.permissions', compact('model'));
+    }
+}

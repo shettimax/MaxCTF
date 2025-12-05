@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Student Details</title>
+    <!-- Bootstrap CSS for styling (optional) -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        /* Optional: Custom styling */
+        .student-details {
+            margin-top: 50px;
+        }
+    </style>
+</head>
+<body>
+<div class="container student-details">
+    <h1>Student Details</h1>
+
+    <div class="card">
+        <div class="card-header">
+            {{ $student->firstname }} {{ $student->surname }}
+        </div>
+        <div class="card-body">
+            <p><strong>Matric Number:</strong> {{ $student->matric_number }}</p>
+            <p><strong>Application Number:</strong> {{ $student->application_number }}</p>
+            <p><strong>JAMB Number:</strong> {{ $student->jamb_number ?? 'N/A' }}</p>
+            <p><strong>Gender:</strong> {{ $student->gender }}</p>
+            <p><strong>Date of Birth:</strong> {{ $student->dob }}</p>
+            <p><strong>Residency:</strong> {{ $student->residency }}</p>
+            <p><strong>Country:</strong> {{ $student->country_id }}</p>
+            <p><strong>Entry Level:</strong> {{ $student->entry_level_id }}</p>
+            <p><strong>Entry Session:</strong> {{ $student->entry_session }}</p>
+            <p><strong>Mode of Entry:</strong> {{ $student->mode_of_entry }}</p>
+            <p><strong>Religion:</strong> {{ $student->religion ?? 'N/A' }}</p>
+            <p><strong>Christian Group:</strong> {{ $student->christian_group ?? 'N/A' }}</p>
+            <p><strong>NIN:</strong> {{ $student->nin ?? 'N/A' }}</p>
+            <!-- Add more fields as necessary -->
+        </div>
+    </div>
+
+    <a href="{{ route('reports.room_occupancy') }}" class="btn btn-secondary mt-3">Back to Report</a>
+</div>
+
+<!-- Optional: Bootstrap JS and dependencies (optional) -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

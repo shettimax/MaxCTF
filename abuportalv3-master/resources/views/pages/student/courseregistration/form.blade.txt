@@ -1,0 +1,494 @@
+@extends("layout.student.master")
+@section("content")
+    <style>
+        .close {
+            float: right;
+            font-size: 30px;
+            font-weight: 700;
+            line-height: 1;
+            color: #000000;
+            text-shadow: 0 1px 0 #fff;
+            filter: alpha(opacity=20);
+            opacity: 1;
+        }
+
+        .register-course-chkbox {
+            margin: none;
+        }
+
+        #courses-to-register-table tr td {
+            font-size: 14px;
+        }
+
+        #courses-to-register-table tr td select {
+            font-size: 14px;
+        }
+
+    </style>
+    <!-- Page Section -->
+    @php
+
+        //$session = $student->currentSession();
+        $sessionname = $session;
+        $sessionname = $sessionname . " / " . (($sessionname * 1) + 1);
+    @endphp
+    <section class="content">
+        <div class="container">
+            <div class="section-content">
+                <div class="row">
+                    <div class="col-md-2">
+                        <h4 class="line-bottom-theme-colored-2">
+                            Select {{strtoupper($student->mode_of_entry)!="LV"?"Semester":"Contact"}}</h4>
+                        <div class="volunteer-address">
+                            <ul>
+                                @if($student->courseRegistrationOpen($session,1) || $student->isPGStudent())
+                                    <li>
+                                        <div class="bg-light media border-bottom p-15 mb-20">
+                                            <div class="media-body">
+
+                                                <form method="POST"
+                                                      action="{{ route('courseregistration.index',[$session]) }}">
+                                                    @csrf
+                                                    <input type="hidden" name="activesemester"
+                                                           value="{{$activesemester}}"/>
+                                                    <input type="submit"
+                                                           class="activatesemester btn btn-theme-colored2 btn-flat"
+                                                           id="1"
+                                                           value="{{strtoupper($student->mode_of_entry)!="LV"?'First Semester':$student->sessionLevel($session)->short_name}}" {{ $activesemester==1?" disabled":"" }}/>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </li>
+                                @endif
+                                @if(strtoupper($student->mode_of_entry)!="LV")
+                                    @if($student->courseRegistrationOpen($session,2) || $student->isPGStudent())
+                                        <li>
+                                            <div class="bg-light media border-bottom p-15 mb-20">
+                                                <form method="POST"
+                                                      action="{{ route('courseregistration.index',[$session]) }}">
+                                                    @csrf
+                                                    <input type="hidden" name="activesemester"
+                                                           value="{{$activesemester}}"/>
+                                                    <input type="submit"
+                                                           class="activatesemester btn btn-theme-colored2 btn-flat"
+                                                           id="2"
+                                                           value="Second Semester" {{ $activesemester==2?" disabled":"" }}/>
+                                                </form>
+                                            </div>
+                                        </li>
+                                    @endif
+                                @endif
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="col-md-10">
+                        <h4 class="name font-24 mt-0 mb-0">Course Registration</h4>
+                        <div class="panel-group" id="accordion1" role="tablist" aria-multiselectable="true">
+                            <div class="panel panel-success">
+                                <div class="panel-heading btn-flat" role="tab" id="headingOne1"
+                                     style="background: #43B14B;color: #FFF;padding: 8px;">
+                                    <h4 class="panel-title">
+                                        <span class=" btn-flat"
+                                              style="color:#fff;">{{$programme->department()->faculty()->name}}</span>
+                                        <i class="fa fa-chevron-circle-right"></i>
+                                        <span class=" btn-flat"
+                                              style="color:#fff;">{{$programme->department()->name}}</span>
+                                        <i class="fa fa-chevron-circle-right"></i>
+                                        <span class=" btn-flat" style="color:#fff;">{{$programme->name}}</span>
+                                    </h4>
+                                </div>
+                                <div id="collapseOne1" class="panel-collapse collapse in" role="tabpanel"
+                                     aria-labelledby="headingOne1">
+                                    <div class="panel-body">
+                                        <div class="row">
+                                            <div class="col-sm-12">
+                                                <div class="card">
+                                                    <div class="card-body">
+                                                        @if(count($coursestoregister) +1 > 0 && $activesemester)
+                                                            <table class="table table-bordered table-condensed">
+                                                                <tr>
+                                                                    <th>Registration No</th>
+                                                                    <td>{{$student->matric_number}}</td>
+
+                                                                    <th>Fullname</th>
+                                                                    <td>
+                                                                        {{$student->getFullName()}} &nbsp;
+                                                                    </td>
+                                                                    <th>Application Number</th>
+                                                                    <td>{{$student->application_number}}</td>
+                                                                </tr>
+                                                                <tr>
+                                                                    <th>Session:</th>
+                                                                    <td>{{$sessionname}}</td>
+                                                                    @if(strtoupper($student->mode_of_entry)!="LV")
+                                                                        <th>Semester:</th>
+                                                                        <td>{{$activesemester==1?"First":"Second"}}</td>
+                                                                    @endif
+                                                                    <th>Level</th>
+                                                                    <td>{{$student->sessionLevel($session)->short_name}}</td>
+                                                                </tr>
+                                                            </table>
+                                                            <div class="row">
+                                                                <div class="col-md-12">
+                                                                    <div class="p-5 pull-left text-left">
+                                                                        <a href="#"
+                                                                           class="btn btn-flat btn-dark btn-theme-colored2 btn-sm"
+                                                                           id="showmorecourses-link">Show more
+                                                                            courses</a>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            <div class="row">
+                                                                <div class="col-md-12">
+                                                                    <div
+                                                                        class="panel panel-success filterable add_bottom_45">
+                                                                        <div class="panel-heading p-10">
+                                                                            <h2 class="panel-title text-left bold font-18">
+                                                                                Courses</h2>
+                                                                            <div class="pull-right">
+
+                                                                            </div>
+                                                                        </div>
+                                                                        <table
+                                                                            class="table table-bordered table-responsive table-striped"
+                                                                            id="courses-to-register-table">
+
+                                                                            <tr class="filters">
+                                                                                <td>S/N</td>
+                                                                                <td>Code</td>
+                                                                                <td style="width: 35%;">Title</td>
+                                                                                <td>Unit</td>
+                                                                                <td>Status</td>
+                                                                                <td>Info</td>
+                                                                                <td>Lecture</td>
+                                                                                <td>Lab</td>
+                                                                                <td></td>
+                                                                            </tr>
+                                                                            @php $do =0;@endphp
+                                                                                @foreach($coursestoregister as $coursetoregister)
+                                                                                        @php
+
+                                                                                            $course = $coursetoregister['course'];
+                                                                                            $lecturegroups = $coursetoregister['coursegroupslt'];
+                                                                                            $labgroups = $coursetoregister['coursegroupslb'];;
+
+                                                                                        @endphp
+                                                                                        @if(!is_null($course))
+                                                                                            {{--@if(isset($course))--}}
+                                                                                                <tr>
+                                                                                                    <td class="xCountx">{{$loop->index+1}}</td>
+                                                                                                    <td>{{$course->coursecode?:''}}</td>
+                                                                                                    <td>{{$course->coursetitle}}</td>
+                                                                                                    <td>{{$course->courseunit}}</td>
+                                                                                                    <td>{{$coursetoregister['coursestatus']}}</td>
+                                                                                                    <td>
+                                                                                                        <a class="course-info"
+                                                                                                           course_id="{{$course->id}}">
+                                                                                                            <i class="fa fa-info-circle"
+                                                                                                               style="line-height:3; color: blue;"></i>
+                                                                                                        </a>
+                                                                                                    </td>
+                                                                                                    <td>
+                                                                                                        <select name="" id=""
+                                                                                                                class="form-control lg">
+                                                                                                            @if(count($lecturegroups)>0)
+                                                                                                                <option value=""
+                                                                                                                        selected>--sel--
+                                                                                                                </option>
+                                                                                                                @foreach($lecturegroups as $lecturegroup)
+                                                                                                                    <option
+                                                                                                                        value="{{$lecturegroup->id}}">{{$lecturegroup->groupno}}</option>
+                                                                                                                @endforeach
+                                                                                                            @else
+                                                                                                                <option value=""
+                                                                                                                        selected>None
+                                                                                                                </option>
+                                                                                                            @endif
+                                                                                                        </select>
+                                                                                                    </td>
+                                                                                                    <td>
+                                                                                                        <select name="" id=""
+                                                                                                                class="form-control lg">
+                                                                                                            @if(count($labgroups)>0)
+                                                                                                                <option value=""
+                                                                                                                        selected>--sel--
+                                                                                                                </option>
+                                                                                                                @foreach($labgroups as $labgroup)
+                                                                                                                    <option
+                                                                                                                        value="{{$labgroup->id}}">{{$labgroup->groupno}}</option>
+                                                                                                                @endforeach
+                                                                                                            @else
+                                                                                                                <option value=""
+                                                                                                                        selected>None
+                                                                                                                </option>
+                                                                                                            @endif
+                                                                                                        </select>
+                                                                                                    </td>
+                                                                                                    <td>
+                                                                                                        <input type="checkbox"
+                                                                                                               class="register-course-chkbox"
+                                                                                                               course_id="{{$course->id}}"
+                                                                                                               lecture_group_id=""
+                                                                                                               lab_group_id>
+                                                                                                    </td>
+                                                                                                </tr>
+                                                                                            @endif
+
+                                                                                            @endforeach
+                                                                        </table>
+                                                                    </div>
+
+                                                                </div>
+                                                                <aside class="col-md-6">
+                                                                    <div
+                                                                        class=" box_style_1 profile pt-10 pl-10 text-left">
+                                                                        <p>
+                                                                            <a class="btn btn-flat btn-sm btn-success btn-theme-colored2"
+                                                                               href="{{route('courseregistration.print', ['category'=>'current', 'session'=>$session, 'semester'=>$activesemester])}}"
+                                                                               target="_blank"><i
+                                                                                    class="fa fa-print"></i> <span>Print course form</span></a>
+
+                                                                            <a class="btn btn-flat btn-sm btn-success btn-theme-colored2"
+                                                                               href="{{route('courseregistration.timetable', ['session'=>$session,'semester'=>$activesemester])}}"
+                                                                               target="_blank"><i
+                                                                                    class="fa fa-calendar"></i> <span>View timetable</span></a>
+                                                                        </p>
+                                                                    </div>
+                                                                </aside>
+                                                                <aside class="col-md-6">
+                                                                    <div class=" box_style_1 profile">
+
+                                                                        <table id="courses-preview-table"
+                                                                               class="table alert alert-success">
+                                                                            <tr>
+                                                                                <td>Code</td>
+                                                                                <td>Unit</td>
+                                                                                <td>Lecture/Lab</td>
+                                                                            </tr>
+                                                                            @foreach($coursesalreadyregistered as $key=>$coursegroup)
+                                                                                @php
+                                                                                   // var_dump($course);
+                                                                                    $course = explode(" &&& ", $key);
+                                                                                    if(count($course)<3){
+                                                                                        continue;
+                                                                                    }
+                                                                                    $coursecode = $course[0]; $courseunit = $course[2]; $course_id = $course[3];
+                                                                                @endphp
+                                                                                <tr class="preview-tr-{{$course_id}}">
+
+                                                                                    <td>{{$coursecode ?: "" }}</td>
+                                                                                    <td class='preview-course-unit'>{{$courseunit}}</td>
+                                                                                    <td>@php echo implode("/", $coursegroup->toArray()) @endphp</td>
+                                                                                </tr>
+                                                                            @endforeach
+                                                                        </table>
+                                                                        <div class="registration-req">
+                                                                            <table>
+                                                                                <tr>
+                                                                                    <td>
+                                                                                        Total Credit Units Registered:
+                                                                                    </td>
+                                                                                    <td class="tcur">
+                                                                                        5
+                                                                                    </td>
+                                                                                </tr>
+                                                                                <tr>
+                                                                                    <td>
+                                                                                        Maximum Credit Units
+                                                                                        Registrable:
+                                                                                    </td>
+                                                                                    <td class="mcur">
+                                                                                        {{$maxregistrationunit}}
+                                                                                    </td>
+                                                                                </tr>
+                                                                            </table>
+                                                                        </div>
+                                                                    </div><!-- End box-sidebar -->
+                                                                </aside>
+                                                            </div>
+                                                        @else
+                                                            <div class="row">
+                                                                <div class="col-md-12">
+                                                                    <div class="alert alert-light font-40" role="alert">
+                                                                        <i class="fa fa-long-arrow-left"></i>Select
+                                                                        semester to view courses.
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        @endif
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+
+    <!---------------------------------Bootstrap Dialogs ------------------------------------------->
+    <div class="modal" tabindex="-1" role="dialog" id="add-course-modal">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+                            aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title" id="myModalLabel">
+                        Add Course
+                        <div class="double-line-bottom-theme-colored-2"></div>
+                    </h4>
+                </div>
+                <div class="modal-body">
+                    <p class="coursedetails"></p>
+                    <p>
+                        Type in the <strong>course code</strong> in caps and click add
+                    </p>
+                    <p>
+                        <input type="text" name="coursecode">
+                        &nbsp;&nbsp;<span class="course_validation_error" style="color:red"></span>
+                        <input type="hidden" name="preview-tr-html">
+                    </p>
+                    <p>
+                        <input type="button" class="btn btn-theme-colored2 btn-flat" session="{{$session}}"
+                               semester="{{$activesemester}}" id="add-course-btn" style="width: 12%" value="Add"/>
+                        &nbsp;&nbsp;&nbsp;
+                        <input type="button" class="btn btn-secondary btn-flat" data-dismiss="modal" style="width: 12%"
+                               value="Cancel"/>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="modal" tabindex="-1" role="dialog" id="delete-course-modal">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+                            aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title" id="myModalLabel">
+                        Delete Course
+                        <div class="double-line-bottom-theme-colored-2"></div>
+                    </h4>
+                </div>
+                <div class="modal-body">
+                    <p class="coursedetails"></p>
+                    <p>
+                        Type in the <strong>course code</strong> in caps and click remove
+                    </p>
+                    <p>
+                        <input type="text" name="coursecode">
+                        &nbsp;&nbsp;<span class="course_validation_error" style="color:red"></span>
+                        <input type="hidden" name="preview-tr-html">
+                    </p>
+                    <p>
+                        <input type="button" class="btn btn-primary" id="delete-course-btn" value="Remove"/>
+                        &nbsp;&nbsp;&nbsp;
+                        <input type="button" class="btn btn-secondary" data-dismiss="modal" value="Cancel"/>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+    <div class="modal" tabindex="-1" role="dialog" id="showcourses_modal">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+                            aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title" id="myModalLabel">
+                        Show More Courses
+                        <div class="double-line-bottom-theme-colored-2"></div>
+                    </h4>
+                </div>
+                <div class="modal-body">
+                    <form method="POST" action="">
+                        @csrf
+
+                        <div class="form-group">
+                            <label>Faculty</label>
+                            <select name="faculty" id="faculty" class="form-control">
+                                <option>--select--</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Department</label>
+                            <select name="department" id="department" class="form-control">
+                                <option>--select--</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Level</label>
+                            <select name="courselevel" id="courselevel" class="form-control">
+                                <option>--select--</option>
+                                @foreach(\App\Models\Level::list() as $level)
+                                    <option value="{{$level->id}}">{{$level->short_name}}{{$level->prog_type_code=="PG"?"-".$level->prog_short_name:""}}</option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <div class="form-group" id="morecourses-dropdown">
+
+                        </div>
+                        <div id="morecourses-btn-div">
+
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+
+
+    <div class="modal" tabindex="-1" role="dialog" id="course-info-modal">
+        <div class="modal-dialog" role="document" style="width: 50%;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+                            aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title" id="myModalLabel">
+                        Course Information
+                        <div class="double-line-bottom-theme-colored-2"></div>
+                    </h4>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-12">
+                            <h5 id="course-info-details"></h5>
+                            <table class="table table-bordered table-condensed table-striped" id="course-info-table">
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="https://code.jquery.com/jquery-2.2.4.min.js"
+            integrity="sha256-BbhdlvQf/xTY9gja0Dq3HiwQF8LaCRTXxZKRutelT44=" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-migrate/1.4.1/jquery-migrate.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.0/js/bootstrap.min.js"></script>
+
+
+
+
+    @include("pages.student.courseregistration.jsfuncs")
+    @include("pages.student.courseregistration.jsrendercourseform")
+    @include("pages.student.courseregistration.jsshowmorecourses")
+    @include("pages.student.courseregistration.jsaddremovecourse")
+    @include("pages.student.courseregistration.jsgetcourseinfo")
+@endsection

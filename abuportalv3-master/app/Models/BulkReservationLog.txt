@@ -1,0 +1,45 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class BulkReservationLog extends Model
+{
+    use HasFactory;
+
+    protected $table = 'bulk_reservation_logs';
+
+    /**
+     * Mass assignable attributes
+     */
+    protected $fillable = [
+        'file_name',
+        'uploaded_by',
+        'total_rows',
+        'success_count',
+        'error_count',
+        'tmp_path',
+        'rows',
+        'errors',
+        'error_file_path',
+        'notes',
+    ];
+
+    /**
+     * Casts for JSON fields
+     */
+    protected $casts = [
+        'rows'   => 'array',
+        'errors' => 'array',
+    ];
+
+    /**
+     * Relationship: uploader (user who uploaded the file)
+     */
+    public function uploader()
+    {
+        return $this->belongsTo(User::class, 'uploaded_by');
+    }
+}

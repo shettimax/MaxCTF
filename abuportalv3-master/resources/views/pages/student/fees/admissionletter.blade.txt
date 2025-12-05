@@ -1,0 +1,356 @@
+<?php
+/**
+ * Created by PhpStorm.
+ * User: AD Umar
+ * Date: 22/06/2018
+ * Time: 22:42
+ */
+?>
+@extends('layout.student.master')
+
+@section('css')
+    <style type='text/css'>
+        .disableit{
+            opacity:0.3;
+        }
+        a > i.disableit:hover, a > i.disableit:link{
+            cursor: default;
+        }
+        #hedi{
+            font-size: 38px;
+        }
+        #refactions a{
+            margin-left: 3px;
+            margin-right: 3px;
+        }
+        @media print{
+            .main-nav, nav.navigation, ul.nav, #candformnav, div.bottom-footer, div.txnslipactions, div.right-side, img#remita-logo{display:none;}
+            h3#txnid{
+                text-align: right !important;
+            }
+            @page {
+                margin: 0cm;
+            }
+        }
+        @media print {
+
+            #cont {
+                background-color: white;
+                height: 100%;
+                width: 100%;
+                top: 0;
+                left: 0;
+                margin: auto auto;
+                padding: 15px;
+                font-size: 14px;
+                line-height: 18px;
+            }
+            .logo, #print{
+                display: none;
+            }
+
+            #inner{
+                width: 100%;
+            }
+
+            #footer-widget,header,footer, #sub-header,nav{
+                display:none;
+            }
+            .printX{
+                display: inline-block;
+            }
+            img{
+
+            }
+            #hedi{
+                font-size: 24px !important;
+                width: 100%;
+                color: #316f8f !important;
+            }
+            #main-features{
+                padding:0;
+            }
+            h4{
+                color: #316f8f !important;
+            }
+        }
+
+    </style>
+@endsection
+@section('content')
+    <?php $user = \Auth::user(); ?>
+    <?php
+        $biodata = $user->biodata();
+        $reg = $user->currentSession();
+        $dateStart = Carbon\Models\Carbon::parse($reg->startdate);
+        $dateEnd = Carbon\Models\Carbon::parse($reg->enddate);
+    ?>
+    @php
+        $nsukSession = $user->entrysession;
+        $registrar = \App\Models\Configuration::where(["name"=>"registrar"])->orderBy("created_at")->first();
+        $registrarPG = \App\Models\Configuration::where(["name"=>"secretary_pg"])->orderBy("created_at")->first();
+        $registrarPL = \App\Models\Configuration::where(["name"=>"secretary_pl"])->orderBy("created_at")->first();
+        if(strtoupper($user->modeofentry)=="PG")
+            $registrar = $registrarPG;
+        if(strtoupper($user->modeofentry)=="PL")
+            $registrar = $registrarPL;
+        if(strtoupper($user->modeofentry)=="IJMB")
+            $registrar = $registrarPL;
+
+
+        $duration = $user->programme()->duration*2;
+
+        $level = \App\Models\Level::where(['programmetypeid'=>$user->programme()->programmetypeid])->where('id','<',$user->entrylevel)->get();
+        $level_c = count($level);
+    @endphp
+    @if($user->modeofentry!='PG')
+    <div class="row">
+        <div class="col-md-12">
+            <div class="row">
+                <aside class="col-md-12">
+                    <div class="box_style_1 profile"  style="padding-bottom: 50px;">
+                        <table class="table">
+                            <tr>
+                                <td><p class="text-center printX"><img src="{{ asset('images/logo.png') }}" alt="Student:{{ $user->matricnumber }}" class="styled" width="150"></p></td>
+                                <td width="60%"><h4 id="hedi" style="color: #316f8f;font-weight: bold;border:none;" class="text-center">NASARAWA STATE UNIVERSITY, KEFFI</h4><h4  style="color: #316f8f;border: none;" class="text-center">P.M.B 1022 KEFFI</h4></td>
+                                <td><p class="text-center printX"><img src="{{ route('studentbiodata.photoupload',[time()]) }}" alt="Student:{{ $user->matricnumber }}" class="img-thumbnail styled" width="150"></p></td>
+                            </tr>
+                        </table>
+
+                        <div class="row">
+                            <div class="col-md-12">
+                                <table class="table table-bordered">
+                                    <thead>
+                                    <tr>
+                                        <th>Full Name:</th>
+                                        <td>{{ $user->getFullName() }}</td>
+                                        <th>Session:</th>
+                                        <td>{{$nsukSession}}/{{$nsukSession+1}}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Faculty:</th>
+                                        <td>{{ucwords($user->faculty()->name)}}</td>
+                                        <th>Department:</th>
+                                        <td>{{ ucwords($user->department()->name) }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Programme</th>
+                                        <td>{{ucwords($user->programme()->name)}}</td>
+                                        <th>State of Origin</th>
+                                        <td>{{ucwords($user->state()->statename)}}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Mode of Entry</th>
+                                        <td>{{ $user->modeofentry=="PG"?"Postgraduate":\App\Models\ProgrammeType::where(["progtypecode"=>$user->modeofentry])->first()->progtypename }}</td>
+                                        <th>Reg. No</th>
+                                        <td>{{$user->applicationnumber}}</td>
+                                    </tr>
+                                    </thead>
+                                </table>
+                            </div>
+                            <div class="col-md-12">
+                                <h4 class="text-center text-capitalize" style="font-weight: bold;font-size: 28px;">Provisional Admission Letter</h4>
+                                <div style="font-size: 13px;">
+                                    <ol>
+                                        <li>I am pleased to inform you that you have been offered provisional admission into the  {{strtoupper($user->modeofentry)=="IJMB"?'preliminary':'degree'}} programme of Nasarawa State University, Keffi for the {{ $nsukSession }}/{{ $nsukSession+1 }}
+                                            Academic year as detailed above.
+                                            <p></p>
+                                        </li>
+                                        <li>
+                                            Please note that the duration of your Programmes in the University is <strong>{{ intval($user->programme()->duration)-$level_c }} Year{{$user->programme()->duration-$level_c>1?"s":""}}</strong><p></p>
+                                            @php $amount = $user->sessionFees(intval($user->entrysession))["total"];  @endphp
+                                        </li>
+                                        <li>
+                                            Registration commences from {{ $dateStart->day ." ".$dateStart->englishMonth." ".$dateStart->year }} and you are required to come along with the following:
+                                            <p></p>
+                                            <ol type="A">
+                                                <li>Original copies of all your certificates</li>
+                                                <li>
+                                                    Fees:
+                                                    <table class="table table-bordered">
+                                                        <thead>
+                                                        <tr>
+                                                            <th>ENTRY LEVEL</th>
+                                                            <th>INDIGENES/NON-INDIGENES</th>
+                                                            <th>Arts/Humanities/Sciences</th>
+                                                            <th>Amount</th>
+                                                        </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                        <tr>
+                                                            <td>{{ \App\Models\Level::find($user->entrylevel)->level}}</td>
+                                                            <td>{{ $user->state()->id==25?"Indigene":"Non-Indigene" }}</td>
+                                                            <td>{{ ucwords($user->faculty()->name)}}</td>
+                                                            <td>&#8358;{{$amount}}</td>
+                                                        </tr>
+
+                                                        </tbody>
+                                                    </table>
+                                                </li>
+                                                <li>
+                                                    A medical certificate of fitness from Nasarawa State University clinic.
+                                                </li>
+                                                <li>
+                                                    {{strtoupper($user->modeofentry)=="IJMB"?"Four":"Ten"}} recent passport sized photographs.
+                                                </li>
+                                            </ol>
+                                            <p></p>
+                                        </li>
+                                        <li>
+                                            Note that this offer of Admission lapses after two weeks.
+                                        </li>
+                                    </ol>
+                                    <p>
+                                        Please, accept my congratulations.
+                                    </p>
+                                    <p style="padding-left: 80px;">
+                                        <img src="{{asset('images/registrars/'.$registrar->id.'.png')}}" alt="" height="64">
+                                    </p>
+                                    <h5>{{$registrar->config}}</h5>
+                                    @if(strtoupper($user->modeofentry)=="PG")
+                                        <h5>Secretary, SPGS</h5>
+                                    @elseif(strtoupper($user->modeofentry)=="PL" || strtoupper($user->modeofentry)=="IJMB" )
+                                        <h5>Director School of Preliminary and Remedial Studies.(SPRS)
+                                        </h5>
+                                    @else
+                                        <h5>Registrar</h5>
+                                    @endif
+                                </div>
+                                <div class="text-center ">
+                                    <a class="button_medium_outline" id="print">Print Admission Letter</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div><!-- End box-sidebar -->
+                </aside><!-- End aside -->
+            </div><!-- End row -->
+
+        </div>
+    </div><!-- End row-->
+    @else
+        <div class="row">
+        <div class="col-md-12">
+            <div class="row">
+                <aside class="col-md-12">
+                    <div class="box_style_1 profile"  style="padding-bottom: 50px;">
+                        <table class="table">
+                            <tr>
+                                <td><p class="text-center printX"><img src="{{ asset('images/logo.png') }}" alt="Student:{{ $user->matricnumber }}" class="styled" width="150"></p></td>
+                                <td width="60%">
+                                    <h4 id="" style="color: #316f8f;font-weight: bold;border:none;" class="text-center">SCHOOL OF POSTGRADUATE STUDIES</h4>
+                                    <h4 id="hedi" style="color: #316f8f;font-weight: bold;border:none;" class="text-center">NASARAWA STATE UNIVERSITY, KEFFI</h4>
+                                    <h4  style="color: #316f8f;border: none;" class="text-center">P.M.B 1022 KEFFI</h4>
+                                </td>
+                                <td><p class="text-center printX"><img src="{{ route('studentbiodata.photoupload',[time()]) }}" alt="Student:{{ $user->matricnumber }}" class="img-thumbnail styled" width="150"></p></td>
+                            </tr>
+                        </table>
+
+                        <div class="row">
+                            <div class="col-md-12">
+                                <h4 style="color: #316f8f;font-weight: bold;border:none;">
+                                    {{$user->surname}}, {{$user->firstname}} {{$user->othernames}}
+                                </h4>
+                                <h4 style="color: #316f8f;font-weight: bold;border:none;">{{$user->matricnumber}}</h4>
+
+                            </div>
+                            <div class="col-md-12">
+                                <div class="text-center text-capitalize" style="font-weight: bold;font-size: 19px;">OFFER OF PROVISIONAL ADMISSION</div>
+                                <div class="text-center text-capitalize" style="font-weight: bold;font-size: 19px;">{{ucwords($user->programme()->name)}}</div>
+                                <div style="font-size: 13px;">
+                                    @php
+                                        $message = "DOCTOR OF PHILOSOPHY (Ph.D)";
+                                        $ext = 3;
+                                        $programme = $user->programme();
+                                        switch ($programme->programmetypeid){
+                                            case 5:$message = "POSTGRADUATE DIPLOMA (PGD)"; $ext = 2;break;
+                                            case 6:$message = "MASTER OF SCIENCE (M.SC.)";$ext = 2;break;
+                                            case 7:$message = "MASTERS";$ext=2;break;
+                                            case 8:$message = "MASTER OF PHILOSOPHY (M.PHIL)";$ext=2;break;
+                                            case 9:$message = "DOCTOR OF PHILOSOPHY (Ph.D)";$ext=4;break;
+                                        }
+                                    if( strpos(strtoupper($programme->name),'M.ED') !==false){
+                                        $message = "MASTER OF EDUCATION (M.ED.)";
+                                    }
+                                    if( strpos(strtoupper($programme->name),'M.A') !==false){
+                                        $message = "MASTER OF ART (M.A.)";
+                                    }
+                                    if( strpos(strtoupper($programme->name),'LLM') !== false){
+                                        $message = "MASTER OF LAW (LL.M.)";
+                                    }
+
+                                    $duration = $user->programme()->duration*2;
+
+                                    $level = \App\Models\Level::where(['programmetypeid'=>$user->programme()->programmetypeid])->where('id','>',$user->entrylevel)->get();
+                                    $level_c = count($level);
+                                    @endphp
+                                    <ol>
+                                        <li>I am pleased to inform you that you have been offered provisional admission to pursue {{ $user->programme()->mode=='Academic'?'FULL TIME':'PART TIME' }} {{ $message }}
+                                            in the {{$nsukSession}}/{{$nsukSession+1}} Academic Session.
+
+                                            <p></p>
+                                        </li>
+                                        <li>
+                                            Minimum duration for the programme is {{ ($user->programme()->duration*2)-($level_c*2) }} Semesters and maximum number of semesters allowed is {{ ($user->programme()->duration*2) + $ext }} .
+
+                                        </li>
+                                        <li>
+                                            The total fee chargeable for the programme should be paid in full at the beginning of each academic session <strong style="font-style: italic;">until you submit your
+                                                research project which must be within the maximum number of semesters allowed for your programme.</strong>
+
+                                        </li>
+                                        <li>
+                                            Please refer to the registration procedure on portal.nsuk.edu.ng Registration will commence on {{ $dateStart->day ." ".$dateStart->englishMonth." ".$dateStart->year }}  .
+                                        </li>
+                                        <li>
+                                            On acceptance of this offer, please be informed that the original copies of your credentials will be scrutinised during registration. If it is established at any stage of the registration that the information given at the point of application is false, you will be withdrawn from the programme without the option of refund of school fees.
+                                        </li>
+                                    </ol>
+                                    <p>
+                                        Accept our hearty congratulations!
+                                    </p>
+                                    <p style="padding-left: 80px;">
+                                        <img src="{{asset('images/registrars/'.$registrar->id.'.png')}}" alt="" height="64">
+                                    </p>
+                                    <h5>{{$registrar->config}}</h5>
+
+                                    @php
+                                        if(strtoupper($user->modeofentry)=="PG")
+                                           echo '<h5>Secretary, SPGS</h5>';
+                                       else if(strtoupper($user->modeofentry)=="PL")
+                                          echo "
+                                           <h5>Director School of Preliminary and Remedial Studies(SPRS).
+                                           </h5>";
+                                        else if(strtoupper($user->modeofentry)=="IJMB")
+                                           echo "<h5>Director School of Preliminary and Remedial Studies(SPRS).
+                                           </h5>";
+                                       else
+                                           echo '<h5>Registrar</h5>';
+                                    @endphp
+
+
+                                </div>
+                                <div class="text-center ">
+                                    <a class="button_medium_outline" id="print">Print Admission Letter</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div><!-- End box-sidebar -->
+                </aside><!-- End aside -->
+            </div><!-- End row -->
+
+        </div>
+        </div><!-- End row-->
+    @endif
+
+@endsection
+
+@section('js')
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+    <script type='text/javascript'>
+        $('body').on('click','#print',function(){
+            window.print();
+        });
+    </script>
+@endsection

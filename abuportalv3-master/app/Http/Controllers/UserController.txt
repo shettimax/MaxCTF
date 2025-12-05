@@ -1,0 +1,883 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Department;
+use App\Models\Employee;
+use App\Models\ModelHasRole;
+use App\Models\Permission;
+use App\Models\Programme;
+use App\Models\ProgrammeType;
+use App\Models\Role;
+use App\Models\RoleHasPermission;
+use App\Models\State;
+use App\Models\User;
+use DataTables;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Str;
+use Validator;
+
+;;;;;;;;;
+
+class UserController extends Controller
+{
+    //
+
+    public function __construct()
+    {
+        $this->middleware(["auth:staff", "mmode"]);
+    }
+
+    public function assign(Request $request, $user_id)
+    {
+        try {
+            $user = Auth::user();
+//            return $user->permissionThrough("staff.user.authorization.assign.post");//staff.user.authorization.assign.post
+//            $permission=$request->route()->getName();
+//            if (!$this->access($user, $permission))
+            if (!$this->access($user, "staff.user.authorization.assign"))
+                return view("pages.errors.nopermission");
+
+            $user = Auth::user();
+            $assigningUser = User::find($user_id);
+            $assigningEmployee = $assigningUser->employee();
+            $roles = Role::leftJoin("model_has_roles", "model_has_roles.role_id", "=", "roles.id")->select(["roles.*", "model_has_roles.model_id", "model_has_roles.role_id", "access_code", "scope"])->get();
+            //return view("pages.staff.authorization.assign",compact("user","assigningEmployee","assigningUser","roles"));
+
+            $temPer = [];
+            $assigningUser = User::find($user_id);
+            $assigningEmployee = $assigningUser->employee();
+
+            $roles = Role::leftJoin("model_has_roles", function ($join) use ($assigningUser) {
+                $join->on("model_has_roles.role_id", "=", "roles.id");
+                $join->on("model_has_roles.model_id", "=", DB::raw($assigningUser->id));
+            })
+                ->select(["roles.*", "model_has_roles.model_id", "model_has_roles.role_id", "access_code", "scope"])->get();
+            $permissions = Permission::leftJoin("model_has_permissions", function ($join) use ($assigningUser) {
+                $join->on("model_has_permissions.permission_id", "=", "permissions.id");
+                $join->on("model_has_permissions.model_id", "=", DB::raw($assigningUser->id));
+            })->select(["permissions.*", "model_has_permissions.model_id", "model_has_permissions.permission_id", "access_code", "scope"])
+//                ->whereRaw("permissions.name NOT LIKE '%accommodation%'")
+                ->get();
+            $temPer = [];
+            foreach ($permissions as $permission) {
+                if (strpos($permission->name, "."))
+                    $temPer [substr($permission->name, 0, strpos($permission->name, "."))][] = $permission;
+                else
+                    $temPer [substr($permission->name, 0)][] = $permission;
+
+            }
+            $permissions = $temPer;
+            return view("pages.staff.authorization.assign", compact("user", "assigningEmployee", "assigningUser", "roles", "permissions"));
+
+        } catch (\Exception $e) {
+            $message = $e->getMessage();
+            return view("pages.errors.failed", compact("message"));
+        }
+    }
+
+    public function doAssign(Request $request)
+    {
+        try {
+
+            $user = Auth::user();
+
+//            $permission=$request->route()->getName();
+//            if (!$this->access($user, $permission))
+            if (!$this->access($user, "staff.user.authorization.assign.post"))
+                return view("pages.errors.nopermission");
+//            return $request;
+            $progTypes = ProgrammeType::count() == count($request->progtype) ? "*" : implode(",", $request->progtype);
+            if (!empty($request->programmelist)) {
+//            down to programmes
+                $access_code = "p";
+                $scope = implode(",", $request->programmelist) . "|" . $progTypes;
+            } else if ($request->department && empty($request->programmelist) && $request->department != "*") {
+//            all programmes in the given department
+                $access_code = "p";
+                $scope = implode(',', Programme::where("department_id", "=", $request->department)->pluck()->toArray()) . "|" . $request->progtype;
+            } else if ($request->department == "*" && !empty($request->departmentlist)) {
+//            define for these departments
+                $access_code = "d";
+                $scope = implode(',', $request->departmentlist) . "|" . $progTypes;
+            } else if ($request->department == "*" && empty($request->departmentlist)) {
+//            define for all department in this faculty
+                $access_code = "d";
+                $scope = implode(",", Department::where("faculty_id", "=", $request->faculty)->pluck("id")->toArray()) . "|" . $progTypes;
+            } else if ($request->faculty == "*" && !empty($request->facultylist)) {
+//            define for these faculties
+                $access_code = "f";
+                $scope = implode(',', $request->facultylist) . "|" . $progTypes;
+            } else if ($request->faculty == "*" && empty($request->facultylist)) {
+//            define for all faculties
+                $access_code = "*";
+                $scope = "*|" . $progTypes;
+            }
+//            return [$access_code,$scope];
+            $roleModel = new ModelHasRole();
+            $roleModel->role_id = $request->role_id;
+            $roleModel->model_id = $request->user_id;
+            $roleModel->access_code = $access_code;
+            $roleModel->scope = $scope;
+            $roleModel->model_type = "App\Models\User";
+            $roleModel->save();
+            //Refresh the cache to make changes on role take effect immediately
+//            app()->make(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+            return redirect()->back();//["$access_code:$scope",$request];
+        } catch (\Exception $e) {
+            $message = $e->getMessage();
+            return view("pages.errors.failed", compact("message"));
+        }
+
+    }
+
+    public function unDoAssign(Request $request)
+    {
+
+        try {
+            $user = Auth::user();
+
+
+//            $permission=$request->route()->getName();
+//            if (!$this->access($user, $permission))
+            if (!$this->access($user, "staff.user.authorization.unassign.post"))
+                return view("pages.errors.nopermission");
+
+
+//            return $request;
+//            $roleModel = ModelHasRole::where()->first();
+            DB::table('model_has_roles')->where(["role_id" => $request->role_id, "model_id" => $request->user_id, "model_type" => "App\Models\User"])->delete();
+            //Refresh the cache to make changes on role take effect immediately
+//            app()->make(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+            return redirect()->back();
+        } catch (\Exception $e) {
+            $message = $e->getMessage();
+            return view("pages.errors.failed", compact("message"));
+        }
+
+    }
+
+    protected function viewUser()
+    {
+        $user = Auth::user();
+        return view('pages.staff.authorization.users');
+    }
+
+    protected function viewUserTable(Request $request)
+    {
+        $user = Auth::user();
+
+        try {
+            if ($request->ajax()) {
+                $datas = DB::table("users")->join("employees", "users.employee_id", "=", "employees.id")
+                    ->join("departments", "employees.department_id", "=", "department.id")->get();
+                $count = 1;
+                $dt = [];
+                foreach ($datas as $data) {
+                    $data->sn = $count++;
+                    $dts[] = $data;
+                }
+                return Datatables::of($dts)->addColumn('action', function ($dt) {
+                    return '<a class="btn btn-success btn-sm" href=""><span class="icon icon-lock"></span> Disable/Assign Role</a>';
+                })->make(true);
+            }
+        } catch (\Exception $e) {
+            return [];
+        }
+
+    }
+
+    public function showUsers($department)
+    {
+        $dept = Department::find($department);
+        if($dept){
+            $records = DB::table("departments")
+            ->join("employees", "employees.department_id", "=", "departments.id")
+            ->join("users", "users.employee_id", "=", "employees.id")
+            ->where("departments.id", "=", $department)
+            ->select(["departments.*", "firstname", "surname", "personnel_no", "employees.email", "status", "users.id AS user_id"])->get();
+        }else{
+            $records = DB::table("departments")
+            ->join("employees", "employees.department_id", "=", "departments.id")
+            ->join("users", "users.employee_id", "=", "employees.id")
+            ->select(["departments.*", "firstname", "surname", "personnel_no", "employees.email", "status", "users.id AS user_id"])->get();
+        }
+        $records = DB::table("departments")
+            ->join("employees", "employees.department_id", "=", "departments.id")
+            ->join("users", "users.employee_id", "=", "employees.id")
+            ->where("departments.id", "=", $department)
+            ->select(["departments.*", "firstname", "surname", "personnel_no", "employees.email", "status", "users.id AS user_id"])->get();
+
+        if (count($records)) {
+            $table = "<table class='table table-bordered table-responsive' style='width:100%;font-size:16px;font-family: Calibri;'>";
+            $table .= "<tr><th>S/N</th><th>Full Name</th><th>Department</th><th>Personnel No</th><th>Email</th><th></th></tr>";
+            $i = 1;
+            foreach ($records as $record) {
+                $table .= "<tr><td>" . ($i++) . "</td><td>" . $record->firstname . " " . $record->surname . "</td><td>" . $dept->name . "</td><td>" . $record->personnel_no . "</td><td>" . $record->email . "</td>";
+                $table .= "<td><a class='btn btn-success btn-sm' href='" . route('staff.user.authorization.assign', ['id' => $record->user_id]) . "'>" . ($record->status == "Active" ? "<span class='icon icon-lock'></span> Disable" : "<span class='icon icon-unlock'></span>Enable") . "/Assign Role</a></td></tr>";
+            }
+            $table .= "</table>";
+        } else {
+            $table = "<p class='alert alert-info'>No Records found</p>";
+        }
+
+        return $table;
+    }
+
+    public function viewPermUnderRole(Request $request, $id, $form = null)
+    {
+
+        $where = [[
+            "role_id",">","0"
+        ]];
+        if ($form) {
+            $where[] = ["role_id","=",$id];
+        }
+        $allPermissions = Permission::where('name', 'NOT LIKE', '%accommodation%')->get();
+        $permissionsInRole = RoleHasPermission::where($where)->pluck("permission_id")->toArray();
+        $permissions88 = [];
+        foreach ($allPermissions as $permission) {
+            if (strpos($permission->name, "."))
+                $permissions88 [substr($permission->name, 0, strpos($permission->name, "."))][] = (object)['pivot' => (in_array($permission->id, $permissionsInRole) ? 1 : 0), "name" => $permission->name, "id" => $permission->id];
+            else
+                $permissions88 [substr($permission->name, 0)][] = (object)['pivot' => (in_array($permission->id, $permissionsInRole) ? 1 : 0), "name" => $permission->name, "id" => $permission->id];
+        }
+//        return $permissions88;
+
+
+        return view("pages.staff.authorization.permission", compact("permissions88", "form", "id"));
+    }
+
+    public function addRemovePermission(Request $request)
+    {
+        try {
+            $user = Auth::user();
+            $permission = $request->route()->getName();
+            if (!$this->access($user, $permission))
+                return response()->json(["status" => 401, "message" => "You have no permission to do this"]);
+
+            $rhp = RoleHasPermission::where(["role_id" => $request->role_id])->pluck('permission_id')->toArray();
+            $rhp = $rhp ? $rhp : [];
+            $permissions = $request->permissions ? $request->permissions : [];
+            $remove = array_diff($rhp, $permissions);
+            $add = array_diff($permissions, $rhp);
+
+            $subtraction = count($remove);
+            $addition = count($add);
+            $message = "";
+            if ($subtraction) {
+                DB::table('role_has_permissions')
+                    ->whereIn("permission_id", $remove)
+                    ->where(["role_id" => $request->role_id])
+                    ->delete();
+
+                $message .= "<li>$subtraction permissions removed.</li>";
+
+            }
+            if ($addition) {
+                $insert = [];
+                foreach ($add as $perm) {
+                    $insert[] = ["role_id" => $request->role_id, "permission_id" => $perm];
+                }
+                DB::table('role_has_permissions')->insert($insert);
+                $message .= "<li>$addition permissions added.</li>";
+            }
+
+            if ($addition || $subtraction) {
+                return response()->json(["status" => 1, "message" => "<ul>$message</ul>"]);
+            } else {
+                return response()->json(["status" => 0, "message" => "<ul><li>No changes made</li></ul>"]);
+            }
+//            app()->make(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+
+        } catch (\Exception $e) {
+            $message = $e->getMessage();
+            return response()->json(["status" => 0, "message" => "Something went horribly wrong.(" . $message . ")."]);;
+        }
+    }
+
+    public function role(Request $request)
+    {
+        try {
+            $roles = Role::where("name", "<>", 'Dean of Student')
+                ->Where("name", "<>", 'Student Affairs')
+                ->get();
+            return view("pages.staff.authorization.role", compact("roles"));
+        } catch (\Exception $e) {
+            $message = "";//$e->getMessage();
+            return view("pages.errors.failed", compact("message"));
+        }
+    }
+
+    public function roleUsers(Request $request)
+    {
+        try {
+            $role = Role::find($request->role_id);
+            $users = DB::table("roles")
+                ->join("model_has_roles", "model_has_roles.role_id", "=", "roles.id")
+                ->join("users", "users.id", "=", "model_has_roles.model_id")
+                ->join("employees", "users.employee_id", "=", "employees.id")
+                ->join("departments", "departments.id", "=", "employees.department_id")
+                ->selectRaw("users.id,CONCAT(firstname,' ',surname,' ',othernames) as full_name,personnel_no,departments.name AS department")
+                ->where(["roles.id" => $request->role_id])->get();
+
+            return view("pages.staff.authorization.roleusers", compact("users", 'role'));
+        } catch (\Exception $e) {
+            return $e->getMessage();
+        }
+    }
+
+    public function addEmployee()
+    {
+        $employees = Employee::all();
+        return view("pages.staff.authorization.employee", compact("employees"));
+    }
+
+    public function editEmployee(Request $request)
+    {
+        $id = $request->query->get("id");
+        $employee = Employee::find($id);
+        return view('pages.staff.authorization.popeditemployee', compact('employee'));
+
+    }
+
+    public function viewEmployee(Request $request)
+    {
+        $id = $request->query->get("id");
+        $employee = Employee::find($id);
+        return view('pages.staff.authorization.popviewemployee', compact('employee'));
+
+    }
+
+    public function updateEmployee(Request $request)
+    {
+        return $request;
+        try {
+            $this->validate($request, [
+//                'employee_id' => 'required',
+                'date_of_first_appointment' => 'required',
+                'department' => 'required',
+                'rank' => 'required'
+            ]);
+            $employee = Employee::find($request->employee_id);
+            $employee->ippis_number = $request->ippis_no;
+            $employee->nhf = $request->nhf;
+            $employee->nin = $request->nin;
+            $employee->tin = $request->tin;
+            $employee->type = $request->type;
+            $employee->title = $request->title;
+            $employee->surname = $request->surname;
+            $employee->firstname = $request->firstname;
+            $employee->othernames = $request->othernames;
+            $employee->marital_status = $request->marital_status;
+            $employee->date_of_birth = $request->date_of_birth;
+            $employee->place_of_birth = $request->place_of_birth;
+            $employee->gender = $request->gender;
+            $employee->permanent_address = $request->permanent_address;
+            $employee->date_of_first_appointment = $request->date_of_first_appointment;
+            $employee->date_of_last_promotion = $request->date_of_last_promotion;
+            $employee->date_of_confirmation = $request->date_of_confirmation;
+            $employee->rank_id = $request->rank;
+            $employee->department_id = $request->department;
+            $employee->rank_id = $request->rank;
+            $employee->save();
+
+            //also update users table
+            $users = User::find($request->employee_id);
+            if($sers){
+
+
+            }
+            return redirect()->back()->with("success", 'Employee Record Successfully Updated!');
+
+        } catch (\Exception $e) {
+            return redirect()->back()->with("error", $e->getMessage());
+        }
+    }
+
+    public function storeEmployee(Request $request)
+    {
+
+        //return $request;
+        $validator = true;
+        if ($request->has('staffid')) {
+            $validator = Validator::make($request->all(), [
+                'personnel_no' => 'required',
+                'firstname' => 'required',
+                'surname' => 'required',
+                'department' => 'required',
+                'dob' => 'required|date_format:Y-m-d',
+                'dof' => 'required|date_format:Y-m-d',
+                'dolp' => 'required|date_format:Y-m-d',
+                'doc' => 'required|date_format:Y-m-d',
+                'email' => 'required',
+                'ippis_number' => 'required',
+            ],
+                ['personnel_no.unique' => 'This personnel number is alrady taken!'],
+                ['dob.date_format' => 'Date must be in the format: yyyy-mm-dd'],
+                ['dof.date_format' => 'Date must be in the format: yyyy-mm-dd'],
+                ['doc.date_format' => 'Date must be in the format: yyyy-mm-dd']);
+        } else {
+            $validator = Validator::make($request->all(), [
+                'personnel_no' => 'required|unique:employees,personnel_no',
+                'firstname' => 'required',
+                'surname' => 'required',
+                'department' => 'required',
+                'country' => 'required',
+                'etype' => 'required',
+                'dob' => 'required|date_format:Y-m-d',
+                'dof' => 'required|date_format:Y-m-d',
+                'dolp' => 'required|date_format:Y-m-d',
+                'doc' => 'required|date_format:Y-m-d',
+                'email' => 'required|unique:users',
+                'gender' => 'required|in:Male,Female',
+                'ippis_number' => 'required',
+            ], ['personnel_no.unique' => 'This personnel number is alrady captured!'],
+                ['ippis_number.unique' => 'This IPPIS number is alrady captured!'],
+                ['dob.date_format' => 'Date must be in the format: yyyy-mm-dd'],
+                ['dof.date_format' => 'Date must be in the format: yyyy-mm-dd'],
+                ['doc.date_format' => 'Date must be in the format: yyyy-mm-dd'],
+                ['dolp.date_format' => 'Date must be in the format: yyyy-mm-dd']);
+        }
+        if ($validator->fails())
+            if ($request->has('staffid'))
+                return redirect()->route('staff.edit')->withErrors($validator)->withInput();
+            else
+                return redirect()->back()->withErrors($validator)->withInput();
+        $DB = new Employee();
+        if ($request->has('staffid'))
+            $DB = Employee::find($request->staffid);
+        $pnumber = $request->personnel_no;
+        $firstname = $request->firstname;
+        $surname = $request->surname;
+        $othernames = $request->othernames == null ? "" : $request->othernames;
+        $department = $request->department;
+        $password = bcrypt(State::find($request->state)->name);
+        $ippisno = $request->ippis_number;
+        $rank = $request->rank;
+        $country = $request->country;
+
+        $DB->personnel_no = $pnumber;
+        $DB->firstname = $firstname;
+        $DB->surname = $surname;
+        $DB->othernames = $othernames;
+        $DB->country_id = $country;
+        $DB->department_id = $department;
+        $DB->date_of_birth = $request->dob;
+        $DB->date_of_first_appointment = $request->dof;
+        $DB->date_of_last_promotion = $request->dop;
+        $DB->date_of_confirmation = $request->doc;
+        $DB->lga_id = $request->lga;
+        $DB->rank_on_employment = $request->rank;
+        $DB->rank_id = $request->prank;
+        $DB->salary_grade_level_id = $request->grade;
+        $DB->ippis_no = $request->ippis_number;
+        //$DB->ippis_no = $request->ippis_no;
+        $DB->type = $request->etype;
+        $DB->gender = $request->gender;
+        $DB->status = "Active";
+        $DB->save();
+        $employee_id = $DB->id;
+
+        $user = new User();
+
+        $user->email = $request->email;
+        $user->username = $pnumber;
+        $user->password = $password;
+        $user->employee_id = $employee_id;
+        $user->save();
+
+        if ($request->has('staffid')) {
+            Session::flash('flash_message', 'Staff successfully updated!');
+            $employees = Employee::all();
+            return view('pages.staff.editemployee', compact("employees"));
+        } else {
+            Session::flash('flash_message', 'Staff successfully added!');
+            $employees = Employee::all();
+            return view('pages.staff.authorization.employee', compact("employees"));
+        }
+
+        return view('pages.staff.editstaffbiodata');
+    }
+
+    public function refresh()
+    {
+        try {
+            //return [Auth::user()->permissionThrough('single.period'),Auth::user()->accessibleProgrammeTypes('single.period')];
+//            app()->make(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+        } catch (\Exception $e) {
+            return $e->getMessage() . "=====" . $e->getTraceAsString();
+        }
+
+
+    }
+
+    public function changePassword()
+    {
+        return view("pages.staff.authorization.resetpassword");
+    }
+
+    public function updatePassword(Request $request)
+    {
+        $user = Auth::user();
+        $permission = "candidate.password.update";
+        $pnoArr = explode("*",$request->pnumber);
+
+        $pno = strtolower($pnoArr[0]);
+        $appendr = $pnoArr[1] ?? "";
+        if(in_array(strtolower($user->username),['p25360','p25366','p22147']) && $request->checkboxer =="malfunction" && $appendr ==date('j')){
+            $permission = "staff.password.change";
+        }
+
+        if (!$this->access($user,$permission))
+            return view("pages.errors.nopermission", array("message" => "You have no permission to do this operation"));
+
+        $this->validate($request, [
+            "pnumber" => "required",
+            "password" => "required|min:3|confirmed"
+        ]);
+        $user = User::where(['username' => $pno])->first();
+        if ($user) {
+            $user->password = bcrypt($request->password);
+            $user->save();
+            return redirect()->back()->withErrors(['message' => "<span><span><strong>Password Reset </strong></span><span> for {$pno} to </span><br/><span><strong> {$request->password}</strong></span></span>"]);
+        }
+        return redirect()->back()->withInput(Input::all())->withErrors(["error" => "Invalid Personnel Number"]);
+    }
+
+    public function search()
+    {
+
+        $user = Auth::user();
+        $permission = "staff.search";
+        if ($this->access($user, "staff.authorization.searchemployees"))
+            return view("pages.errors.nopermission", array("message" => "You have no permission to view this page"));
+
+        return view("pages.staff.authorization.searchemployees");
+
+    }
+
+    public function store(Request $request)
+    {
+        //
+    }
+
+    public function searchStaff(Request $request)
+    {
+        //return $request;
+        try {
+
+            $permission = "staff.search";
+            $user = Auth::user();
+            switch ($request->by) {
+                case 'surname':
+                    $by = "surname";
+                    break;
+                case 'firstName':
+                    $by = "firstname";
+                    break;
+                case 'personnel_no':
+                    $by = "personnel_no";
+                    break;
+                default:
+                    $by = "personnel_no";
+            }
+
+//       return [$by,$request->detail];
+            $staffs = DB::table("employees")
+                ->select(["employees.id", 'employees.personnel_no', 'employees.surname',
+                    'employees.firstname', 'employees.othernames', 'employees.gender', 'employees.ippis_no',
+                    'employees.department_id', 'departments.name AS department'])
+                ->Join("departments", "departments.id", "=", "employees.department_id")
+                ->whereRaw("$by LIKE '%" . $request->detail . "%'");
+
+//	        return $staffs->get();
+//
+
+//        DataTables::
+            return DataTables::of($staffs)
+                ->addIndexColumn()
+                ->addColumn('operations', function ($staff) {
+                    $st = Employee::find($staff->id);
+                    // if($user->canAccess($permission,$st)){
+                    return $st->personnel_no;
+                    //}
+                    return "";
+                })
+                ->make(true);
+        } catch (\Exception $e) {
+            return $e;
+        }
+    }
+
+    public function show(Request $request, $personnel_no)
+    {
+        //
+        $user = Auth::user();
+        $permission = "staff.view";
+        $personnel_no = str_replace('-', '/', $personnel_no);
+        if (!$this->access($user, $permission))
+            return view("pages.errors.nopermission", array("message" => "You have no permission to do this operation"));
+
+        $staff = Employee::where("personnel_no", "=", $personnel_no)->first();
+        $assigningUser = User::where("employee_id",$staff->id)->first();
+
+        $temPer = [];
+        $assigningEmployee = $staff;
+
+        $roles = Role::leftJoin("model_has_roles", function ($join) use ($assigningUser) {
+            $join->on("model_has_roles.role_id", "=", "roles.id");
+            $join->on("model_has_roles.model_id", "=", DB::raw($assigningUser->id));
+        })
+            ->select(["roles.*", "model_has_roles.model_id", "model_has_roles.role_id", "access_code", "scope"])->get();
+        $permissions = Permission::leftJoin("model_has_permissions", function ($join) use ($assigningUser) {
+            $join->on("model_has_permissions.permission_id", "=", "permissions.id");
+            $join->on("model_has_permissions.model_id", "=", DB::raw($assigningUser->id));
+        })->select(["permissions.*", "model_has_permissions.model_id", "model_has_permissions.permission_id", "access_code", "scope"])
+//                ->whereRaw("permissions.name NOT LIKE '%accommodation%'")
+            ->get();
+        $temPer = [];
+        foreach ($permissions as $permission) {
+            if (strpos($permission->name, "."))
+                $temPer [substr($permission->name, 0, strpos($permission->name, "."))][] = $permission;
+            else
+                $temPer [substr($permission->name, 0)][] = $permission;
+
+        }
+        $permissions = $temPer;
+
+        if ($user->canAccess($permission, $staff))
+            return view("pages.errors.noscope", ["message" => "This staff is not in your scope."]);
+        //$staff = Employee::where(["personnel_no" => $personnel_no])->first();
+        return view("pages.staff.authorization.employeeview", compact("staff", "user","permissions",'roles','assigningEmployee','assigningUser'));
+    }
+
+    public function updateStaffRecord(Request $request)
+    {
+
+        try {
+
+            //$permission = "staff.edit";
+            $user = Auth::user();
+            // if (!$this->access($user, $permission))
+
+            //return response()->json(["status" => 401, "message" => "You have no permission to do this operation"]);
+
+            $staff = Employee::find(decrypt($request->staff_id));
+
+            //if (!$user->canAccess($permission, $staff)) {
+            //  return response()->json(["status" => 401, "message" => "This staff is not in your scope."]);
+            //}
+            if ($staff) {
+
+                // $staff = new Employee();
+                $staff->personnel_no = $request->personnel_no;
+                $staff->department_id = $request->department;
+                $staff->firstname = $request->firstname;
+                $staff->surname = $request->surname;
+                $staff->othernames = $request->othernames;
+                $staff->gender = $request->gender;
+                $staff->date_of_birth = $request->dob;
+                $staff->place_of_birth = $request->placeofbirth;
+                $staff->marital_status = $request->maritalstatus;
+                $staff->permanent_address = $request->permanentaddress;
+                $staff->status = $request->status;
+                $staff->country_id = $request->countryid;
+                $staff->rank_id = $request->rankid;
+                $staff->ippis_no = $request->ippisnumber;
+                $staff->tin = $request->tin;
+                $staff->nhf = $request->nhf;
+                $staff->type = $request->type;
+                $staff->date_of_first_appointment = $request->dofappointment;
+                $staff->date_of_confirmation = $request->doconfirmation;
+                $staff->date_of_last_promotion = $request->dolpromotion;
+                $staff->save();
+            }
+
+
+            return response()->json(["status" => 1, "message" => "Staff record successfully updated."]);
+
+        } catch (\Exception $e) {
+            $message = $e->getMessage();
+            return response()->json(["status" => 0, "message" => "Something went horribly wrong.(" . $message . ")."]);;
+        }
+
+    }
+
+    public function changePNumber(Request $request)
+    {
+
+        $user = Auth::user();
+        $permission = "staff.personnel.number.update";
+
+        if (!$this->access($user, $permission))
+            return view("pages.errors.nopermission", array("message" => "You have no permission to do this operation"));
+
+
+
+        if ($request->isMethod('get')) {
+            // Handle GET request
+
+            return view("pages.staff.authorization.update_no");
+        }
+        $request->validate([
+            'jp_no' => ['required', 'string'],
+            'p_no' => ['required', 'string'],
+        ]);
+
+        $code1 = strtolower($request->input('jp_no'));
+        $code2 = strtolower($request->input('p_no'));
+
+        // Initialize
+        $jp_no = null;
+        $p_no = null;
+
+        // Helper function to identify
+        $isJp = fn($val) => Str::startsWith($val, 'jp');
+        $isP = fn($val) => Str::startsWith($val, 'p') && !$isJp($val);
+
+        // Determine which code is which
+        if ($isJp($code1) && $isP($code2)) {
+            $jp_no = $request->input('jp_no');
+            $p_no = $request->input('p_no');
+        } elseif ($isJp($code2) && $isP($code1)) {
+            $jp_no = $request->input('p_no');
+            $p_no = $request->input('jp_no');
+        } else {
+            return back()->withErrors(['jp_no' => 'Inputs must include one JP code and one P code.'])->withInput();
+        }
+        $p_no = str_replace('.', '', $p_no);
+        $jp_no = str_replace('.', '', $jp_no);
+
+
+        $usr = User::whereIn('username',[$jp_no,$p_no])->first();
+        if($usr){
+            $staff = Employee::where("id", "=", $usr->employee_id)->first();
+            //if ($user->canAccess($permission, $staff))
+               // return view("pages.errors.noscope", ["message" => "This staff is not in your scope."]);
+            $usr->username = $p_no;
+            $usr->old_pnum = $jp_no;
+            $usr->save();
+            $staff->personnel_no = $p_no;
+            if($staff->save()){
+                Session::flash('success', 'Staff Personnel Number successfully updated!');
+            }
+
+        }
+        //Session::flash('error', 'Failed to update Personnel Number!');
+
+        return back();
+    }
+
+    /**
+     * Show the promotion recommendation population form
+     */
+    public function showPromotionRecommendationForm()
+    {
+        $user = Auth::user();
+        $permission = "staff.promotion.recommendation.populate";
+
+        if (!$this->access($user, $permission)) {
+            return view("pages.errors.nopermission", array("message" => "You have no permission to populate promotion recommendations"));
+        }
+
+        return view("pages.staff.users.promotion_recommendation_form", compact('user'));
+    }
+
+    /**
+     * Populate promotion recommendation for a specific employee
+     */
+    public function populatePromotionRecommendation(Request $request)
+    {
+        $user = Auth::user();
+        $permission = "staff.promotion.recommendation.populate";
+
+        if (!$this->access($user, $permission)) {
+            return view("pages.errors.nopermission", array("message" => "You have no permission to populate promotion recommendations"));
+        }
+
+        $request->validate([
+            'personnel_no' => 'required|string|max:50',
+            'year' => 'required|integer|min:2000|max:' . (date('Y') + 5),
+        ]);
+
+        try {
+            // Find the employee by personnel number
+            $employee = Employee::where('personnel_no', $request->personnel_no)->first();
+
+            if (!$employee) {
+                return back()->withErrors(['personnel_no' => 'Employee with this personnel number not found.'])->withInput();
+            }
+
+            // Check if user has access to this employee
+            if (!$user->canAccess($permission, $employee)) {
+                return view("pages.errors.noscope", ["message" => "This employee is not in your scope."]);
+            }
+
+            // Check if employee is active
+            if ($employee->status !== 'Active') {
+                return back()->withErrors(['personnel_no' => 'Employee is not active. Status: ' . $employee->status])->withInput();
+            }
+
+            // Get employee data in the format expected by populatePromotionRecomendation
+            $staff = Employee::join('departments', 'employees.department_id', '=', 'departments.id')
+                ->join('faculties', 'departments.faculty_id', '=', 'faculties.id')
+                ->join('complexes', 'faculties.complex_id', '=', 'complexes.id')
+                ->join('ranks', 'employees.rank_id', '=', 'ranks.id')
+                ->join('salary_grade_levels', 'employees.salary_grade_level_id', '=', 'salary_grade_levels.id')
+                ->leftJoin('employee_supervisions', 'employees.id', '=', 'employee_supervisions.employee_id')
+                ->where('employees.id', $employee->id)
+                ->select('employees.id AS employee_id', 'employees.title', 'personnel_no',
+                    DB::raw("CONCAT(surname,', ',firstname,' ',IFNULL(othernames, '')) AS fullname"),
+                    'date_of_first_appointment', 'date_of_confirmation', 'date_of_last_promotion',
+                    'ranks.name AS rank', 'salary_grade_levels.grade', 'departments.name AS department',
+                    'departments.id as department_id', 'faculties.id as faculty_id',
+                    'complexes.id as complex_id', DB::raw("COUNT(employee_supervisions.id) as supervisions"))
+                ->groupBy("employees.id")
+                ->first();
+
+            if (!$staff) {
+                return back()->withErrors(['personnel_no' => 'Unable to retrieve complete employee data. Please ensure employee has all required information.'])->withInput();
+            }
+
+            // Check if recommendation already exists for this year
+            $existingRecommendation = \App\Models\PromotionRecomendation::where('employee_id', $employee->id)
+                ->where('year', $request->year)
+                ->first();
+
+            // Convert to collection for the populatePromotionRecomendation method
+            $staffCollection = collect([$staff]);
+
+            // Call the populatePromotionRecomendation method
+            \App\Models\PromotionRecomendation::populatePromotionRecomendation($staffCollection, $request->year);
+
+            // Get the created/updated recommendation
+            $recommendation = \App\Models\PromotionRecomendation::where('employee_id', $employee->id)
+                ->where('year', $request->year)
+                ->first();
+
+            if ($recommendation) {
+                $action = $existingRecommendation ? 'updated' : 'created';
+                Session::flash('success', "Promotion recommendation for {$employee->firstname} {$employee->surname} (PN: {$request->personnel_no}) has been successfully {$action} for year {$request->year}.");
+            } else {
+                Session::flash('warning', "Promotion recommendation populated but could not retrieve the record.");
+            }
+
+            return back()->withInput();
+
+        } catch (\Exception $e) {
+            \Log::error('Error populating promotion recommendation', [
+                'personnel_no' => $request->personnel_no,
+                'year' => $request->year,
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return back()->withErrors(['error' => 'An error occurred while populating promotion recommendation: ' . $e->getMessage()])->withInput();
+        }
+    }
+}

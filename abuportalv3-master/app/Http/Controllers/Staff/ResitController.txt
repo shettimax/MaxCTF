@@ -1,0 +1,87 @@
+<?php
+
+namespace App\Http\Controllers\Staff;
+
+use App\Http\Controllers\Controller;
+use App\Models\Level;
+use App\Models\ProgrammeType;
+use App\Models\ResitConfiguration;
+use Illuminate\Http\Request;
+
+class ResitController extends Controller
+{
+    public function __construct()
+    {
+        $this->middleware(['auth:staff']);
+    }
+
+    public function index()
+    {
+        return view('pages.staff.settings.setresitconfiguration');
+    }
+
+    public function levels(Request $request)
+    {
+        if ($request->ajax()) {
+            $entry = $request->entry_mode;
+            if ($entry == '%')
+                $levels = Level::orderBy('name')->get();
+            else {
+                $types = ProgrammeType::where(['prog_type_code' => $entry])->get()->pluck('id');
+                $levels = Level::whereIn('programme_type_id', $types)->get();
+            }
+
+            return view('pages.staff.settings.ajax.resitlevels', compact('entry', 'levels'));
+        }
+        return 'Busted :)';
+    }
+
+    public function store(Request $request)
+    {
+        try {
+            $session = $request->accsession;
+            $faculty = $request->faculty_id == '%' ? 0 : $request->faculty_id;
+            $department = $request->department_id == '%' ? 0 : $request->department_id;
+            $programme = $request->programme_id == '%' ? 0 : $request->programme_id;
+            $entrymode = $request->mode_of_entry;
+            $levels = $request->level_id;
+
+            $config = ResitConfiguration::where(['session' => $session, 'faculty_id' => $faculty, 'department_id' => $department, 'programme_id' => $programme, 'mode_of_entry' => $entrymode])
+                ->where('level_id', 'like', '%' . $levels . '%')
+                ->first();
+
+            if (!$config)
+                $config = new ResitConfiguration();
+
+            $config->session = $session;
+            $config->faculty_id = $faculty;
+            $config->department_id = $department;
+            $config->programme_id = $programme;
+            $config->mode_of_entry = $entrymode;
+            $config->level_id = $levels;
+            $config->max_courses = $request->max_courses;
+            $config->max_credit_unit = $request->max_credit_unit;
+            $config->registration_amount = $request->registration_amount;
+            $config->per_course_amount = $request->per_course_amount;
+            $config->start_date = $request->start_date;
+            $config->end_date = $request->end_date;
+
+            if ($config->save())
+                return back()->with('success', 'Resit Configuration Saved');
+
+            return back()->with('error', 'Resit Configuration Failed');
+        } catch (\Exception $e) {
+            return back()->with('error', $e->getMessage());
+        }
+    }
+
+    public function show($session)
+    {
+        $configs = ResitConfiguration::with(['faculty', 'department', 'programme', 'level'])
+            ->where('session', $session)
+            ->get();
+
+        return view('pages.staff.settings.ajax.existingconfigurations', compact('configs'));
+    }
+
+}

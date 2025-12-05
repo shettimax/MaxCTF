@@ -1,0 +1,146 @@
+@extends("layout.candidate.master")
+
+
+@section("content")
+    <section id="reservation" class="parallax" data-bg-img="images/bg/bg1_.jpg" data-parallax-ratio="0.2" style="background-image: url('{{asset("abu_gate.jpeg")}}'); background-position: 50% 54px;">
+        <div class="container"  style="background: url('{{asset('abu_gate.jpeg')}}');background-size: cover;background-position-y: -18px;">
+            <div class="row">
+                <div class="col-md-4 sm-text-center">
+
+                </div>
+                <div class="col-md-4">
+                    <div class="p-30 mt-0 bg-white">
+                        <h3 class="title-pattern mt-0" {{ !(\App\Models\Menu::check($errors))?"style=display:none;":"" }} id="logintext"><span class="text-success">Please <span class="text-theme-colored2">Login</span></span></h3>
+                        <h3 class="title-pattern mt-0" {{ !(\App\Models\Menu::check($errors))?"":"style=display:none;" }} id="registertext"><span class="text-white">Register <span class="text-theme-colored2">Now</span></span></h3>
+                        <!-- Appilication Form Start-->
+                        <form id="login_form" name="login_form" class="reservation-form mt-20" method="post" action="{{ route("form.login.post") }}" novalidate="novalidate" {{ !(\App\Models\Menu::check($errors))?"style=display:none;":"" }}>
+                            @csrf
+                            @php
+                                $usr = Str::random(rand(6,12));
+                                $pswd = Str::random(rand(6,12));
+                            @endphp
+                            @for($i=0;$i<52;$i++)
+                                @if($i==11)
+                                    <input type="hidden" name="ye6h0pls_zxsa_eqwas__" value="{{ encrypt($usr."\$altu\$r") }}" autocomplete="off">
+                                @elseif($i==48)
+                                    <input type="hidden" name="lvjnsv_hbbd_nkskjs_rn__" value="{{ encrypt($pswd."\$altp\$wd") }}" autocomplete="off">
+                                @else
+                                    <input type="hidden" name="{{Str::random(rand(11,23))}}" value="{{ encrypt(Str::random(rand(11,23))."\$altp\$wd") }}" autocomplete="off">
+                                @endif
+                            @endfor
+                            <input autocomplete="off" name="hidden" type="text" style="display:none;">
+                            <input type="hidden" name="sgvefytgsvvrvyr" value="{{ encrypt($usr."\$altu\$r") }}" autocomplete="off">
+                            <input type="hidden" name="mhcbhfbvehhgvejk" value="{{ encrypt($pswd."\$altp\$wd") }}" autocomplete="off">
+                            <div class="row">
+                                <div class="col-sm-12">
+                                    <div class="form-group mb-20">
+                                        @if($errors->has("login.message"))
+                                            <p class="alert alert-danger p-2">{{ $errors->first("login.message") }}</p>
+                                        @endif
+                                        <label for="" class="text-black font-16">JAMB No.</label>
+                                        <input placeholder="Enter Username" id="username" name="{{strrev($usr)}}" required="" class="form-control" aria-required="true" type="text">
+                                    </div>
+                                </div>
+                                <div class="col-sm-12">
+                                    <div class="form-group mb-20">
+                                        <label for="" class="text-black font-16">State</label>
+                                        <select name="{{strrev($pswd)}}" class="form-control" required>
+                                            <option value="">Select State</option>
+                                            @foreach(\App\Models\State::all() as $state)
+                                                <option value="{{ strtolower($state->name) }}">{{$state->name}}</option>
+                                            @endforeach
+                                        </select>
+{{--                                        <input placeholder="Enter Password" id="password" name="" required="" class="form-control" aria-required="true" type="password">--}}
+                                    </div>
+                                </div>
+
+                                <div class="col-sm-12">
+                                    <div class="form-group mb-0 mt-10">
+                                        <input name="form_botcheck" class="form-control" value="" type="hidden">
+                                        <button type="submit" class="btn btn-colored btn-theme-colored2 text-white btn-lg btn-block btn-flat" data-loading-text="Please wait...">Login</button>
+                                    </div>
+                                </div>
+
+
+                            </div>
+                        </form >
+
+
+                        <!-- Application Form Validation Start-->
+                        <script type="text/javascript">
+                            $("#registration_form").validate({
+
+                            });
+
+                            $("#registerLink, #loginLink").on("click",function (e) {
+                                e.preventDefault();
+                                $("#login_form, #logintext").slideToggle();
+                                $("#registration_form, #registertext").slideToggle();
+
+                            });
+                        </script>
+                        <!-- Application Form Validation Start -->
+                    </div>
+                </div>
+                <div class="col-md-8 col-md-offset-2 mt-5">
+                    <div class="p-30 mt-0 bg-white">
+                        <p class="text-gray font-15 pr-90 pr-sm-0 mb-sm-60">
+                            Post UTME Candidates are to login with their JAMB Registration Number and State of Origin as username and password respectively.
+                            <a href="{{asset('requirement/new_abu_admissions_requirements.pdf')}}" class="btn btn-primary btn-sm btn-flat" target="_blank">Check ABU Brochure</a>
+                        </p>
+                    </div>
+                    <div class="p-30 mt-0 bg-white">
+                        <p class="text-gray font-15 pr-90 pr-sm-0 mb-sm-60">
+                            <strong>Note That:</strong>
+                        <ol>
+                            <li>Registration continues till the last day of PUTME Screening (30 <sup>th</sup>September, 2024)</li>
+                            <li>Ensure that you have screened and print scheduling Slip</li>
+                            <li>Direct Entry Registration continues untill otherwise</li>
+                        </ol>
+
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="modal fade bs-example-modal-sm" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel" id="loginSuccessfulModal">
+        <div class="modal-dialog " style="width: 640px;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title" id="myModalLabel">Registration Successful</h4>
+                    <div class="double-line-bottom-theme-colored-2"></div>
+                </div>
+                <div class="modal-body">
+                    <p class="alert alert-success">
+                        Account created successfully. Please login with your new credentials to continue
+                    </p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+@endsection
+
+@section("css")
+    <style>
+        .errorDisplay{
+            padding-left: 8px;
+            color:yellow;
+        }
+    </style>
+@endsection
+
+@section("js")
+    <script>
+        $(function () {
+            @if($errors->has("loginSuccessful"))
+            $("#loginSuccessfulModal").modal();
+            @endif
+        });
+    </script>
+@endsection

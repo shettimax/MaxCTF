@@ -1,0 +1,336 @@
+@extends("layout.staff.master")
+@section("css")
+    <link rel="stylesheet" href="{{ asset('js/datatables/jquery.dataTables.min.css')}}"/>
+
+    <style>
+        label {
+            width: 100%;
+            color: #0f1824;
+            text-align: left;
+        }
+
+        .autocomplete {
+            /*the container must be positioned relative:*/
+            position: relative;
+            display: inline-block;
+        }
+        input {
+            border: 1px solid transparent;
+            background-color: #f1f1f1;
+            padding: 8px;
+            font-size: 16px;
+        }
+        input[type=text] {
+            background-color: #f1f1f1;
+            width: 100%;
+        }
+        input[type=submit] {
+            background-color: DodgerBlue;
+            color: #fff;
+        }
+        .autocomplete-items {
+            position: absolute;
+            border: 1px solid #d4d4d4;
+            border-bottom: none;
+            border-top: none;
+            z-index: 99;
+            /*position the autocomplete items to be the same width as the container:*/
+            top: 100%;
+            left: 0;
+            right: 0;
+        }
+        .autocomplete-items div {
+            padding: 10px;
+            cursor: pointer;
+            background-color: #fff;
+            border-bottom: 1px solid #d4d4d4;
+        }
+        .autocomplete-items div:hover {
+            /*when hovering an item:*/
+            background-color: #e9e9e9;
+        }
+        .autocomplete-active {
+            /*when navigating through the items using the arrow keys:*/
+            background-color: DodgerBlue !important;
+            color: #ffffff;
+        }
+    </style>
+@endsection
+@section("pageTitle")
+    Manage Complexes
+@endsection
+@section("content")
+    <section>
+        <div class="main-section">
+            <div class="container">
+                <div class="row justify-content-center">
+                    <div class="col-md-12">
+                        <div class="card">
+                            <div class="card-body">
+                                @if (session('status'))
+                                    <div class="alert alert-success" role="alert">
+                                        {{ session('status') }}
+                                    </div>
+                                @endif
+                                @if (isset($errors))
+                                    <ul>
+                                        @foreach($errors as $error)
+                                            <li>{{$error}}</li>
+                                        @endforeach
+                                    </ul>
+                                @endif
+                                @if(Session::has('flash_message'))
+                                    <div class="alert alert-success">
+                                        {{ Session::get('flash_message') }}
+                                    </div>
+                                @endif
+                                @if(Session::has('flash_error_message'))
+                                    <div class="alert alert-danger">
+                                        {{ Session::get('flash_error_message') }}
+                                    </div>
+                                @endif
+
+                                <div class="mb-70 mr-30 mt-30">
+                                    <!-- Button trigger modal -->
+                                    <button type="button" class="btn btn-primary pull-right add" data-toggle="modal"
+                                            data-target="#myModal">
+                                        Add New
+                                    </button>
+
+
+                                </div>
+
+                                <div class="mb-30 ml-30 mr-30 mt-30">
+                                    <table id="faculties-table" align="center"
+                                           class="table table-bordered table-striped"
+                                           style="width:100%;font-size:16px;font-family: Calibri; margin-top: 2vh; text-align: left; color: #000000">
+                                        <thead>
+                                        <tr>
+                                            <th>S/N</th>
+                                            <th>Form Session</th>
+                                            <th>Session</th>
+                                            <th>Faculty</th>
+                                            <th>Programme Type</th>
+                                            <th>Action</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        @php $i =1; @endphp
+                                        @foreach(\App\Models\SessionMapping::select('*')->orderby('session')->get() as $complex)
+                                            <tr>
+                                                <td>{{$i++}}</td>
+                                                <td>{{$complex->form_session}}</td>
+                                                <td>{{$complex->session}}</td>
+                                                <td>{{$complex->faculty->name ?? 'N/A'}}</td>
+                                                <td>{{\App\Models\ProgrammeType::find($complex->programme_type_id)->prog_type_name}}</td>
+                                                <td>
+                                                    @if($user->canDo('complex'))
+                                                        <a class="btn btn-primary btn-sm ml-30 edit"
+                                                           href="#" data-toggle="modal"
+                                                           data-target="#myModal"
+                                                           data-id="{{$complex->id}}"
+                                                           data-form_session="{{$complex->form_session}}"
+                                                           data-cur_session="{{$complex->session}}"
+                                                           data-faculty="{{$complex->faculty_id}}"
+                                                           data-progtype="{{$complex->programme_type_id}}"
+                                                           >
+                                                            Edit
+                                                            <span class="icon icon_pencil-edit"></span>
+                                                        </a>
+                                                    @endif
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+
+    <!-- Modal -->
+    <div class="modal fade" id="myModal" tabindex="-1" role="dialog"
+         aria-labelledby="myModalLabel">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal"
+                            aria-label="Close"><span aria-hidden="true">&times;</span>
+                    </button>
+                    <h4 class="modal-title text-left" id="myModalLabel">Add new
+                        Record
+                        <div class="double-line-bottom-theme-colored-2"></div>
+                    </h4>
+                </div>
+                @php if(!isset($model))
+                                                      $model = null
+                @endphp
+                <form class="form" action="{{route('ranks.store')}}"
+                      method="POST"
+                      style="width: 100%; margin-top: 3vh; ">
+                    @csrf
+                    <div class="modal-body" style="min-height:180px;">
+                        {{--                                                        @if( isset($model) && $model !=null)--}}
+                        <input type="hidden" id="sess_id" value="0"
+                               name="sess_id"/>
+                        {{--                                                        @endif--}}
+                        <div class="row">
+                        <div class="form-group col-md-6">
+                                        <label for="form_session">Form Session:</label>
+                                        <select id="form_session" class="form-control {{ $errors->has('form_session')?'is-invalid':'is-valid' }}" size="" name="form_session" placeholder="Session" aria-label="Session" aria-describedby="basic-addon2" required>
+                                            <option value="">Session </option>
+                                            @foreach(range(date("Y"),date("Y")-8) as $year)
+                                                <option value="{{$year}}">{{$year}}/{{$year+1}}</option>
+                                            @endforeach
+                                        </select>
+                                        @if($errors->has('form_session'))
+                                            <div class="invalid-feedback">
+                                                {{ $errors->first('form_session')}}
+                                            </div>
+                                        @endif
+                                    </div>
+                        <div class="form-group col-md-6">
+                                        <label for="cur_session">Session:</label>
+                                        <select id="cur_session" class="form-control {{ $errors->has('cur_session')?'is-invalid':'is-valid' }}" size="" name="cur_session" placeholder="Session" aria-label="Session" aria-describedby="basic-addon2" required>
+                                            <option value="">Session </option>
+                                            @foreach(range(date("Y"),date("Y")-8) as $year)
+                                                <option value="{{$year}}">{{$year}}/{{$year+1}}</option>
+                                            @endforeach
+                                        </select>
+                                        @if($errors->has('cur_session'))
+                                            <div class="invalid-feedback">
+                                                {{ $errors->first('cur_session')}}
+                                            </div>
+                                        @endif
+                                    </div>
+                        <div class="form-group col-md-6">
+                                                                <label for="nature">Faculty:</label>
+                                                                <select class="form-control  {{ $errors->has('faculty')?'is-invalid':'is-valid' }}" name="faculty" id="faculty" required>
+                                            <option value="all">All Faculty Types</option>
+                                            @foreach(\App\Models\Faculty::all()  as $fac)
+                                                @php $id = $fac->id@endphp
+                                                <option value="{{$fac->id}}" {{$id == $fac->id?"selected":""}}>{{$fac->name}}</option>
+                                            @endforeach
+                                        </select>
+                                                                <div id="nature_error" class="invalid-feedback"></div>
+                                                            </div>
+                            
+                            <div class="form-group col-md-6">
+                            <label for="nature">ProgrammeType:</label>
+                            <select class="form-control  {{ $errors->has('progtype')?'is-invalid':'is-valid' }}" name="progtype" id="progtype" required>
+                                            <option value="all">Programme Type(s)</option>
+                                            @foreach(\App\Models\ProgrammeType::all()  as $programmetype)
+                                                @php $id = $programmetype->id@endphp
+                                                <option value="{{$programmetype->id}}" {{$id == $programmetype->id?"selected":""}}>{{$programmetype->prog_type_name}}</option>
+                                            @endforeach
+                                        </select>
+                                <div id="nature_error" class="invalid-feedback">
+
+                                </div>
+                    
+                            </div>
+                            
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <div class="form-group">
+                            <button type="button" class="btn btn-flat btn-danger"
+                                    data-dismiss="modal">
+                                Close
+                            </button>
+                            <button type="submit" id="addbtn"
+                                    class="btn btn-flat btn-success text-right"><span
+                                    class="icon icon-save"> Save </span>
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+@endsection
+
+@section("js")
+    <script src="{{asset('bootstrap-autocomplete.min.js')}}"></script>
+    <script src="{{asset('js/datatables/jquery.dataTables.min.js')}}"></script>
+    <script>
+        var countries = ["Afghanistan","Albania","Algeria","Andorra","Angola","Anguilla","Antigua &amp; Barbuda","Argentina","Armenia","Aruba","Australia","Austria","Azerbaijan","Bahamas","Bahrain","Bangladesh","Barbados","Belarus","Belgium","Belize","Benin","Bermuda","Bhutan","Bolivia","Bosnia &amp; Herzegovina","Botswana","Brazil","British Virgin Islands","Brunei","Bulgaria","Burkina Faso","Burundi","Cambodia","Cameroon","Canada","Cape Verde","Cayman Islands","Central Arfrican Republic","Chad","Chile","China","Colombia","Congo","Cook Islands","Costa Rica","Cote D Ivoire","Croatia","Cuba","Curacao","Cyprus","Czech Republic","Denmark","Djibouti","Dominica","Dominican Republic","Ecuador","Egypt","El Salvador","Equatorial Guinea","Eritrea","Estonia","Ethiopia","Falkland Islands","Faroe Islands","Fiji","Finland","France","French Polynesia","French West Indies","Gabon","Gambia","Georgia","Germany","Ghana","Gibraltar","Greece","Greenland","Grenada","Guam","Guatemala","Guernsey","Guinea","Guinea Bissau","Guyana","Haiti","Honduras","Hong Kong","Hungary","Iceland","India","Indonesia","Iran","Iraq","Ireland","Isle of Man","Israel","Italy","Jamaica","Japan","Jersey","Jordan","Kazakhstan","Kenya","Kiribati","Kosovo","Kuwait","Kyrgyzstan","Laos","Latvia","Lebanon","Lesotho","Liberia","Libya","Liechtenstein","Lithuania","Luxembourg","Macau","Macedonia","Madagascar","Malawi","Malaysia","Maldives","Mali","Malta","Marshall Islands","Mauritania","Mauritius","Mexico","Micronesia","Moldova","Monaco","Mongolia","Montenegro","Montserrat","Morocco","Mozambique","Myanmar","Namibia","Nauro","Nepal","Netherlands","Netherlands Antilles","New Caledonia","New Zealand","Nicaragua","Niger","Nigeria","North Korea","Norway","Oman","Pakistan","Palau","Palestine","Panama","Papua New Guinea","Paraguay","Peru","Philippines","Poland","Portugal","Puerto Rico","Qatar","Reunion","Romania","Russia","Rwanda","Saint Pierre &amp; Miquelon","Samoa","San Marino","Sao Tome and Principe","Saudi Arabia","Senegal","Serbia","Seychelles","Sierra Leone","Singapore","Slovakia","Slovenia","Solomon Islands","Somalia","South Africa","South Korea","South Sudan","Spain","Sri Lanka","St Kitts &amp; Nevis","St Lucia","St Vincent","Sudan","Suriname","Swaziland","Sweden","Switzerland","Syria","Taiwan","Tajikistan","Tanzania","Thailand","Timor L'Este","Togo","Tonga","Trinidad &amp; Tobago","Tunisia","Turkey","Turkmenistan","Turks &amp; Caicos","Tuvalu","Uganda","Ukraine","United Arab Emirates","United Kingdom","United States of America","Uruguay","Uzbekistan","Vanuatu","Vatican City","Venezuela","Vietnam","Virgin Islands (US)","Yemen","Zambia","Zimbabwe"];
+        $(function (){
+            // autocomplete(document.getElementById("chairman"), );
+        })
+        $(document).on('click', '.add', function () {
+            $(".modal-body #form_session").val('');
+            $(".modal-body #cur_session").val('');
+            $(".modal-body #progtype").val(0);
+            $(".modal-body #faculty").val(0);
+           
+        });
+
+        $(document).on('click', '.edit', function () {
+            const id = $(this).data('id');
+            form_session = $(this).data('form_session');
+            cur_session = $(this).data('cur_session');
+            faculty = $(this).data('faculty');
+            progtype = $(this).data('progtype');
+           
+            $(".modal-body #sess_id").val(id);
+            $(".modal-body #form_session").val(form_session);
+            $(".modal-body #cur_session").val(cur_session);
+            $(".modal-body #faculty").val(faculty);
+            $(".modal-body #progtype").val(progtype);
+        });
+
+        $('#faculties-table').DataTable({
+            "lengthMenu": [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+            pageLength: 10,
+            dom: "<'row'<'col-sm-12'B>>" +
+                "<'row'<'col-sm-12 col-md-6'l><'col-sm-12 col-md-6'f>>" +
+                "<'row'<'col-sm-12'tr>>" +
+                "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+            buttons: [
+                {
+                    extend: 'excelHtml5',
+                    exportOptions: {
+                        columns: ':visible'
+                    }
+                },
+                {
+                    extend: 'pdfHtml5',
+                    orientation: 'landscape',
+                    pageSize: 'LEGAL',
+                    exportOptions: {
+                        columns: ':visible'
+                    }
+                },
+                {
+                    extend: 'print',
+                    messageTop: 'Candidates Report',
+                    orientation: 'landscape',
+                    pageSize: 'LEGAL'
+                },
+                {
+                    extend: 'colvis',
+                    columns: ':not(.noVis)',
+                    collectionLayout: 'fixed two-column',
+                    postfixButtons: [{
+                        extend: 'colvisGroup',
+                        text: 'Show all',
+                        show: ':hidden'
+                    }]
+                }
+            ],
+            language: {
+                buttons: {
+                    colvis: 'Show/Hide columns'
+                }
+            }
+        });
+
+    </script>
+@endsection
+

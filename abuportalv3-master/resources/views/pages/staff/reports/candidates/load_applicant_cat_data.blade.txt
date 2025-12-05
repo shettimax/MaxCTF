@@ -1,0 +1,184 @@
+<style>
+    .wrap-column {
+        white-space: normal !important;
+        word-wrap: break-word;
+        word-break: break-word;
+        max-width: 200px;
+        min-width: 150px;
+    }
+    .wrap-column-long {
+        white-space: normal !important;
+        word-wrap: break-word;
+        word-break: break-word;
+        max-width: 300px;
+        min-width: 200px;
+    }
+    
+    /* Ensure table cells with wrapped content display properly */
+    #reporttb td.wrap-column,
+    #reporttb td.wrap-column-long {
+        vertical-align: top;
+        padding: 8px;
+        line-height: 1.4;
+    }
+    
+    /* Style for numbered A-levels list */
+    #reporttb td.wrap-column-long div {
+        margin-bottom: 2px;
+        font-size: 0.9em;
+    }
+    
+    /* Make sure the table can handle wrapped content */
+    #reporttb {
+        table-layout: auto;
+    }
+</style>
+
+<div id="load" style="position: relative;" class="table-responsive">
+    <table id="reporttb" class="table table-striped table-bordered table-hover table-condensed nowrap">
+        <thead>
+        <tr>
+            <th>S/N</th>
+            <th>Application No.</th>
+            <th>Email</th>
+            <th>Candidate ID</th>
+            <th>JAMB No.</th>
+            <th>JAMB Score</th>
+            <th>Full Name</th>
+            <th>Amount</th>
+            <th>Gender</th>
+            <th>Phone</th>
+            <th>Date</th>
+            <th>Programme</th>
+            <th>Department</th>
+            <th>Faculty</th>
+            <th>State</th>
+            <th>LGA</th>
+            <th>Session</th>
+            <th>RRR</th>
+            <th>Transaction ID</th>
+            <th>O-levels</th>
+            <th>A-levels</th>
+            <th>A-ID</th>
+            <th>A-levels Type</th>
+            <th>A-levels Grade</th>
+            <th>Institution</th>
+            <th>Registration No</th>
+            <th>CGPA</th>
+            <th>Level</th>
+            <th>Transcript</th>
+        </tr>
+        </thead>
+
+        <tfoot>
+        <tr>
+            <th></th>
+            <th></th>
+            <th></th>
+            <th></th>
+            <th></th>
+            <th></th>
+            <th></th>
+            <th></th>
+            <th></th>
+            <th></th>
+            <th></th>
+            <th></th>
+            <th></th>
+            <th></th>
+            <th></th>
+            <th></th>
+            <th></th>
+            <th></th>
+            <th></th>
+            <th></th>
+            <th></th>
+            <th></th>
+            <th></th>
+            <th></th>
+            <th></th>
+            <th></th>
+            <th></th>
+            <th></th>
+            <th></th>
+            <th></th>
+            <th></th>
+        </tr>
+        </tfoot>
+
+        <tbody>
+
+        @foreach ($candidates as $stud)
+            @php
+                $qual = [];
+                $alevel = [];
+
+                $alevel = explode("@",$stud->alevel);
+                $qual = explode('|',count($alevel)?$alevel[0]:"");
+                $ilast = count($qual)-1;
+                $school = empty(trim($stud->school_attended))?(object)[
+                    'school'=>"",
+                    'reg_number'=>"",
+                    'level'=>"",
+                    'cgpa'=>"",
+                    'transcript'=>""]:
+                    json_decode($stud->school_attended);
+
+            @endphp
+            <tr>
+                <td>{{$loop->index+1}}</td>
+                <td>{{ $stud->appno}}</td>
+                <td>{{ $stud->email}}</td>
+                <td>{{ $stud->candid}}</td>
+                <td>{{ $stud->username}}</td>
+                <td>{{ $stud->jamb_score}}</td>
+                <td>{{ $stud->fullname }}</td>
+                <td>{{ $stud->amount }}</td>
+                <td>{{ $stud->gender }}</td>
+                <td>{{ $stud->gsm }}</td>
+                <td>{{ $stud->date }}</td>
+                <td>{{ $stud->programme}} </td>
+                <td>{{ $stud->department }}</td>
+                <td>{{ $stud->faculty }}</td>
+                <td>{{ $stud->state }}</td>
+                <td>{{ $stud->lga }}</td>
+                <td>{{  $stud->session }}</td>
+                <td>{{  $stud->invoice_number }}</td>
+                <td>{{  $stud->transaction_code }}</td>
+                <td class="wrap-column-long">{{  $stud->olevel }}</td>
+                <td class="wrap-column-long">
+                    @if(!empty($stud->alevel))
+                        @php
+                            $alevels = explode("@", $stud->alevel);
+                            $alevels = array_filter($alevels, function($item) {
+                                return !empty(trim($item));
+                            });
+                        @endphp
+                        @if(count($alevels) > 0)
+                            @foreach($alevels as $index => $alevel)
+                                <div>{{ $index + 1 }}. {{ trim($alevel) }}</div>
+                            @endforeach
+                        @else
+                            {{ $stud->alevel }}
+                        @endif
+                    @else
+                        -
+                    @endif
+                </td>
+                <td>{{$stud->candalevelid}}</td>
+                <td class="wrap-column">{{  isset($qual[0])?$qual[0]:"" }}</td>
+                <td class="wrap-column">{{  count($qual)?$qual[$ilast]:"" }}</td>
+                <th>{{isset($school->school)?$school->school:""}}</th>
+                <th>{{isset($school->reg_number)?$school->reg_number:""}}</th>
+                <th>{{isset($school->cgpa)?$school->cgpa:""}}</th>
+                <th>{{isset($school->level)?$school->level:""}}</th>
+                <th>
+                    @if(isset($school->transcript) && file_exists(public_path("uploads/").$school->transcript))
+                        <a href="{{asset("uploads/".$school->transcript?:"")}}" target="_blank">Download</a>
+                    @endif
+                </th>
+            </tr>
+        @endforeach
+        </tbody>
+    </table>
+</div>

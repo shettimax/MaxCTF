@@ -1,0 +1,42 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class CandidateRefereeResponse extends Model {
+
+    //
+    protected $fillable = [
+        "questionone","questiontwo","questionthree","questionfour","questionfive","questionsix","questionseven",
+        "questioneight","questionnine","questionten","questioneleven","remark","refereeid"
+    ];
+
+    public static $questions = [
+        ["question"=>"How long have you known the candidate?","name"=>"one","labels"=>["0-3yrs","3-5yrs","5-8yrs","8-10yrs","10yrs+"]],
+        ["question"=>"What capacity have you known the candidate?","name"=>"two","labels"=>["Parent/Guardian","Friend","Colleague","Employee","Student"]],
+        ["question"=>"How will you rate the candidate's intellectual ability?","name"=>"three","labels"=>["1-20%","21-40%","41-60%","61-80%","81%+"]],
+        ["question"=>"How will you rate the candidate's capacity for persistent and intellectual academic study ","name"=>"four","labels"=>["1-20%","21-40%","41-60%","61-80%","81%+"]],
+        ["question"=>"How will you rate the candidate's ability for imaginative thought","name"=>"five","labels"=>["1-20%","21-40%","41-60%","61-80%","81%+"]],
+        ["question"=>"How will you rate the candidate's oral expression in English Language","name"=>"six","labels"=>["1-20%","21-40%","41-60%","61-80%","81%+"]],
+        ["question"=>"How will you rate the candidate's written expression in English Language","name"=>"seven","labels"=>["1-20%","21-40%","41-60%","61-80%","81%+"]],
+        ["question"=>"Please rank the candidate academically among the students you know (select whichever applies)","name"=>"eight","labels"=>["No idea","Lowest 10%","Lowest 25%","Average 50%","Top 25%","Top 10%"]],
+        ["question"=>"How will you rate the candidate's moral character","name"=>"nine","labels"=>["Poor","Fair","Satisfactory","Good","Excellent"]],
+        ["question"=>"How will you rate the candidate's emotional stability","name"=>"ten","labels"=>["Poor","Fair","Satisfactory","Good","Excellent"]],
+        ["question"=>"How will you rate the candidate's physical stability","name"=>"eleven","labels"=>["Poor","Fair","Satisfactory","Good","Excellent"]],
+        ["question"=>"If this applicant were applying to your Faculty or Department, would you feel able to accept him/her as a research student?","name"=>"twelve","labels"=>["Yes","No","Not Sure"]]
+    ];
+
+    public function candidateReferee() {
+        return $this->belongsTo('App\Models\CandidateReferee', 'refereeid');
+    }
+
+    public static function rules(){
+        $rules = [];
+        foreach (CandidateRefereeResponse::$questions as $question){
+            $rules['question'.$question['name']] = "required";
+        }
+        $rules['remark'] = 'required|string';
+        return $rules;
+    }
+}

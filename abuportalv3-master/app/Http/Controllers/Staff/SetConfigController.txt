@@ -1,0 +1,125 @@
+<?php
+
+namespace App\Http\Controllers\Staff;
+
+use App\Http\Controllers\Controller;
+use App\Models\SetConfig;
+use App\Models\SetDefaultQuestion;
+use App\Models\SetQuestion;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+
+class SetConfigController extends Controller
+{
+
+    public function __construct()
+    {
+        $this->middleware('auth:staff');
+    }
+
+    public function index()
+    {
+        if (!$this->access(Auth::user(), "dashboard"))
+            return view("pages.errors.nopermission");
+
+        $questions = SetQuestion::all();
+
+        return view('pages.staff.set.configurations', compact('questions'));
+    }
+
+    public function store(Request $request)
+    {
+        if (!$this->access(Auth::user(), "dashboard"))
+            return view("pages.errors.nopermission");
+
+        try {
+//            return $request;
+
+            $rules = ['name' => 'required', 'programme_type' => 'required', 'config_session' => 'required'];
+            $validator = $request->validate($rules);
+
+            if (!$validator) {
+                return redirect()->route('staff.set.config')->withInput()->withErrors();
+            } else {
+                $config = new SetConfig();
+
+                if ($request->config_id > 0)
+                    $config = SetConfig::find($request->config_id);
+
+                $config->name = $request->name;
+                $config->session = $request->config_session;
+                $config->programme_type = $request->programme_type;
+                $config->save();
+
+                if ($request->config_id > 0)
+                    $request->session()->flash('flash_message', 'Question has been updated');
+                else
+                    $request->session()->flash('flash_message', 'Question has been added');
+                return redirect()->back()->withInput($request->all());
+            }
+        } catch (\Exception $e) {
+            return $e->getMessage();
+        }
+    }
+
+    public function assignQuestions(Request $request)
+    {
+        if (!$this->access(Auth::user(), "dashboard"))
+            return view("pages.errors.nopermission");
+
+        try {
+            $rules = [
+                'config_id' => 'required|integer',
+                'group_type' => 'required',
+                'question' => 'required_without_all',
+            ];
+
+            $validator = $request->validate($rules);
+
+            if (!$validator) {
+                return redirect()->route('staff.set.config')->withInput()->withErrors();
+            } else {
+                $questions = $request->question;
+
+                foreach ($questions as $question) {
+                    $default = new SetDefaultQuestion();
+                    $default->question_id = $question;
+                    $default->config_id = $request->config_id;
+                    $default->lab_lecture = $request->group_type;
+                    $default->save();
+
+                    $request->session()->flash('flash_message', 'Questions has been assigned');
+                }
+            }
+
+        } catch (\Exception $e) {
+            return view("pages.staff.error.technical");
+//            return $e->getMessage();
+        }
+    }
+
+    public function edit(SetConfig $setConfig)
+    {
+        //
+    }
+
+    public function update(Request $request, SetConfig $setConfig)
+    {
+        //
+    }
+
+    public function destroy()
+    {
+        if (!$this->access(Auth::user(), "dashboard"))
+            return view("pages.errors.nopermission");
+
+        try {
+            $id = request('config_id');
+            $config = SetConfig::find($id);
+            $config->delete();
+        } catch (\Exception $e) {
+//            return $e->getMessage();
+            return view("pages.staff.error.technical");
+        }
+    }
+}

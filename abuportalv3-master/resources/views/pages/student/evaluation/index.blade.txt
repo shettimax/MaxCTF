@@ -1,0 +1,46 @@
+@extends('layout.student.master')
+
+@section('content')
+    <section class="">
+        <div class="main-section pt-20 pb-20">
+            <!-- Page Section -->
+            <div  class="page-section"   style="margin-top: 0px;margin-bottom: 0px;border-top: 0px #e0e0e0 solid;border-bottom: 0px #e0e0e0 solid;" >
+                <!-- Container Start -->
+                <div  class="container">
+                    <h2>Evaluation</h2>
+                    <div class="">
+                        <hr>
+                    </div>
+                   <ul class="list angle-double-right">
+                       @foreach($cgs as $key=>$value)
+                        <li>
+                            {{ $value["name"] }}
+                            <ul class="list angle-double-right">
+                            @foreach($value["details"] as $cg)
+                                <li>
+                                    @if(!$student->hasRespondedTo($cg->course_group_id,$cg->employee_id))
+                                        <a href="{{ route("evaluation.evaluate",[$cg->course_group_id,$cg->employee_id]) }}" class="btn-link">
+                                           {{$cg->title}} {{ strtoupper($cg->surname) }}, {{ strtoupper($cg->firstname) }} {{ strtoupper($cg->othernames) }}
+                                        </a>
+                                    @else
+                                        {{$cg->title}} {{ strtoupper($cg->surname) }}, {{ strtoupper($cg->firstname) }} {{ strtoupper($cg->othernames) }} <i class="fa fa-check text-success"></i>
+                                    @endif
+                                </li>
+                            @endforeach
+                            </ul>
+                        </li>
+                       @endforeach
+                   </ul>
+
+
+                </div>
+            </div>
+        </div>
+    </section>
+@endsection
+<script>
+    function printContent(el){
+
+    }
+</script>
+

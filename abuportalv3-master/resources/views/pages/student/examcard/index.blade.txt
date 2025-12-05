@@ -1,0 +1,186 @@
+@extends('layout.student.master')
+
+@section('content')
+    <section class="">
+        <div class="main-section pt-20">
+            <!-- Page Section -->
+            <div class="page-section"
+                 style="margin-top: 0px;margin-bottom: 0px;border-top: 0px #e0e0e0 solid;border-bottom: 0px #e0e0e0 solid;">
+                <!-- Container Start -->
+                <div class="container">
+                    @php
+                        $student= Auth::user();
+                    @endphp
+                    <div id="idcard">
+                        <div class="col-md-12 cs-tabs box" id="idcard1">
+                            <div class="container">
+                                <div class="repeat-logo"></div>
+                                <div style="background-color: #fff;padding: 12px;box-shadow: 3px 3px 5px #4e5b6c;">
+                                    {{--@if(!$pendingSet || !$student->isUGStudent())--}}
+                                    <div class="student-profile">
+                                        <table class="table">
+                                            <tr>
+                                                <td colspan="5">
+                                                    <a class="menuzord-brand pull-left flip sm-pull-center mb-15">
+                                                        <img src="{{ asset("images/logo-wide.png") }}" alt="Ahmadu Bello University"
+                                                             class="pull-left">
+                                                        <div
+                                                            style="font-size:16px;font-weight: bold;width: 320px;color: #4e5b6c;padding-left: 16px;">
+                                                            <span style="display: inline-block;margin: 4px 10px 0;"> Ahmadu Bello University</span>
+                                                            <span
+                                                                style="display: inline-block;margin: 2px 10px;font-size: 12px;font-weight: bold;color: #008822;"> Zaria - Nigeria</span>
+                                                        </div>
+                                                    </a>
+                                                    {{--<img src="{{asset("reg_banner.png")}}" alt="" height="128">--}}
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td>Reg.No</td>
+                                                <td colspan="3">{{isset($student->matric_number)?$student->matric_number:""}}</td>
+
+                                                <td rowspan="4" colspan="2"><img class="img-thumbnail"
+                                                                                 src="https://static.abu.edu.ng/uploads/student/photos/{{strtoupper($student->matric_number)}}.JPG"
+                                                                                 width="150" alt="team"></td>
+                                            </tr>
+                                            <tr>
+                                                <td>Full Name</td>
+                                                <td colspan="3">{{$student->getFullname()}}</td>
+                                            </tr>
+                                            <tr>
+
+                                                <td>Course of Study</td>
+                                                <td colspan="3">{{isset($student->programme()->name)?$student->programme()->name:""}}</td>
+                                            </tr>
+                                            <tr>
+                                                <td>Session</td>
+                                                <td>{{ $session }}</td>
+                                                <td>Semester</td>
+                                                <td>{{ $semester==1?"First":"Second" }}</td>
+                                            </tr>
+                                        </table>
+                                    </div>
+
+                                    <div class="table-container">
+                                        <table class="table">
+                                            <thead>
+                                            <tr>
+                                                <th>S/N</th>
+                                                <th>Course Code</th>
+                                                <th>Course Title</th>
+                                                <th>Credit Unit</th>
+                                            </tr>
+                                            </thead>
+                                            <tbody>
+                                            @php $total = 0; @endphp
+                                            @foreach($courses as $course)
+                                                @php $total += $course->courseunit; @endphp
+                                                <tr>
+                                                    <td>{{$loop->index+1}}</td>
+                                                    <td>{{$course->coursecode}}</td>
+                                                    <td>{{strtoupper($course->coursetitle)}}</td>
+                                                    <td>{{$course->courseunit}}</td>
+                                                </tr>
+                                            @endforeach
+                                            <tr>
+                                                <td></td>
+                                                <td></td>
+                                                <th class="text-right">Total</th>
+                                                <th>{{ $total }}</th>
+                                            </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+
+                                    <div class="guidelines">
+                                        <h4>Guidelines/Rules for Examination Hall:</h4>
+                                        <ol>
+                                            <li>Arrive at the examination hall at least 30 minutes before the start time.</li>
+                                            <li>Bring your examination card and a valid ID card.</li>
+                                            <li>Do not bring any unauthorized materials into the examination hall.</li>
+                                            <li>Listen carefully to the instructions given by the invigilator.</li>
+                                            <li>Maintain silence and do not communicate with other students during the examination.</li>
+                                            <li>Do not attempt to cheat or engage in any form of academic dishonesty.</li>
+                                            <li>Raise your hand if you have any questions or need assistance.</li>
+                                            <li>Once you have completed the examination, submit your answer booklet and leave the hall quietly.</li>
+                                        </ol>
+                                    </div>
+
+                                    <div class="exam-officer-signature">
+                                        <table class="table">
+                                            <tr>
+                                                <td>{!! QrCode::size(80)->generate(strtoupper($student->matric_number)); !!}</td>
+                                                <td>
+                                                    <span>Exam Officer's Signature:</span>
+                                                </td>
+                                            </tr>
+                                        </table>
+
+                                    </div>
+                                    {{--@else--}}
+                                        {{--To print your exam card, you are required to Evaluate teaching for each of your registered course.--}}
+                                    {{--@endif--}}
+                                </div>
+                                <div class="footer">
+                                    Ahmadu Bello University: Exam Card First Semester 2021/2022 Session Printed
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-12 pt-10 pb-15">
+                        <button id="print" onclick="printContent();" class="btn btn-success">Print</button>
+                    </div>
+                    <br/>
+                </div>
+            </div>
+        </div>
+    </section>
+@endsection
+<style>
+
+    .guidelines {
+        margin-top: 30px;
+        font-size: 14px;
+    }
+
+    .exam-officer-signature {
+        position: absolute;
+        bottom: 20px;
+        right: 20px;
+    }
+
+    .exam-officer-signature span {
+        display: block;
+        text-align: center;
+        margin-top: 20px;
+    }
+
+    .repeat-logo {
+        position: fixed;
+        top: -20mm;
+        left: -20mm;
+        right: -20mm;
+        bottom: -20mm;
+        z-index: -1;
+        background-repeat: repeat;
+        background-image: url('https://dev.abu.edu.ng/images/logo-wide.png');
+        opacity: 0.1;
+    }
+
+    .footer {
+        text-align: center;
+        font-size: 12px;
+        margin-top: 40px;
+    }
+</style>
+<script>
+    function printContent() {
+        var restorepage = $('body').html();
+        var printcontent1 = $('#idcard1').clone();
+        var printcontent2 = $('#idcard2').clone();
+        // var table = "";
+        $('body').empty().html("<table><tr><td width='70%'>" + printcontent1.html() + "</td><td>" + printcontent2.html() + "</td></tr></table>");
+        window.print();
+        $('body').html(restorepage);
+    }
+</script>
+

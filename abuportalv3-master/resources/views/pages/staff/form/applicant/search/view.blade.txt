@@ -1,0 +1,640 @@
+@extends("layout.staff.master")
+
+@section("content")
+
+    @php
+
+
+        @endphp
+    <section class="">
+        <div class="row">
+            <div class="col-md-12">
+                <div class="col-md-3 bg-silver-light">
+                    <div class="doctor-thumb">
+                        <img src="{{ route("candidate.picture",[$candidate->id,time()]) }}" alt="{{ $candidate->username }}"
+                             width="432px;" height="302px">
+                             @if($user->canAccess("candidate.search.picture",$candidate))
+                            <form id="deleteFormID" action="{{route('candidate.photo.destroy')}}" method="post"
+                                  style="display: inline-block;width: 100%;">
+                                @csrf
+                                <input type="hidden" id="candUsername" name="candUsername"
+                                       value="{{$candidate->username}}"/>
+                                <button type="submit" class="btn btn-flat btn-sm btn-warning"
+                                        style="width: 100% !important;">Remove Picture
+                                </button>
+                            </form>
+                        @endif
+                    </div>
+                    @php
+                       $biodata = $candidate->biodata();
+                        $candidateid = $candidate->id;
+                        $contact = $candidate->contact();
+
+                        //$session_reg = $student->sessionReg()->first();
+                       // $candidatebiodata = $biodata;
+                    @endphp
+                    <div class="info p-10 bg-gray">
+                        <h6 class="text-uppercase text-white">{{$candidate->username}}</h6>
+                        <ul class="list angle-double-right m-0">
+                            <li class="mt-0 text-gray-silver"><strong
+                                    class="text-gray-lighter"> {{$candidate->getFullName()}}</strong></li>
+                            <li class="text-gray-silver"><strong
+                                    class="text-gray-lighter">{{ $biodata->gender }}</strong></li>
+                            <li class="text-gray-silver"><strong
+                                    class="text-gray-lighter"></strong></li>
+                            <li class="text-gray-silver"><strong
+                                    class="text-gray-lighter">{{ isset($contact->gsm)?$contact->gsm:"" }}</strong></li>
+                        </ul>
+
+                    </div>
+                </div>
+                <div class="col-md-9">
+                    <div class="pt-20 pb-20">
+
+                        @if($errors->has("message"))
+                            <div class="alert alert-info">
+                                {{$errors->first('message')}}
+                            </div>
+                        @endif
+
+                             <a class="btn btn-flat btn-sm btn-success" id="editCandRecordBtn">Update Candidate Record</a>
+                           {{-- <a class="btn btn-info btn-flat btn-sm" href="#" id="editRecordBtn">Edit Candidate Programme</a>--}}
+
+                            {{--<a class="btn btn-danger btn-flat btn-sm" href="#">Edit Biodata</a>--}}
+
+                            {{--@if($user->canAccess("student.edit",$student))
+                                                            <a class="btn btn-flat btn-sm btn-success" id="changeProgramme">Update Session Record</a>
+                                                        @endif--}}
+
+
+
+                            {{--@if($user->canAccess("student.disciplinary.add",$student))
+                            <a href="" class="btn btn-flat btn-sm btn-info" id="desciplinaryCase">Disciplinary Case</a>
+                        @endif--}}
+
+                    </div>
+                    <div class="col-md-12 pull-right">
+                        <div class="blog-posts">
+                            <div class="col-md-12">
+
+                                <?php $biodata = $candidate->biodata(); ?>
+                                <section class="bg-white-f7 pr-30 pl-30 pt-30 pb-30"
+                                         style="border-left:2px solid #43B14B;">
+
+                                    <h3 class="widget-title" style="margin-bottom: 0">
+                                        Biodata
+                                    </h3>
+                                    <div class="double-line-bottom-theme-colored-2"></div>
+                                    <div class="row">
+                                        {{--<label for="name" class="col-sm-3 control-label">Name:</label>--}}
+                                        <div class="col-sm-12">
+                                            <span><b>Name:</b></span>
+                                            {{ $candidate->getFullName() }}
+                                        </div>
+
+
+                                    </div>
+
+
+
+
+                                    <div class="row">
+                                        <div class="col-sm-4">
+                                            @php $country = $biodata->country()  @endphp
+                                            <span><b>Nationality:</b></span>
+                                            {{$country?$country->name:"Not Selected"}}
+
+                                        </div>
+                                        <div class="col-sm-4">
+                                            @php $state = $biodata->state();@endphp
+                                            <span><b>State:</b></span>
+                                            {{$state?$state->name:"Not Selected"}}
+                                        </div>
+                                        <div class="col-sm-4">
+                                            @php $lga = $biodata->lga();@endphp
+                                            <span><b>LGA:</b></span>
+                                            {{$lga?$lga->name:"Not Selected"}}
+                                        </div>
+                                    </div>
+
+                                    <div class="row">
+                                        <div class="col-sm-4">
+                                            <span><b>Gender:</b></span>
+                                            {{$biodata->gender}}
+                                        </div>
+                                        <div class="col-sm-4">
+                                            <span><b>GSM:</b></span>
+                                            {{isset($contact->gsm)?$contact->gsm:""}}
+                                        </div>
+                                        <div class="col-sm-4">
+                                            <span><b>Email:</b></span>
+                                            {{isset($candidate->email)?$candidate->email:""}}
+                                        </div>
+                                    </div>
+
+                                    <div class="row">
+
+
+                                        <div class="col-sm-4">
+                                            <span><b>Marital Status:</b></span>
+                                            {{isset($biodata->marital_status)?$biodata->marital_status:'N/A'}}
+                                        </div>
+                                        <div class="col-sm-4">
+                                            <span><b>DOB:</b></span>
+                                            {{isset($biodata->date_of_birth)?$biodata->date_of_birth:""}}
+                                        </div>
+                                        <div class="col-sm-4">
+                                            <span><b>Place of Birth:</b></span>
+                                            {{isset($biodata->place_of_birth)?$biodata->place_of_birth:''}}
+                                        </div>
+                                    </div>
+
+                                    <hr>
+                                    <h3 class="widget-title" style="margin-bottom: 0">
+                                        Contact Information
+                                    </h3>
+                                    <div class="double-line-bottom-theme-colored-2"></div>
+                                    <div class="row">
+                                        <div class="col-sm-4">
+                                            <span><b>Other Phone Number:</b></span>
+                                            {{isset($contact->other_phone)?$contact->other_phone:""}}
+                                        </div>
+                                        <div class="col-sm-4">
+                                            <span><b>Contact Address:</b></span>
+                                            {{isset($contact->current_address)?$contact->current_address:""}}
+                                        </div>
+                                        <div class="col-sm-4">
+                                            <span><b>Home Address:</b></span>
+                                            {{isset($contact->permanent_address)?$contact->permanent_address:""}}
+                                        </div>
+                                    </div>
+
+                                    <div class="row">
+                                        <div class="col-sm-4">
+                                            <span><b>Home Town:</b></span>
+                                            {{isset($biodata->home_town)?$biodata->home_town:""}}
+                                        </div>
+                                    </div>
+
+                                    <hr>
+                                    <h3 class="widget-title" style="margin-bottom: 0">
+                                        Next of Kin
+                                    </h3>
+                                    <div class="double-line-bottom-theme-colored-2"></div>
+                                    <div class="row">
+                                        <div class="col-sm-4">
+                                            <span><b>Name:</b></span>
+                                            {{isset($contact->nok_name)?$contact->nok_name:""}}
+                                        </div>
+                                        <div class="col-sm-4">
+                                            <span><b>GSM:</b></span>
+                                            {{isset($contact->nok_gsm)?$contact->nok_gsm:""}}
+                                        </div>
+                                        <div class="col-sm-4">
+                                            <span><b>Address:</b></span>
+                                            {{isset($contact->home_address)?$contact->home_address:""}}
+                                        </div>
+                                    </div>
+                                    <hr>
+                                    <h3 class="widget-title" style="margin-bottom: 0">
+                                        Applied Programmes
+                                    </h3>
+                                    <div class="double-line-bottom-theme-colored-2"></div>
+                                    <div class="row">
+                                        <div class="col-md-12">
+                                            <table class="table table-bordered table-stripped" id="progg">
+                                                <tr>
+                                                    <th>S/N</th>
+                                                    <th>Form ID</th>
+                                                    <th>Programme</th>
+                                                    <th>Session</th>
+                                                    <th>Action</th>
+                                                </tr>
+                                                @foreach($candidateForm as $cf)
+                                                    @php
+                                                        $fs = $cf->formSetting;
+                                                        $prg = $fs->programme();
+
+                                                    @endphp
+                                                    <tr>
+                                                        <td>{{$loop->index+1}}</td>
+                                                        <td>{{$cf->id}}</td>
+                                                        <td>{{$prg?$prg->name:""}}</td>
+                                                        <td>{{$fs->session}}/{{$fs->session+1}}</td>
+                                                        <td>
+                                                            <a class="btn btn-primary btn-sm editRecordBtn" cfid="{{$cf->id}}"><i class="fa fa-pencil"></i> Edit </a>
+                                                            @if($cf->payment_status == 'Not Paid')
+                                                                <a class="btn btn-danger btn-sm deleteFormBtn" cfid="{{$cf->id}}" style="margin-left: 5px;"><i class="fa fa-trash"></i> Delete </a>
+                                                            @endif
+                                                        </td>
+                                                    </tr>
+                                                    @endforeach
+                                            </table>
+                                        </div>
+
+                                    </div>
+
+                                    <hr>
+                                    <h3 class="widget-title" style="margin-bottom: 0">
+                                        Admitted Programme
+                                    </h3>
+                                    <div class="double-line-bottom-theme-colored-2"></div>
+                                    <div class="row">
+                                        <div class="col-md-12">
+                                            <table class="table table-bordered table-stripped" id="progg">
+                                                <tr>
+                                                    <th>S/N</th>
+                                                    <th>Programme</th>
+                                                    <th>Session</th>
+                                                    <th>Action</th>
+                                                </tr>
+                                                @php
+                                                    $admittedForms = $candidateForm->where('admission_status', 'admitted');
+                                                    $admittedCount = 0;
+                                                @endphp
+                                                @foreach($admittedForms as $cf)
+                                                    @php
+                                                        $fs = $cf->formSetting;
+                                                        $pgObj = App\Models\Programme::find($cf->programme_admitted_id);
+                                                        $pg = $pgObj ? $pgObj->name : "Not Set";
+                                                    @endphp
+                                                    @if($cf->admission_status == 'admitted')
+                                                        <tr>
+                                                            <td>{{++$admittedCount}}</td>
+                                                            <td>{{$pg}}</td>
+                                                            <td>{{$fs->session}}/{{$fs->session+1}}</td>
+                                                            <td>
+                                                                <a class="btn btn-primary btn-sm editRecordBtn1" cfad="{{$cf->id}}"><i class="fa fa-pencil"></i> Edit </a>
+                                                            </td>
+                                                        </tr>
+                                                    @endif
+                                                @endforeach
+                                                @if($admittedCount == 0)
+                                                    <tr>
+                                                        <td colspan="4" class="text-center text-muted">No admitted programmes found</td>
+                                                    </tr>
+                                                @endif
+                                            </table>
+                                        </div>
+
+                                    </div>
+                                </section>
+
+
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </section>
+
+    @php
+
+    @endphp
+
+        <!-- Modal for adding Disciplinary Cases -->
+
+        <!-- Modal for editing Student Record -->
+    @include("pages.staff.form.modals.editrecord")
+    @include("pages.staff.form.modals.editcandrecord")
+    @include("pages.staff.form.modals.editadmitprog")
+    @endsection
+
+    @section("js")
+        <script>
+            $(function () {
+                var added = false;
+                $("#messageChangeRecord").hide();
+
+                $(".editRecordBtn").on("click", function (e) {
+                    e.preventDefault();
+                    $("#updateBlock").load("{{route('candidate.form.update',[''])}}/"+$(this).attr('cfid'));
+                    $("#editRecordModal").modal();
+                });
+
+                $("#updateStudentRecord").on("click", function (e) {
+
+                    added = true;
+                    $.ajax({
+                        url: "{{  route('candidate.record.edit') }}",
+                        data: $("#updateStudentRecordForm").serialize(),
+                        type: "post",
+                        success: function (response) {
+                            console.log(response);
+                            if(response.status==1){
+
+                            }
+                          $("#updateStudentRecordForm, #updateStudentRecord").hide();
+                            $("#messageChangeRecord").html(response.message).show();
+                        }
+                    });
+                });
+
+                $("#addRecordBtnClose").on("click", function () {
+                    if (added)
+                        document.location = document.location;
+                });
+
+                //for admitted programme
+                var added = false;
+                $("#messageChangeRecord1").hide();
+
+                $(".editRecordBtn1").on("click", function (e) {
+                    e.preventDefault();
+                    $("#updateBlock1").load("{{route('candidate.form.update1',[''])}}/"+$(this).attr('cfad'));
+                    $("#editRecordModal1").modal();
+                });
+
+                $("#updateStudentRecord1").on("click", function (e) {
+
+                    added = true;
+                    $.ajax({
+                        url: "{{  route('candidate.record.edit1') }}",
+                        data: $("#updateStudentRecordForm1").serialize(),
+                        type: "post",
+                        success: function (response) {
+                         console.log(response);
+                            if(response.status==1){
+
+                            }
+                          $("#updateStudentRecordForm1, #updateStudentRecord1").hide();
+                            $("#messageChangeRecord1").html(response.message).show();
+                        }
+                    });
+                });
+
+                $("#addRecordBtnClose1").on("click", function () {
+                    if (added)
+                        document.location = document.location;
+                });
+
+                var added = false;
+                $("#newdept option, #newprog option").not(":first").hide();
+                $("#messageAddDisciplanary").hide();
+                $("#desciplinaryCase").on("click", function (e) {
+                    e.preventDefault();
+                    $("#desciplinaryModal").modal();
+                });
+                $("#addDisciplinaryBtn").on("click", function (e) {
+                    // console.log()
+                    added = true;
+                    $.ajax({
+                        url: "{{  route('student.search.disciplinaryadd') }}",
+                        data: $("#addDisciplinaryForm").serialize(),
+                        type: "post",
+                        success: function (response) {
+                            $("#addDisciplinaryForm, #addDisciplinaryBtn").hide();
+                            $("#messageAddDisciplanary").html(response.message).show(300);
+                        }
+                    });
+                });
+                $("#addDisciplinaryBtnClose").on("click", function () {
+                    if (added)
+                        document.location = document.location;
+                });
+
+
+                var added = false;
+                $("#messageChangeProgramme").hide();
+                $("#changeProgramme").on("click", function (e) {
+                    e.preventDefault();
+                    $("#editProgrammeModal").modal();
+                });
+                $("#changeProgrammeBtn").on("click", function (e) {
+                    console.log($("#changeProgrammeForm").serialize())
+                    added = true;
+                    $.ajax({
+                        url: "{{route("staff.student.programme.add")}} ",
+                        data: $("#changeProgrammeForm").serialize(),
+                        type: "post",
+                        success: function (response) {
+                            console.log(response);
+                            $("#changeProgrammeForm, #changeProgrammeBtn").hide();
+                            $("#messageChangeProgramme").html(response.message).show(300);
+                        }
+                    });
+                });
+                $("#changeProgrammeBtnClose").on("click", function () {
+                    if (added)
+                        document.location = document.location;
+                });
+
+                //edit candidate data
+                var added = false;
+                $("#messageChangeCandRecord").hide();
+                $("#editCandRecordBtn").on("click", function (e) {
+                    e.preventDefault();
+                    $("#editCandRecordModal").modal();
+                });
+                $("#updateCandidateRecord").on("click", function (e) {
+                    console.log($("#updateCandRecordForm").serialize())
+                    added = true;
+                    $.ajax({
+                        url: "{{route("candidate.biodata.update")}} ",
+                        data: $("#updateCandRecordForm").serialize(),
+                        type: "post",
+                        success: function (response) {
+                            console.log(response);
+                            $("#updateCandRecordForm, #updateCandidateRecord").hide();
+                            $("#messageChangeCandRecord").html(response.message).show();
+                        }
+                    });
+                });
+                $("#addCandRecordBtnClose").on("click", function () {
+                    if (added)
+                        document.location = document.location;
+                });
+
+
+                var added = false;
+                $("#display").hide();
+                $("body").on("change", "#session", function () {
+                    if($("#updateSessionRecord").prop("checked")==true){
+                        $("#display").show();
+                    }
+                    var session = $(this).val();
+                    var studentid = "{{$candidate->id }}";
+                    $.ajax({
+                        type: "get",
+                        data: {session: session, studentid: studentid},
+                        url: "{{route('staff.student.programme.change',[''])}}/"
+                    }).done(function (data) {
+                        $("#studymode").val(data.study_mode);
+                        $("#studtype").val(data.study_type);
+                        $("#maritalstat").val(data.marital_status);
+                        $("#matricno").val(data.matric_number);
+                        $("#gradstatus").val(data.graduation_status);
+                        $("#level").val(data.level_id);
+
+                    });
+                });
+
+                $("#updateSessionRecord").on("click",function () {
+                    if($(this).prop("checked")){
+                        $("#display").show();
+                    }else{
+                        $("#display").hide();
+                    }
+                });
+                $("#editRecordBtn").on("click", function (e) {
+                    e.preventDefault();
+                    $("#editRecordModal").modal();
+                });
+
+                $("#editCandRecordBtn").on("click", function (e) {
+                    e.preventDefault();
+                    $("#editCandRecordModal").modal();
+                });
+
+                $('#datetimepicker3').datepicker({
+                    format: 'yyyy-mm-dd'
+                });
+
+                $("body").on("change","#state",function () {
+                    var id = $(this).val();
+                    $("#lga").empty();
+                    $("#lga").append("<option value=''>Select...</option>");
+                    $.getJSON(
+                        "{{ route("ajax.lgas",['']) }}/"+$(this).val(),
+                        function (obj) {
+                            $.each(obj,function (key,value) {
+                                $("#lga").append("<option value='"+value.id+"'>"+value.name+"</option>");
+                            });
+                        }
+                    );
+                });
+
+
+                $("body").on("change","#faculty",function () {
+                    var id = $(this).val();
+                    console.log('Faculty changed:', id);
+                    $("#department").empty();
+                    $("#department").append("<option value=''>Select...</option>");
+                    $.getJSON(
+                        "{{ route("ajax.department",['']) }}/"+$(this).val(),
+                        function (obj) {
+                            console.log('Departments loaded:', obj);
+                            $.each(obj,function (key,value) {
+                                $("#department").append("<option value='"+value.id+"'>"+value.name+"</option>");
+                            });
+                        }
+                    ).fail(function(xhr, status, error) {
+                        console.error('Error loading departments:', error);
+                        console.error('Response:', xhr.responseText);
+                    });
+                });
+
+                $('body').on("change","#department", function () {
+                    var id = $(this).val();
+                    $("#programme").empty();
+                    $("#programme").append("<option value='0'>Select...</option>");
+                    var candidateFormTypeId = $("#candidate_form_type_id").val();
+                    var session = $("#sessionUpdate").val();
+                    
+                    console.log('Department changed:', id);
+                    console.log('Candidate Form Type ID:', candidateFormTypeId);
+                    console.log('Session:', session);
+                    
+                    $.getJSON(
+                        "{{ route("staff.ajax.programmes.forms",['']) }}/" + $(this).val()+"?session="+session+"&candidate_form_type_id="+candidateFormTypeId,
+                        function (obj) {
+                            console.log('Programmes loaded:', obj);
+                            $.each(obj, function (key, value) {
+                                $("#programme").append("<option value='" + value.id + "'>" + value.name + "</option>");
+                            });
+                        }
+                    ).fail(function(xhr, status, error) {
+                        console.error('Error loading programmes:', error);
+                        console.error('Response:', xhr.responseText);
+                    });
+                });
+
+$("#newfac").on("change",function () {
+
+                    var first = 1;
+                    $("#newdept option").each(function (index) {
+                        if($(this).attr("faculty-id")==$("#newfac").val()){
+                            $(this).show();
+                            if(first){
+                                $(this).attr("selected",true);
+                                first = 0;
+                                var value = $(this).attr('value');
+                                var firstIn = 1;
+                                $("#newprog option").each(function (index) {
+                                    if($(this).attr("dept-id")==value){
+                                        $(this).show();
+                                        if(firstIn){
+                                            firstIn = 0;
+                                            $(this).attr("selected",true);
+                                        }
+                                    }else{
+                                        $(this).hide();
+                                    }
+                                });
+                            }
+                        }else{
+                            $(this).hide();
+                        }
+
+                    });
+
+                });
+
+                $("#genMatricBtn").on("click",function () {
+                    //sxtd-ixd
+                    var sxtd_ixd = $(this).attr('sxtd-ixd');
+                    $("#jybuygwu").val(sxtd_ixd);
+                    $("#genMatricModal").modal();
+                });
+                $("#yesChangeMatricBtn").on("click",function () {
+                    $("#updateMatricForm").submit();
+                });
+
+
+                $("#newdept").on("change",function () {
+
+                    $("#newprog option").each(function (index) {
+                        if($(this).attr("dept-id")==$("#newdept").val()){
+                            $(this).show();
+                        }else{
+                            $(this).hide();
+                        }
+                    });
+
+                });
+
+                // Delete candidate form functionality
+                $(".deleteFormBtn").on("click", function (e) {
+                    e.preventDefault();
+                    var cfid = $(this).attr('cfid');
+                    var row = $(this).closest('tr');
+                    
+                    if (confirm('Are you sure you want to delete this candidate form? This action cannot be undone.')) {
+                        $.ajax({
+                            url: "{{ route('candidate.form.delete', '') }}/" + cfid,
+                            type: "DELETE",
+                            data: {
+                                _token: "{{ csrf_token() }}"
+                            },
+                            success: function (response) {
+                                if (response.status == 1) {
+                                    row.fadeOut(300, function() {
+                                        $(this).remove();
+                                    });
+                                    alert(response.message);
+                                } else {
+                                    alert('Error: ' + response.message);
+                                }
+                            },
+                            error: function (xhr) {
+                                var response = JSON.parse(xhr.responseText);
+                                alert('Error: ' + response.message);
+                            }
+                        });
+                    }
+                });
+            });
+        </script>
+    @endsection

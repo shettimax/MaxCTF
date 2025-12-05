@@ -1,0 +1,178 @@
+<?php
+
+namespace App\Http\Controllers;
+use App\Models\Student;
+use App\Models\Hostel;
+use App\Models\Block;
+use App\Models\Room;
+use App\Models\Accommodation;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Validator;
+
+class StaffRoomController extends Controller {
+
+    public function __construct() {
+        $this->middleware('auth:staff');
+    }
+    public function index(Request $request, $bid=null) {
+        //
+        $arrdata = array();
+        if ($bid != null) {
+            $selectedblock = Block::find($bid);
+            $arrdata['selectedblock'] = $selectedblock;
+        }
+        $hostels = Hostel::all();
+        $arrdata['hostels'] = $hostels;
+        return view('pages.staff.accommodation.room.index', $arrdata);
+    }
+
+    public function getRoomHTMLList(Request $request) {
+        $id = $request->query->get('blockid');
+        //echo $id; exit;
+        $block = Block::findOrFail($id);
+        $rooms = $block->rooms;
+        //var_dump($blocks); exit();
+        return view('pages.staff.accommodation.room.roomlist', array('rooms' => $rooms, 'block' => $block));
+    }
+
+    /**
+     * Show the form for creating a new resource.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function create(Request $request, $id = null) {
+        //
+        if ($id == null) {
+            $id = $request->query->get('id');
+        }
+        $block = Block::findOrFail($id);
+        return view("pages.staff.accommodation.room.create", array('block' => $block));
+    }
+
+    /**
+     * Store a newly created resource in storage.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function store(Request $request) {
+//        return $request;
+        $validator = Validator::make($request->all(), [
+            'roomno' => 'required',
+            'fee' => 'nullable|numeric|min:0',
+            'bedspace'=>'required|numeric|min:1',
+            'blockid' => 'required|numeric'
+        ]);
+        if ($validator->fails()) {
+            return redirect()->route('accommodation.admin.room.create',
+                ['id' => $request->input('blockid')])
+                ->withErrors($validator)
+                ->withInput();
+        }
+
+        $room = new Room();
+        $room->room_no = $request->input('roomno');
+        /*$room->status = $request->request->get('status');*/
+        $room->bed_space = $request->input('bedspace');
+        $room->block_id = $request->input('blockid');
+        $room->fee = $request->input('fee') > 0 ? $request->input('fee') : null;
+//        $room->fee = ($request->input('roomfee') >0)?($request->input('roomfee')):(null);
+        $room->save();
+        return redirect()->route('accommodation.admin.room.show', array('id' => $room->id));
+    }
+
+    /**
+     * Display the specified resource.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function show(Request $request, $id=null) {
+        if ($id == null) {
+            $id = $request->query->get('id');
+        }
+        $room = Room::findOrFail($id);
+
+        return view("pages.staff.accommodation.room.view", array("room" => $room));
+    }
+
+    /**
+     * Show the form for editing the specified resource.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function edit(Request $request, $id = null) {
+        if ($id == null) {
+            $id = $request->query->get('id');
+        }
+        $room = Room::findOrFail($id);
+        return view("pages.staff.accommodation.room.edit", array("room" => $room));
+    }
+
+    /**
+     * Update the specified resource in storage.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  int  $id
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function update(Request $request) {
+        //
+        $validator = Validator::make($request->all(), [
+            'roomno' => 'required',
+            'bedspace' => 'required|numeric|min:1',
+            'fee' => 'nullable|numeric|min:0'
+        ]);
+        if ($validator->fails()) {
+            return redirect()->route('accommodation.admin.room.edit', ['id' => $request->input('roomid')])
+                ->withErrors($validator)
+                ->withInput();
+        }
+
+        $room = Room::findOrFail($request->input('roomid'));
+        $room->room_no = $request->input('roomno');
+        $room->bed_space = $request->input('bedspace');
+//        $room->status = $request->input('status');
+        if ($request->input('roomfee') == 'blockfee') {
+            $room->fee = null;
+        } else {
+            $room->fee = $request->input('roomfee');
+        }
+        $room->save();
+        $request->session()->flash('success', 'Room update was successful!');
+        return redirect()->route('accommodation.admin.room.edit', array('id' => $room->id));
+    }
+
+    public function toggleStatus(Request $request, $id = null) {
+        if ($id == null) {
+            $id = $request->query->get('id');
+        }
+
+        $room = Room::findOrFail($id);
+        if ($room->status == '1') {
+            $room->status = '0';
+        } else {
+            $room->status = '1';
+        }
+        $room->save();
+        return view("pages.staff.accommodation.room.view", array("room" => $room));
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function destroy($id) {
+        //
+    }
+
+    public function getRooms($blockId) {
+        return Room::where('block_id', $blockId)->get();
+    }
+
+}

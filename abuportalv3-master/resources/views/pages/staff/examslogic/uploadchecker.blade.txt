@@ -1,0 +1,64 @@
+<?php
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+?>
+
+@extends("layouts.master")
+
+@section("content")
+<div class="container">
+    <div class="row">
+        <div class="col-md-12">
+            <table class="table table-bordered">
+                <tr>
+                    <th>
+                        <center>Total number of valid results entered for {{$coursecode}} in {{$session}} academic session is {{ $totalvalid }}</center>
+                    </th>
+                </tr>
+            </table>            
+        </div>
+    </div>
+    <div clas="row">
+        <div class="col-md-4">
+            <table class="table table-bordered">
+                <tr>
+                <center>The following student(s) registered this course but no result entered for them yet.</center>
+                </tr>
+                @foreach($noResult as $noR)
+                <tr>
+                    <td>{{$noR}}</td>
+                </tr>
+                @endforeach
+            </table> 
+        </div>
+        <div class="col-md-4">
+            <table class="table table-bordered">
+                <tr>
+                <center>The following student(s) did not registered for this course. Please confirm their registration status and retry</center>
+                </tr>
+                @foreach($invalidmatrics as $invalid)
+                <tr>
+                    <td>{{$invalid}}</td>
+                </tr>
+                @endforeach
+            </table> 
+        </div>
+        <div class="col-md-4">
+            <table class="table table-bordered">
+                <tr>
+                <center>The following student(s) had duplicate results for this course, delete the wrong entries and retry</center>
+                </tr>
+                @foreach($duplicates as $dup)
+                <tr>
+                    <td>{{ $dup }}</td>
+                </tr>
+                @endforeach
+            </table> 
+        </div>
+    </div>
+
+</div>
+@endsection

@@ -1,0 +1,885 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Block;
+use App\Models\Room;
+use Illuminate\Http\Request;
+use App\Models\Hostel;
+use App\Models\Reservation;
+use App\Models\Student;
+use Illuminate\Support\Facades\DB;
+use SebastianBergmann\Diff\Exception;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
+use Auth;
+class AccommodationReportController extends Controller
+{
+    public function __construct()
+    {
+        $this->middleware('auth:staff');
+    }
+
+    /**
+     * Display the Room Occupancy Report.
+     *
+     * @param Request $request
+     * @return \Illuminate\View\View
+     */
+    public function roomOccupancyReport(Request $request)
+    {
+
+        try {
+
+            $hostel_id = null;
+            $block_id = null;
+            $room_id = null;
+            $session = null;
+            $rooms = [];
+            $hostel = 0;
+
+            if ($request->hostel) {
+                //return $request->session." ".$request->hostel;
+                $hostel_id = $request->input('hostel', '%');
+                $block_id = $request->input('block', '%');
+                $room_id = $request->input('room', '%');
+                $session = $request->input('session');
+                $hostel = $hostel_id;
+
+                // Optimized query using database aggregation instead of PHP loops
+                $rooms = DB::table('reservations')
+                    ->join('students', 'reservations.student_id', '=', 'students.id')
+                    ->join('room_configs', 'reservations.room_config_id', '=', 'room_configs.id')
+                    ->join('rooms', 'room_configs.room_id', '=', 'rooms.id')
+                    ->join('blocks', 'rooms.block_id', '=', 'blocks.id')
+                    ->join('hostels', 'blocks.hostel_id', '=', 'hostels.id')
+                    ->select(
+                        'hostels.name as hostel_name',
+                        'blocks.name as block_name',
+                        'rooms.room_no',
+                        'rooms.id as room_id',
+                        'room_configs.bed_space',
+                        DB::raw('GROUP_CONCAT(DISTINCT CONCAT(students.matric_number, "|", students.firstname, "|", students.surname, "|", students.gender, "|", reservations.status) ORDER BY students.matric_number SEPARATOR "||") as occupants_data'),
+                        DB::raw('COUNT(DISTINCT students.id) as total_occupants')
+                    )
+                    ->groupBy('rooms.id', 'hostels.name', 'blocks.name', 'rooms.room_no', 'room_configs.bed_space');
+
+                // Apply filters
+                if ($hostel_id !== '%') {
+                    $rooms->where('hostels.id', $hostel_id);
+                }
+
+                if ($block_id !== '%') {
+                    $rooms->where('blocks.id', $block_id);
+                }
+
+                if ($room_id !== '%') {
+                    $rooms->where('rooms.id', $room_id);
+                }
+
+                if ($session) {
+                    $rooms->where('reservations.session', $session);
+                }
+
+                // Execute query and process results
+                $roomResults = $rooms->get();
+                
+                $processedRooms = [];
+                foreach ($roomResults as $room) {
+                    $occupants = [];
+                    if ($room->occupants_data) {
+                        $occupantData = explode('||', $room->occupants_data);
+                        foreach ($occupantData as $data) {
+                            $parts = explode('|', $data);
+                            if (count($parts) >= 5) {
+                                $occupants[] = (object) [
+                                    'matric_number' => $parts[0],
+                                    'firstname' => $parts[1],
+                                    'surname' => $parts[2],
+                                    'gender' => $parts[3],
+                                    'status' => $parts[4]
+                                ];
+                            }
+                        }
+                    }
+
+                    $processedRooms[] = [
+                        'hostel_name' => $room->hostel_name,
+                        'block_name' => $room->block_name,
+                        'room_no' => $room->room_no,
+                        'bed_space' => $room->bed_space,
+                        'occupants' => $occupants,
+                        'status' => !empty($occupants) ? $occupants[0]->status : 'empty'
+                    ];
+                }
+
+                $rooms = collect($processedRooms);
+            }
+            // return $request;
+            // $reservations = Reservation::with([
+            //     'student:id,matric_number,firstname,surname,gender',
+            //     'roomConfig.room.block.hostel:id,name',
+            //     'transactions' => function ($query) {
+            //         $query->where('code', 'ACC')
+            //             ->where('payment_status', 'Paid');
+            //     }
+            // ])->whereHas('transactions', function ($query) {
+            //     $query->where('code', 'ACC')
+            //         ->where('payment_status', 'Paid');
+            // });
+
+            // if ($hostel_id !== '%') {
+            //     $reservations->whereHas('roomConfig.room.block.hostel', function ($query) use ($hostel_id) {
+            //         $query->where('id', $hostel_id);
+            //     });
+            // }
+
+            // if ($block_id !== '%') {
+            //     $reservations->whereHas('roomConfig.room.block', function ($query) use ($block_id) {
+            //         $query->where('id', $block_id);
+            //     });
+            // }
+
+            // if ($room_id !== '%') {
+            //     $reservations->whereHas('roomConfig.room', function ($query) use ($room_id) {
+            //         $query->where('id', $room_id);
+            //     });
+            // }
+
+
+            // Cache frequently accessed data
+            $hostels = Cache::remember('hostels_active', 3600, function () {
+                return Hostel::where('status', '1')->orderBy('name')->get();
+            });
+            
+            $blocks = Cache::remember('blocks_active', 3600, function () {
+                return Block::where('status', '1')->orderBy('name')->get();
+            });
+            
+            $roomsList = Cache::remember('rooms_list', 3600, function () {
+                return Room::orderBy('room_no')->get();
+            });
+
+            return view('pages.staff.accommodation.report.room_occupancy', compact(
+                'rooms',
+                'hostels',
+                'blocks',
+                'roomsList',
+                'hostel_id',
+                'block_id',
+                'room_id',
+                'session'
+            ));
+        } catch (\Exception $e) {
+            return $e->getMessage();
+
+        }
+    }
+
+
+    public function getBlocks($hostel_id)
+    {
+        // Cache blocks for better performance
+        $cacheKey = "blocks_hostel_{$hostel_id}";
+        
+        $blocks = Cache::remember($cacheKey, 1800, function () use ($hostel_id) {
+            return Block::select('id', 'name', 'hostel_id')
+                ->when($hostel_id !== '%', function ($query) use ($hostel_id) {
+                    return $query->where('hostel_id', $hostel_id);
+                })
+                ->where('status', '1')
+                ->orderBy('name')
+                ->get();
+        });
+
+        return response()->json($blocks);
+    }
+
+    public function getRooms($block_id)
+    {
+        // Cache rooms for better performance
+        $cacheKey = "rooms_block_{$block_id}";
+        
+        $rooms = Cache::remember($cacheKey, 1800, function () use ($block_id) {
+            return Room::select('id', 'room_no', 'block_id')
+                ->when($block_id !== '%', function ($query) use ($block_id) {
+                    return $query->where('block_id', $block_id);
+                })
+                ->orderBy('room_no')
+                ->get();
+        });
+
+        return response()->json($rooms);
+    }
+
+    public function showStudents()
+    {
+        // Get the maximum session from the accommodation table
+        $maxSession = 2023;// DB::table('accommodation')->max('session');
+
+        $results = DB::table('students')
+            ->distinct()
+            ->select(
+                'students.matric_number',
+                'transactions.session',
+                'students.firstname',
+                'students.surname',
+                'students.other_names',
+                'programmes.name as programme',
+                'departments.name as department',
+                'faculties.name as faculty',
+                'session_regs.level_id',
+                'states.name as state',
+                'students.gender',
+                'hostels.name as hostel',
+                'blocks.name as block',
+                'rooms.room_no',
+                'transactions.payment_status',
+                'transactions.transaction_amount'
+            )
+            ->join('programmes', 'programmes.id', '=', 'students.programme_id')
+            ->join('departments', 'programmes.department_id', '=', 'departments.id')
+            ->join('faculties', 'departments.faculty_id', '=', 'faculties.id')
+            ->join('reservations', 'reservations.student_id', '=', 'students.id')
+            ->join('room_configs', 'reservations.room_config_id', '=', 'room_configs.id')
+            ->join('rooms', 'room_configs.room_id', '=', 'rooms.id')
+            ->join('blocks', 'rooms.block_id', '=', 'blocks.id')
+            ->join('hostels', 'blocks.hostel_id', '=', 'hostels.id')
+            ->join('transactions', 'reservations.id', '=', 'transactions.student_id')
+            ->join('student_biodatas', 'student_biodatas.student_id', '=', 'students.id')
+            ->join('session_regs', 'students.id', '=', 'session_regs.student_id')
+            ->join('lgas', 'lgas.id', '=', 'students.lga_id')
+            ->join('states', 'lgas.state_id', '=', 'states.id')
+            ->where('transactions.session', $maxSession)
+//            ->where('transactions.payment_status', 'Paid')
+            ->where('transactions.code', 'ACC')
+            ->whereIn('students.entry_level_id', [3, 4, 5, 6, 7, 8])
+            ->where('session_regs.session', $maxSession)
+            ->where('reservations.session', $maxSession)
+            ->where('room_configs.session', $maxSession)
+            ->get();
+
+        return view('pages.staff.accommodation.report.payment', compact('results'));
+    }
+
+    public function accdPayment()
+    {
+        return view('pages.staff.accommodation.report.payment_filter');
+    }
+
+    public function getSessions()
+    {
+        $sessions = Reservation::select('session')
+            ->distinct()
+            ->orderBy('session', 'desc')
+            ->pluck('session');
+
+        return response()->json($sessions);
+    }
+
+    public function getReservationStatus()
+{
+    $statuses = Reservation::select('status')
+        ->distinct()
+        ->orderBy('status')
+        ->pluck('status');
+
+    return response()->json($statuses);
+}
+
+
+        public function reservationStatus(Request $request)
+    {
+         $students = array();
+        $user = Auth::user();
+        $permission = "accommodation.admin.report.studentaccstatus";
+        if (!$this->access($user,$permission))
+            return view("pages.errors.nopermission", array("message" => "You have no permission to do this operation"));
+
+        if ($request->ajax()) {
+            try {
+                $hostel_id = $request->input('hostel');
+                $block_id = $request->input('block');
+                $room_id = $request->input('room');
+                $status = $request->input('status');
+                $session = $request->input('session');
+
+                // Validate dropdown values (must be numeric ID or '%')
+                foreach (['hostel' => $hostel_id, 'block' => $block_id, 'room' => $room_id] as $key => $value) {
+                    if (!is_null($value) && $value !== '%' && !is_numeric($value)) {
+                        return response()->json([
+                            'error' => "Invalid value for $key."
+                        ], 422);
+                    }
+                }
+
+                /*
+                if (!is_null($status) && $status !== '%' && !in_array($status, ['reserved', 'occupied', 'cancelled'])) {
+                    return response()->json([
+                        'error' => "Invalid reservation status."
+                    ], 422);
+                }
+               */
+              
+                // Query
+                $reservations = Reservation::query()
+                    ->join('students', 'reservations.student_id', '=', 'students.id')
+                    ->leftJoin('room_configs', 'reservations.room_config_id', '=', 'room_configs.id')
+                    ->join('rooms', 'room_configs.room_id', '=', 'rooms.id')
+                    ->join('blocks', 'rooms.block_id', '=', 'blocks.id')
+                    ->join('hostels', 'blocks.hostel_id', '=', 'hostels.id')
+                    ->select(
+                        'reservations.*',
+                        'students.matric_number',
+                        'students.firstname',
+                        'students.surname',
+                        'students.gender',
+                        'hostels.name as hostel_name',
+                        'blocks.name as block_name',
+                        'rooms.room_no as room_name',
+                        'reservations.reserved_by',
+                        'reservations.reservation_date',
+                        'reservations.status'
+                    );
+
+                if ($hostel_id !== '%') {
+                    $reservations->where('hostels.id', $hostel_id);
+                }
+
+                if ($block_id !== '%') {
+                    $reservations->where('blocks.id', $block_id);
+                }
+
+                if ($room_id !== '%') {
+                    $reservations->where('rooms.id', $room_id);
+                }
+
+                if ($status !== '%') {
+                    $reservations->where('reservations.status', $status);
+                }
+
+                if (!empty($session)) {
+                    $reservations->where('reservations.session', $session);
+                }
+
+                $reservations->orderBy('hostels.name')
+                            ->orderBy('blocks.name')
+                            ->orderBy('rooms.room_no')
+                            ->orderBy('reservations.status');
+
+                $reservations = $reservations->get();
+
+                return view('pages.staff.accommodation.report.load_reservationstatus_data', compact('reservations', 'session'));
+
+            } catch (\Exception $e) {
+                Log::error('Room Occupancy Report Error: ' . $e->getMessage());
+                return response()->view('errors.500', [], 500);
+            }
+        }
+
+        return view('pages.staff.accommodation.report.reservationstatus', compact('students'));
+    }
+
+    public function roomOccupants(Request $request)
+{
+     $students = array();
+        $user = Auth::user();
+        $permission = "accommodation.admin.report.studentaccstatus";
+        if (!$this->access($user,$permission))
+            return view("pages.errors.nopermission", array("message" => "You have no permission to do this operation"));
+ if ($request->ajax()) {
+    try {
+        $hostel_id = $request->input('hostel', '%');
+        $block_id = $request->input('block', '%');
+        $room_id = $request->input('room', '%');
+        $session = $request->input('session');
+
+        // Build reservation query
+       $reservations = Reservation::query()
+        ->join('students', 'reservations.student_id', '=', 'students.id')
+        ->leftJoin('room_configs', 'reservations.room_config_id', '=', 'room_configs.id')
+        ->join('rooms', 'room_configs.room_id', '=', 'rooms.id')
+        ->join('blocks', 'rooms.block_id', '=', 'blocks.id')
+        ->join('hostels', 'blocks.hostel_id', '=', 'hostels.id')
+        ->select(
+            'hostels.name as hostel_name',
+            'blocks.name as block_name',
+            'rooms.room_no as room_name',
+            'rooms.id as room_id',
+            'room_configs.bed_space',
+            DB::raw("GROUP_CONCAT(DISTINCT CONCAT(UCASE(students.matric_number), ' - ', UCASE(reservations.status)) ORDER BY students.matric_number SEPARATOR ', ') as matric_status_list"),
+            DB::raw("COUNT(DISTINCT students.id) as total_occupants")
+        )
+        ->groupBy('rooms.id', 'hostels.name', 'blocks.name', 'rooms.room_no');
+
+        // Apply filters if not wildcard
+        if ($hostel_id !== '%') {
+            $reservations->where('hostels.id', $hostel_id);
+        }
+        if ($block_id !== '%') {
+            $reservations->where('blocks.id', $block_id);
+        }
+        if ($room_id !== '%') {
+            $reservations->where('rooms.id', $room_id);
+        }
+        if (!empty($session)) {
+            $reservations->where('reservations.session', $session);
+}
+
+    $rooms = $reservations->get();
+
+    return view('pages.staff.accommodation.report.load_roomoccupants_data', compact('rooms', 'session'));
+
+    } catch (\Exception $e) {
+        Log::error('Room Occupancy Report Error: ' . $e->getMessage());
+        return response()->view('errors.500', [], 500);
+    }
+}
+ return view('pages.staff.accommodation.report.roomoccupants', compact('students'));
+}
+
+public function reservationsPayment(Request $request) 
+{
+   // Log::info('Reservation report route triggered.');
+    $students = [];
+
+    $user = Auth::user();
+    $permission = "accommodation.admin.report.studentaccstatus";
+    if (!$this->access($user, $permission)) {
+        return view("pages.errors.nopermission", ["message" => "You have no permission to do this operation"]);
+    }
+
+    if ($request->ajax()) {
+        try {
+            $hostel_id = $request->input('hostel');
+            $block_id = $request->input('block');
+            $room_id = $request->input('room');
+            $session = $request->input('session');
+
+            //Log::info('Received input', compact('hostel_id', 'block_id', 'room_id', 'session'));
+
+            foreach (['hostel' => $hostel_id, 'block' => $block_id, 'room' => $room_id] as $key => $value) {
+                if (!is_null($value) && $value !== '%' && !is_numeric($value)) {
+                    return response()->json(['error' => "Invalid value for $key."], 422);
+                }
+            }
+
+          //  DB::enableQueryLog();
+
+            $query = DB::table('reservations')
+                ->join('students', 'reservations.student_id', '=', 'students.id')
+                ->join('room_configs', 'reservations.room_config_id', '=', 'room_configs.id')
+                ->join('rooms', 'room_configs.room_id', '=', 'rooms.id')
+                ->join('blocks', 'rooms.block_id', '=', 'blocks.id')
+                ->join('hostels', 'blocks.hostel_id', '=', 'hostels.id')
+                ->leftJoin('student_biodatas', 'student_biodatas.student_id', '=', 'students.id')
+                ->leftJoin('lgas', 'lgas.id', '=', 'students.lga_id')
+                ->leftJoin('states', 'states.id', '=', 'lgas.state_id')
+                ->leftJoin('programmes', 'programmes.id', '=', 'students.programme_id')
+                ->leftJoin('departments', 'programmes.department_id', '=', 'departments.id')
+                ->leftJoin('faculties', 'departments.faculty_id', '=', 'faculties.id')
+                ->leftJoin('transactions', function ($join) {
+                    $join->on('transactions.student_id', '=', 'reservations.id')
+                        ->on('transactions.session', '=', 'reservations.session')
+                        ->where('transactions.code', '=', 'ACC')
+                        ->whereIn('transactions.payment_status', ['Paid', 'Waived']);
+                })
+                ->select(
+                    'students.id', 'students.matric_number', 'students.firstname', 'students.surname', 'students.other_names',
+                    'programmes.name as programme', 'departments.name as department', 'faculties.name as faculty',
+                    'students.gender', 'states.name as state',
+                    'hostels.name as hostel_name', 'blocks.name as block_name', 'rooms.room_no as room_name',
+                    'reservations.status', 'reservations.reservation_date',
+                    DB::raw('COALESCE(SUM(transactions.transaction_amount), 0) as transaction_amount'),
+                    'reservations.session'
+                )
+                ->where('reservations.status', 'paid')
+                ->when($hostel_id && $hostel_id !== '%', fn($q) => $q->where('hostels.id', $hostel_id))
+                ->when($block_id && $block_id !== '%', fn($q) => $q->where('blocks.id', $block_id))
+                ->when($room_id && $room_id !== '%', fn($q) => $q->where('rooms.id', $room_id))
+                ->when($session, fn($q) => $q->where('reservations.session', $session))
+                ->groupBy(
+                    'students.id', 'students.matric_number', 'students.firstname', 'students.surname', 'students.other_names',
+                    'programmes.name', 'departments.name', 'faculties.name',
+                    'students.gender', 'states.name',
+                    'hostels.name', 'blocks.name', 'rooms.room_no',
+                    'reservations.status', 'reservations.reservation_date', 'reservations.session'
+                )
+                ->orderBy('hostels.name')
+                ->orderBy('blocks.name')
+                ->orderBy('rooms.room_no');
+
+            $data = $query->get();
+
+           // Log::info('Query executed', DB::getQueryLog());
+
+            return view('pages.staff.accommodation.report.load_reservationspayment_data', compact('data', 'session'));
+
+        } catch (\Exception $e) {
+            Log::error('Reservation Payment Report Error: ' . $e->getMessage());
+            return response()->json(['error' => 'Internal Server Error', 'details' => $e->getMessage()], 500);
+        }
+    }
+
+    return view('pages.staff.accommodation.report.reservationspayment', compact('students'));
+}
+
+public function reservationsAnalytics(Request $request) 
+{
+    Log::info('Reservation analytics report route triggered.');
+    $students = [];
+
+    $user = Auth::user();
+    $permission = "accommodation.admin.report.studentaccstatus";
+    if (!$this->access($user, $permission)) {
+        return view("pages.errors.nopermission", ["message" => "You have no permission to do this operation"]);
+    }
+
+    if ($request->ajax()) {
+        try {
+            $hostel_id = $request->input('hostel');
+            $block_id = $request->input('block');
+            $room_id = $request->input('room');
+            $session = $request->input('session');
+
+            Log::info('Received input', compact('hostel_id', 'block_id', 'room_id', 'session'));
+
+            foreach (['hostel' => $hostel_id, 'block' => $block_id, 'room' => $room_id] as $key => $value) {
+                if (!is_null($value) && $value !== '%' && !is_numeric($value)) {
+                    return response()->json(['error' => "Invalid value for $key."], 422);
+                }
+            }
+
+            DB::enableQueryLog();
+ // Base query to filter reservations by given filters
+    $reservationQuery = DB::table('reservations')
+        ->join('room_configs', 'reservations.room_config_id', '=', 'room_configs.id')
+        ->join('rooms', 'room_configs.room_id', '=', 'rooms.id')
+        ->join('blocks', 'rooms.block_id', '=', 'blocks.id')
+        ->join('hostels', 'blocks.hostel_id', '=', 'hostels.id')
+        ->when($hostel_id, fn($q) => $hostel_id !== '%' ? $q->where('hostels.id', $hostel_id) : $q)
+        ->when($block_id, fn($q) => $block_id !== '%' ? $q->where('blocks.id', $block_id) : $q)
+        ->when($room_id, fn($q) => $room_id !== '%' ? $q->where('rooms.id', $room_id) : $q)
+        ->when($session, fn($q) => $q->where('reservations.session', $session));
+
+    // 1. Total Bed Spaces filtered by hostel/block/room (sum of bed_spaces from room_configs)
+    $totalBeds = DB::table('room_configs')
+        ->join('rooms', 'room_configs.room_id', '=', 'rooms.id')
+        ->join('blocks', 'rooms.block_id', '=', 'blocks.id')
+        ->join('hostels', 'blocks.hostel_id', '=', 'hostels.id')
+        ->when($hostel_id, fn($q) => $hostel_id !== '%' ? $q->where('hostels.id', $hostel_id) : $q)
+        ->when($block_id, fn($q) => $block_id !== '%' ? $q->where('blocks.id', $block_id) : $q)
+        ->when($room_id, fn($q) => $room_id !== '%' ? $q->where('rooms.id', $room_id) : $q)
+        ->sum('room_configs.bed_space');
+
+    // 2. Occupied Bed Spaces (count reservations with status = 'occupied')
+    $occupied = (clone $reservationQuery)->where('reservations.status', 'paid')->count();
+
+    // 3. Pending Reservations (status = 'reserved' or 'pending')
+    $pending = (clone $reservationQuery)->whereIn('reservations.status', ['reserved'])->count();
+
+    // 4. Available Bed Spaces = totalBeds - occupied
+    $available = max(0, $totalBeds - $occupied);
+
+    // 5. Payment stats from transactions (code = 'ACC')
+    $paymentQuery = DB::table('transactions')
+        ->join('students', 'transactions.student_id', '=', 'students.id')
+        ->join('reservations', 'students.id', '=', 'reservations.student_id')
+        ->join('room_configs', 'reservations.room_config_id', '=', 'room_configs.id')
+        ->join('rooms', 'room_configs.room_id', '=', 'rooms.id')
+        ->join('blocks', 'rooms.block_id', '=', 'blocks.id')
+        ->join('hostels', 'blocks.hostel_id', '=', 'hostels.id')
+        ->where('transactions.code', 'ACC')
+        ->when($hostel_id, fn($q) => $hostel_id !== '%' ? $q->where('hostels.id', $hostel_id) : $q)
+        ->when($block_id, fn($q) => $block_id !== '%' ? $q->where('blocks.id', $block_id) : $q)
+        ->when($room_id, fn($q) => $room_id !== '%' ? $q->where('rooms.id', $room_id) : $q)
+        ->when($session, fn($q) => $q->where('reservations.session', $session));
+
+    // Total Payment Amount
+    $totalPayment = $paymentQuery->sum('transactions.transaction_amount');
+
+    // Number of paid students (distinct student_id in transactions)
+    $paidStudents = (clone $paymentQuery)->distinct('transactions.student_id')->count('transactions.student_id');
+
+    // Total students with reservations in filtered scope
+    $totalStudents = (clone $reservationQuery)->distinct('reservations.student_id')->count('reservations.student_id');
+
+    // Unpaid students = totalStudents - paidStudents
+    $unpaidStudents = max(0, $totalStudents - $paidStudents);
+
+    // Reservation status counts (reserved, occupied, cancelled, expired)
+    $statusCounts = (clone $reservationQuery)
+        ->select('reservations.status', DB::raw('count(*) as count'))
+        ->groupBy('reservations.status')
+        ->pluck('count', 'status')
+        ->toArray();
+
+                        // Normalize status keys
+            $reservedCount = $statusCounts['reserved'] ?? 0;
+            $occupiedCount = $statusCounts['paid'] ?? 0;
+            $cancelledCount = $statusCounts['cancelled'] ?? 0;
+            $expiredCount = $statusCounts['expired'] ?? 0;
+            $revokedCount = $statusCounts['revoked'] ?? 0;
+
+            // Return as JSON for Google Charts consumption
+            return response()->json([
+                'total_beds' => $totalBeds,
+                'occupied' => $occupied,
+                'available' => $available,
+                'pending' => $pending,
+                'total_payment' => $totalPayment,
+                'paid_students' => $paidStudents,
+                'unpaid_students' => $unpaidStudents,
+                'reservation_status' => [
+                    'reserved' => $reservedCount,
+                    'occupied' => $occupiedCount,
+                    'cancelled' => $cancelledCount,
+                    'expired' => $expiredCount,
+                    'revoked' => $revokedCount,
+                ]
+            ]);
+
+           // Log::info(message: 'Query executed', DB::getQueryLog());
+
+        } catch (\Exception $e) {
+            Log::error('Reservation Analytics Report Error: ' . $e->getMessage());
+            return response()->json(['error' => 'Internal Server Error', 'details' => $e->getMessage()], 500);
+        }
+    }
+
+    return view('pages.staff.accommodation.report.reservationsanalytics', data: compact('students'));
+}
+
+public function showReportByMatricNumbers(Request $request)
+{
+    Log::info('Reservations by matric report route triggered.');
+
+    $user = Auth::user();
+    $permission = "accommodation.admin.report.studentaccstatus";
+
+    if (!$this->access($user, $permission)) {
+        return view("pages.errors.nopermission", [
+            "message" => "You have no permission to do this operation"
+        ]);
+    }
+
+    if ($request->ajax()) {
+        try {
+            $session = $request->input('session');
+            $matricInput = $request->input('matric_numbers');
+
+            // Normalize: split by comma, space, semicolon, newline, etc.
+            $matrics = collect(preg_split('/[\s,;\n\r\t]+/', $matricInput, -1, PREG_SPLIT_NO_EMPTY))
+                ->map(fn($m) => trim($m))
+                ->unique()
+                ->values();
+
+            Log::info('Received matric input', [
+                'count' => $matrics->count(),
+                'session' => $session
+            ]);
+
+            $studentIds = DB::table('session_regs')
+                ->whereIn('matric_number', $matrics)
+                ->distinct()
+                ->pluck('student_id');
+
+           // Log::info('Matric numbers:', $matrics);
+            //Log::info('Retrieved student IDs:', $studentIds->toArray());
+
+            DB::enableQueryLog();
+
+            $data = DB::table('reservations')
+            ->join('students', 'reservations.student_id', '=', 'students.id')
+            ->join('room_configs', 'reservations.room_config_id', '=', 'room_configs.id')
+            ->join('rooms', 'room_configs.room_id', '=', 'rooms.id')
+            ->join('blocks', 'rooms.block_id', '=', 'blocks.id')
+            ->join('hostels', 'blocks.hostel_id', '=', 'hostels.id')
+
+            // Join only the first session_reg record per student per session
+            ->leftJoin(DB::raw('(
+                SELECT sr1.*
+                FROM session_regs sr1
+                INNER JOIN (
+                    SELECT student_id, session, MIN(id) as min_id
+                    FROM session_regs
+                    GROUP BY student_id, session
+                ) sr2 ON sr1.id = sr2.min_id
+            ) AS session_regs'), function ($join) {
+                $join->on('session_regs.student_id', '=', 'students.id')
+                    ->on('session_regs.session', '=', 'reservations.session');
+            })
+
+            ->leftJoin('student_biodatas', 'student_biodatas.student_id', '=', 'students.id')
+            ->leftJoin('lgas', 'lgas.id', '=', 'students.lga_id')
+            ->leftJoin('states', 'states.id', '=', 'lgas.state_id')
+            ->leftJoin('programmes', 'programmes.id', '=', 'students.programme_id')
+            ->leftJoin('departments', 'programmes.department_id', '=', 'departments.id')
+            ->leftJoin('faculties', 'departments.faculty_id', '=', 'faculties.id')
+
+            // One transaction per student
+            ->leftJoin(DB::raw('(
+                SELECT student_id, MAX(transaction_amount) AS transaction_amount
+                FROM transactions
+                WHERE code = "ACC"
+                GROUP BY student_id
+            ) AS transactions'), 'transactions.student_id', '=', 'students.id')
+
+            ->select(
+                'students.id',
+                'students.matric_number',
+                'students.firstname',
+                'students.surname',
+                'students.other_names',
+                'session_regs.level_id as level',
+                'student_biodatas.email',
+                'student_biodatas.gsm',
+                'programmes.name as programme',
+                'departments.name as department',
+                'faculties.name as faculty',
+                'students.gender',
+                'states.name as state',
+                'hostels.name as hostel_name',
+                'blocks.name as block_name',
+                'rooms.room_no as room_name',
+                'reservations.reserved_by',
+                'reservations.status',
+                'reservations.reservation_date',
+                'transactions.transaction_amount',
+                'reservations.session'
+            )
+            ->whereIn('students.id', $studentIds)
+            ->when($session, fn($q) => $q->where('reservations.session', $session))
+            ->orderBy('hostels.name')
+            ->orderBy('blocks.name')
+            ->orderBy('rooms.room_no')
+            ->get();
+
+            Log::info('Query executed', DB::getQueryLog());
+
+            return view('pages.staff.accommodation.report.load_reservationsbymatricnumbers_data', compact('data', 'session'));
+        } catch (\Exception $e) {
+            Log::error('Reservation by matric Report Error', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return response()->json([
+                'error' => 'Internal Server Error',
+                'details' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    // Initial page load
+    return view('pages.staff.accommodation.report.reservationsbymatricnumbers');
+}
+
+public function filteredAccommodationReport(Request $request)
+{
+    Log::info('Reservations by matric report route triggered.');
+    $students = [];
+    $user = Auth::user();
+    $permission = "accommodation.admin.report.studentaccstatus";
+
+    if (!$this->access($user, $permission)) {
+        return view("pages.errors.nopermission", [
+            "message" => "You have no permission to do this operation"
+        ]);
+    }
+
+    if ($request->ajax()) {
+    try {
+        Log::info('Starting filteredAccommodationReport method');
+
+        $session = $request->input('session');
+        $hostelId = $request->input('hostel');
+        $blockId = $request->input('block');
+        $roomId = $request->input('room');
+        $status = $request->input('status');
+
+        Log::info('Request Inputs:', [
+            'session' => $session,
+            'hostel' => $hostelId,
+            'block' => $blockId,
+            'room' => $roomId,
+            'status' => $status,
+        ]);
+
+        $data = DB::table('reservations')
+        ->join('students', 'reservations.student_id', '=', 'students.id')
+        ->join('room_configs', 'reservations.room_config_id', '=', 'room_configs.id')
+        ->join('rooms', 'room_configs.room_id', '=', 'rooms.id')
+        ->join('blocks', 'rooms.block_id', '=', 'blocks.id')
+        ->join('hostels', 'blocks.hostel_id', '=', 'hostels.id')
+        ->join('session_regs', function ($join) use ($session) {
+            $join->on('session_regs.student_id', '=', 'students.id')
+                ->where('session_regs.session', '=', $session);
+        })
+        ->leftJoin('student_biodatas', 'student_biodatas.student_id', '=', 'students.id')
+        ->leftJoin('lgas', 'lgas.id', '=', 'students.lga_id')
+        ->leftJoin('states', 'states.id', '=', 'lgas.state_id')
+        ->leftJoin('programmes', 'programmes.id', '=', 'students.programme_id')
+        ->leftJoin('departments', 'programmes.department_id', '=', 'departments.id')
+        ->leftJoin('faculties', 'departments.faculty_id', '=', 'faculties.id')
+        ->leftJoin('transactions', function ($join) {
+            $join->on('transactions.student_id', '=', 'students.id')
+                ->where('transactions.code', '=', 'ACC');
+        })
+        ->select(
+            'students.id',
+            'students.matric_number',
+            'students.firstname',
+            'students.surname',
+            'students.other_names',
+            'session_regs.level_id as level',
+            'student_biodatas.email',
+            'student_biodatas.gsm',
+            'programmes.name as programme',
+            'departments.name as department',
+            'faculties.name as faculty',
+            'students.gender',
+            'states.name as state',
+            'hostels.name as hostel_name',
+            'blocks.name as block_name',
+            'rooms.room_no as room_name',
+            'reservations.reserved_by',
+            'reservations.status',
+            'reservations.reservation_date',
+            'transactions.transaction_amount',
+            'reservations.session'
+        )
+        ->when($hostelId && $hostelId !== '%', fn($q) => $q->where('hostels.id', $hostelId))
+        ->when($blockId && $blockId !== '%', fn($q) => $q->where('blocks.id', $blockId))
+        ->when($roomId && $roomId !== '%', fn($q) => $q->where('rooms.id', $roomId))
+        ->when($status && $status !== '%', fn($q) => $q->where('reservations.status', $status))
+        ->when($session && $session !== '%', fn($q) => $q->where('reservations.session', $session))
+        ->orderBy('hostels.name')
+        ->orderBy('blocks.name')
+        ->orderBy('rooms.room_no')
+        ->distinct()
+        ->get();
+
+        $occupants = $data;
+        Log::info('Fetched data count: ' . $data->count());
+
+
+        return view('pages.staff.accommodation.report.filtered_report_data', compact('occupants', 'session'));
+
+    } catch (\Exception $e) {
+        Log::error('Error in filteredAccommodationReport:', [
+            'message' => $e->getMessage(),
+            'line' => $e->getLine(),
+            'file' => $e->getFile(),
+            'trace' => $e->getTraceAsString(),
+        ]);
+
+        return response()->view('errors.500', ['error' => 'An error occurred while generating the report. Please try again later.'], 500);
+    }
+}
+
+    // Initial page load
+    return view('pages.staff.accommodation.report.filtered_report');
+}
+
+    
+}

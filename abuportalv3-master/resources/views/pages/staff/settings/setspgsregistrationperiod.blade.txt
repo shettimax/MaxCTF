@@ -1,0 +1,301 @@
+@extends("layout.staff.master")
+
+@section("pageTitle")
+    Registration Period Settings
+@endsection
+@section("content")
+    <section>
+        <div class="container pt-10">
+            <h3>Set Registration Period
+                <small><a href="{{route('inherit.reg')}}" class="btn-link fa fa-clock-o"> Click to Inherit from previous
+                        sessions</a></small>
+            </h3>
+
+            @if(session('success'))
+                <div class="alert alert-success">
+                    {{ session('success') }}
+                </div>
+            @endif
+
+            @php
+                $sdate = isset($model->startdate)?$model->startdate:("");
+                $ldate = isset($model->latestartdate)?$model->latestartdate:("");
+                $edate = isset($model->enddate)?$model->enddate:("");
+            @endphp
+            @if (isset($errors))
+                <ul>
+                    @foreach($errors as $error)
+                        <li>{{$error}}</li>
+                    @endforeach
+                </ul>
+            @endif
+            <form action="{{route('registration.store')}}" method="POST">
+                @csrf
+                <div class="row mt-5 mb-5">
+                    <div class="col-md-3 mb-3">
+                        <label for="faculty">Faculty: </label>
+                        <select class="form-control  {{ $errors->has('faculty')?'is-invalid':'is-valid' }}"
+                                name="faculty" id="faculty" required>
+                            <option value="">Select...</option>
+                            <option value="all">All Faculties</option>
+                            @foreach(\App\Models\Faculty::where("id",">",0)->orderBy("name")->get()  as $faculty)
+                                <option value="{{$faculty->id}}">{{$faculty->name}}</option>
+                            @endforeach
+                        </select>
+                        @if($errors->has('faculty'))
+                            <div class="invalid-feedback" style="color:red;">
+                                {{ $errors->first('faculty')}}
+                            </div>
+                        @endif
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="department">Department: </label>
+                        <select class="form-control"
+                                name="department" id="department" required>
+                            <option value="">Select...</option>
+
+                        </select>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="progtype">Programme Type:</label>
+                        <select id="progtype" name="progtype"
+                                class="form-control is-valid"
+                                required>
+                            <option value="">--select--</option>
+
+                        </select>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="programme">Programme: </label>
+                        <select class="form-control"
+                                name="programme" id="programme" required>
+                            <option value="">Select...</option>
+
+                        </select>
+
+                    </div>
+                </div><!-- end of form row-->
+                <hr>
+                <div class="row mt-5 mb-5">
+                    <div class="col-md-3 mb-3">
+                        <label for="semester">Semester:</label>
+                        <select class="form-control" name="semester" id="semester" required>
+                            <option value="">Select...</option>
+                            <option value="%">All</option>
+                            <option value="1">First Semester</option>
+                            <option value="2">Second Semester</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="acadsession">Session :</label>
+                        <select id="acadsession"
+                                class="form-control {{ $errors->has('acadsession')?'is-invalid':'is-valid' }}"
+                                name="acadsession" aria-label="Session" aria-describedby="basic-addon2" required>
+                            <option value="">Session</option>
+                            @foreach(range(date("Y"),date("Y")-10) as $year)
+
+                                <option value="{{$year}}">{{$year}}/{{$year+1}}</option>
+                            @endforeach
+                        </select>
+                        @if($errors->has('acadsession'))
+                            <div class="invalid-feedback" style="color:red;">
+                                {{ $errors->first('acadsession')}}
+                            </div>
+                        @endif
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="newreturning">New/Returning: </label>
+                        <select class="form-control  {{ $errors->has('newreturning')?'is-invalid':'is-valid' }}"
+                                name="newreturning" id="newreturning" required>
+                            <option value="">Select...</option>
+                            <option value="%">All</option>
+                            <option value="New">New</option>
+                            <option value="Returning">Returning
+                            </option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="level">Level :</label>
+                        <select id="level"
+                                class="form-control" name="level" aria-label="Level" aria-describedby="basic-addon2"
+                                required>
+                            <option value="">Select...</option>
+                            <option value="%">All</option>
+                            @php
+                                $level=\App\Models\Level::whereIn('programme_type_id',$progtypes)->get();
+                            @endphp
+                            @foreach($level as $level)
+                                <option
+                                    value="{{$level->id}}">{{$level->short_name}}{{$level->prog_type_code=="PG"?"-".$level->prog_short_name:""}}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+                <hr>
+                <div class="row mt-5 mb-5">
+                    <div class="col-md-3 mb-3">
+                        <label for="nature">Nature :</label>
+                        <select id="nature" class="form-control" name="nature" aria-describedby="basic-addon2"
+                                required>
+                            <option value="">Select...</option>
+                            <option value="%">All</option>
+                            <option value="FEE">Payment</option>
+                            <option value="REG">Course Registration</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="sdate">Start Date:</label>
+                        <input type="text" class="form-control " name="sdate" id="sdate" placeholder="Start Date"
+                               value="" required>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="ldate">Late Start Date:</label>
+                        <input type="text" class="form-control {{ $errors->has('ldate')?'is-invalid':'is-valid' }}"
+                               name="ldate" id="ldate" placeholder="Last Start Date" value="{{$ldate}}" required>
+                        @if($errors->has('ldate'))
+                            <div class="invalid-feedback">
+                                {{ $errors->first('ldate')}}
+                            </div>
+                        @endif
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="cdate">Closing Date:</label>
+                        <input type="text" class="form-control {{ $errors->has('cdate')?'is-invalid':'is-valid' }}"
+                               name="cdate" id="cdate" placeholder="Closing Date" value="{{$edate}}" required>
+                        @if($errors->has('cdate'))
+                            <div class="invalid-feedback">
+                                {{ $errors->first('cdate')}}
+                            </div>
+                        @endif
+                    </div>
+                </div>
+                <hr>
+                <div class="row mt-5">
+                    <div class="col-md-3 mb-2">&nbsp;</div>
+                    <div class="col-md-6 mb-2 text-right">
+                        <div class="form-group">
+                            <label for="">&nbsp;</label>
+                            @if(isset($model))
+                                <button type="submit" name="update" id="updatebtn"
+                                        class="btn btn-success text-right"><span
+                                        class="icon icon-edit3"> Update</span></button>
+                                <a href="{{route('registration')}}" class="btn btn-warning"><span
+                                        class="icon icon-cancel4"> Cancel</span></a>
+                                <input type="hidden" name="periodid" value="{{$model->id}}"/>
+                            @else
+                                <button type="submit" name="add" id="addbtn"
+                                        class="btn btn-success text-right"><span
+                                        class="icon icon-save"> Save</span>
+                                </button>
+                            @endif
+                        </div>
+                    </div>
+                </div><!-- end of form row-->
+
+                <div class="container" id="display"></div>
+            </form>
+        </div>
+    </section>
+
+@endsection
+
+@section("js")
+    <script>
+        jQuery(function () {
+            //Load faculties
+            jQuery.ajax({
+                url: '{{route("filter.faculties")}}',
+                type: 'GET',
+                data: {permission: '{{Route::currentRouteName()}}', category: 'academic'}
+            }).done(function (msg) {
+                jQuery("#faculty").html("<option value=''>--select--</option>" + msg);
+            });
+
+            //Return departments on select of faculty
+            jQuery(document).on("change", "#faculty", function (event) {
+                jQuery("#department").html("<option value=''>Loading...</option>");
+                jQuery.ajax({
+                    url: '{{route("filter.departments")}}',
+                    type: 'GET',
+                    data: {
+                        permission: '{{Route::currentRouteName()}}',
+                        faculty_id: jQuery("#faculty").val()
+                    }
+                }).done(function (msg) {
+                    jQuery("#department").html("<option value=''>--select--</option>" + msg);
+                    jQuery("#progtype").val("");
+                    jQuery("#programme").val("");
+                    jQuery("#level").val("");
+                    jQuery("#session").val("");
+                });
+            });
+
+            //Return programme types on select of department
+            jQuery(document).on("change", "#department", function (event) {
+                jQuery("#progtype").html("<option value=''>Loading...</option>");
+                jQuery.ajax({
+                    url: '{{route("filter.programme_types")}}',
+                    type: 'GET',
+                    data: {
+                        permission: '{{Route::currentRouteName()}}',
+                        department_id: jQuery("#department").val(),
+                        faculty_id: jQuery("#faculty").val(),
+                        programme_mode: 'PG',
+                    }
+                }).done(function (msg) {
+                    jQuery("#progtype").html("<option value=''>--select--</option>" + msg);
+                    jQuery("#programme").val("");
+                    jQuery("#level").val("");
+                    jQuery("#session").val("");
+                });
+            });
+
+            //Return programmes on select of programme type
+            jQuery(document).on("change", "#progtype", function (event) {
+                jQuery("#programme").html("<option value=''>Loading...</option>");
+                jQuery.ajax({
+                    url: '{{route("filter.programmes")}}',
+                    type: 'GET',
+                    data: {
+                        permission: '{{Route::currentRouteName()}}',
+                        department_id: jQuery("#department").val(),
+                        programme_type_id: jQuery("#progtype").val(),
+                        faculty_id: jQuery("#faculty").val(),
+
+                    }
+                }).done(function (msg) {
+                    jQuery("#programme").html("<option value=''>--select--</option>" + msg);
+                    jQuery("#level").val("");
+                    jQuery("#session").val("");
+                });
+            });
+
+            {{--jQuery('body').on('change', '#programme', function () {--}}
+            {{--    jQuery('#level').html("<option value=''>Loading...</option>");--}}
+            {{--    jQuery.ajax({--}}
+            {{--        url: '{{route('filter.levels') }}',--}}
+            {{--        type: 'GET',--}}
+            {{--        data: {--}}
+            {{--            permission: '{{Route::currentRouteName()}}',--}}
+            {{--            progtype: jQuery("#progtype").val(),--}}
+            {{--            programme_id: jQuery('#programme').val()--}}
+            {{--        }--}}
+            {{--    }).done(function (response) {--}}
+            {{--        jQuery("#level").html("<option value=''>--select--</option>" + response);--}}
+            {{--    })--}}
+            {{--})--}}
+
+            jQuery("body").on("change", "#department,#acadsession", function () {
+                var department = jQuery('#department').val();
+                var session = jQuery('#acadsession').val();
+                $.ajax({
+                    type: "GET",//registration.show
+                    url: "{{ url("staff/settings/registration/show")}}/" + department + "/" + session
+                }).done(function (data) {
+                    jQuery('#display').html(data);
+                });
+            });
+        });
+        $('#ldate,#cdate,#sdate').datetimepicker({format: 'YYYY-MM-DD'});
+    </script>
+@endsection

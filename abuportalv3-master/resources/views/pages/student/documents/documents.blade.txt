@@ -1,0 +1,173 @@
+@extends("layout.student.master")
+@section('css')
+    <style>
+        .parent {
+            height: 100px;
+            position: relative;
+        }
+
+        .center {
+            margin: 0;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            -ms-transform: translate(-50%, -50%);
+            transform: translate(-50%, -50%);
+        }
+    </style>
+@endsection
+@section('content')
+    @php
+        use App\Http\Controllers\Student\StudentDocumentsController;
+        $studentDoc = new StudentDocumentsController();
+    @endphp
+    <section class="bg-white-f7 pr-40 pl-40 pt-40 pb-40" style="border-left:2px solid #43B14B;">
+
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="panel panel-default">
+                        <div class="panel-body">
+                            @if(Session::has('success'))
+                                <div class="alert alert-success">
+                                    {{ Session::get('success') }}
+                                </div>
+                            @endif
+
+                            @if(Session::has('error'))
+                                <div class="alert alert-danger">
+                                    {{ Session::get('error') }}
+                                </div>
+                            @endif
+
+                            <div>
+                                <!-- Button trigger modal -->
+                                <button type="button" class="btn btn-default pull-right add" data-toggle="modal"
+                                        data-target="#myModal">
+                                    Add Document
+                                </button>
+                                <!-- Modal -->
+                                <div class="modal fade" id="myModal" tabindex="-1" role="dialog"
+                                     aria-labelledby="myModalLabel">
+                                    <div class="modal-dialog" role="document">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <button type="button" class="close" data-dismiss="modal"
+                                                        aria-label="Close"><span aria-hidden="true">&times;</span>
+                                                </button>
+                                                <h4 class="modal-title text-left" id="myModalLabel">Add Document
+                                                    <div class="double-line-bottom-theme-colored-2"></div>
+                                                </h4>
+                                            </div>
+                                            @php if(!isset($model)) $model = null @endphp
+                                            <form class="form" action="{{ route('upload.documents') }}"
+                                                  method="POST"
+                                                  style="width: 100%; margin-top: 3vh;"
+                                                  enctype="multipart/form-data">
+                                                @csrf
+                                                <div class="modal-body">
+                                                    <div class="row">
+                                                        <div class="form-group col-md-6">
+                                                            <label for="degree">Document Type:</label>
+                                                            <select
+                                                                class="form-control {{ $errors->has('type')?'is-invalid':'is-valid' }}"
+                                                                name="type" id="type" required>
+                                                                <option value="">Select Type</option>
+                                                                @php $types = \App\Models\DocumentType::all(); @endphp
+                                                                @foreach($types as $type)
+                                                                   @if(!$studentDoc->uploadedThis($type->name))
+                                                                        <option
+                                                                            value="{{ $type->name }}">{{ $type->name }}</option>
+                                                                    @endIf
+                                                                @endforeach
+                                                            </select>
+                                                            <div id="qual_error" class="text text-danger">
+                                                            </div>
+                                                        </div>
+                                                        <div class="form-group col-md-6">
+                                                            <label>Document to upload: </label>
+                                                            <input type="file" name="file" id="file"
+                                                                   class="form-control"/>
+                                                            <input type="hidden" value="{{ csrf_token() }}"
+                                                                   name="_token"/>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <div class="form-group">
+                                                        <button type="button" class="btn btn-danger"
+                                                                data-dismiss="modal">
+                                                            Close
+                                                        </button>
+                                                        <button type="submit" name="add" id="addbtn"
+                                                                class="btn btn-success"><span
+                                                                class="icon icon_floppy"></span> &nbsp;Save
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+        <div class="row mr-3">
+            @forelse ($documents as $document)
+                {{-- @if (Str::startsWith($document['document'], 'candidatedocs/')) --}}
+                    <!-- Ensure it's an image -->
+                    <div class="col-md-3">
+                        <div class="card">
+                            <div class="ratio ratio-4x3">
+                                <img src="https://static.abu.edu.ng/uploads/{{$document['document']}}" class="card-img-top"
+                                     alt="{{ $document['type'] }}">
+                            </div>
+                            <div class="card-body">
+                                <h5 class="card-title">{{ ucfirst($document['type']) }}</h5>
+                            </div>
+                        </div>
+                    </div>
+                {{-- @else --}}
+                    {{-- <div class="col-md-3">
+                        <div class="card">
+                            <div class="card-body">
+                                <p class="card-text">File: {{ $document['document'] }}</p>
+                                <p class="text-muted">{{ ucfirst($document['type']) }}</p>
+                            </div>
+                        </div>
+                    </div> --}}
+                {{-- @endif --}}
+            @empty
+                <div class="parent">
+                    <div class="center">
+                        <p>No document uploaded yet.</p>
+                    </div>
+                </div>
+            @endforelse
+        </div>
+    </section>
+    <style>
+        ul > li {
+            margin: 4px 0;
+        }
+    </style>
+@endsection
+
+@section('js')
+    <script src="{{ asset('assets/js/swal.js') }}"></script>
+    <script>
+        $(function () {
+            $('#type').select()
+            $("#payNotEnabled").on("click", function () {
+                Swal.fire({
+                    icon: 'error',  // 'error' instead of 'false'
+                    title: 'Attention',
+                    text: 'Please Update Biodata,Contact and Olevel to pay!'
+                });
+            });
+        })
+    </script>
+@endsection

@@ -1,0 +1,601 @@
+<?php
+
+namespace App\Http\Controllers\Staff;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use App\Models\Payslip;
+use App\Models\Payslip2;
+use App\Models\Payslip3;
+use Illuminate\Support\Facades\Crypt;
+use Smalot\PdfParser\Parser;
+use Spatie\PdfToText\Pdf;
+
+class PayslipController extends Controller
+{
+    public function __construct()
+    {
+        $this->middleware(['auth:staff']);
+    }
+
+    public function index(){
+
+        $ippis_number = Auth::user()->employee()->ippis_no;
+
+        $payslips = Payslip::where('ippisnum', $ippis_number)->orderByRaw('FIELD(month, "JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE", "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER")')->get();
+
+        $years = Payslip::where('ippisnum', $ippis_number)->select('year')->distinct()->get();
+        $user = Auth::user();
+       $staff_id = Auth::user()->employee()->personnel_no;
+       $payslips2 = Payslip2::whereIn('personnelno', [$user->username,$user->old_pnum])->orderByRaw('FIELD(month, "JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE", "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER")')->get();
+
+        //$payslips2 = Payslip2::where('personnelno', $staff_id)->orderBy('month', 'asc')->get();
+
+        $years2 = Payslip2::whereIn('personnelno', [$user->username,$user->old_pnum])->select('year')->distinct()->get();
+
+        $payslips3 = Payslip3::whereIn('personnelno', [$user->username,$user->old_pnum])->orderByRaw('FIELD(month, "JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE", "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER")')->get();
+
+        $years3 = Payslip3::whereIn('personnelno', [$user->username,$user->old_pnum])->select('year')->distinct()->get();
+
+        $i = 0;
+        $vect_years = array();
+
+        foreach ($years as $year) {
+            $vect_years[$i++] = $year->year;
+        }
+
+        foreach ($years2 as $year) {
+            $vect_years[$i++] = $year->year;
+        }
+
+        foreach ($years3 as $year) {
+            $vect_years[$i++] = $year->year;
+        }
+
+        $vect_years = array_unique($vect_years);
+        rsort($vect_years);
+        $year_count = count($vect_years);
+        $intDiv = intdiv($year_count, 6);
+        $last_row_columns = fmod($year_count, 6);
+
+        $count = 0;
+        $rows = 0;
+        $mat_years = array();
+        for ($i = 1; $i <= $intDiv; $i++) {
+             for ($j = 0; $j < 6; $j++) {
+                    $mat_years[$rows][$j] = $vect_years[$count++];
+                }
+            $rows++;
+        }
+
+        if ($last_row_columns > 0) {
+            for ($j = 0; $j < $last_row_columns; $j++) {
+                $mat_years[$rows][$j] = $vect_years[$count++];
+            }
+        }
+
+        return view('pages.staff.payslips.mypayslips', compact('payslips', 'payslips2', 'payslips3', 'years', 'year_count', 'mat_years'));
+    }
+
+    /**
+     * Display the specified resource.
+     *
+     * @param  int $id
+     * @return \Illuminate\Http\Response
+     */
+    public function show1($id)
+    {
+
+        $payslip = Payslip::find(Crypt::decryptString($id));
+
+        return view('pages.staff.payslips.show1', compact('payslip'));
+    }
+
+    /**
+     * Display the specified resource.
+     *
+     * @param  int $id
+     * @return \Illuminate\Http\Response
+     */
+    public function show2($id)
+    {
+
+        $payslip = Payslip2::find(Crypt::decryptString($id));
+
+        return view('pages.staff.payslips.show2', compact('payslip'));
+    }
+
+    /**
+     * Display the specified resource.
+     *
+     * @param  int $id
+     * @return \Illuminate\Http\Response
+     */
+    public function show3($id)
+    {
+
+        $payslip = Payslip3::find(Crypt::decryptString($id));
+
+        return view('pages.staff.payslips.show3', compact('payslip'));
+    }
+
+    public function manage_payslips(Request $request){
+        $payslips = array();
+
+        if ($request->ajax()) {
+
+            $payslips = Payslip::latest()->where('month', $request->month)->where('year', $request->year)->get();
+             return view('admin.pages.load_payslip_data', compact('payslips'))->render();
+        }
+
+        return view('admin.pages.managepayslips', compact('payslips'));
+    }
+
+    public function filter_months(){
+        $months = DB::table('payslips')
+            ->select('month')
+            ->distinct()
+            ->orderByRaw('FIELD(month, "JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE", "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER")')
+            ->get();
+
+        $result = "";
+
+        foreach ($months as $month) {
+            $result .= "<option value='" . $month->month . "'>$month->month</option>";
+        }
+
+        return $result;
+    }
+
+    public function filter_years(){
+        $years = DB::table('payslips')
+            ->select('year')
+            ->distinct()
+            ->orderBy('year', 'asc')
+            ->get();
+
+        $result = "";
+
+        foreach ($years as $year) {
+            $result .= "<option value='" . $year->year . "'>$year->year</option>";
+        }
+
+        return $result;
+    }
+
+
+    public function uploadPayslip(Request $request)
+    {
+        try {
+            return view("pages.staff.payslips.upload");
+        }catch (\Exception $e){
+            return $e->getMessage();
+        }
+    }
+
+    //
+    //maiwada payslip2
+
+    public function deductions()
+    {
+        try {
+            $user = Auth::user();
+            
+            // Get all payslips for the current user from payslips2 table only
+            $payslips = Payslip2::whereIn('personnelno', [$user->username, $user->old_pnum])
+                ->select('month', 'year', 'deductions', 'personnelno')
+                ->orderByRaw('FIELD(month, "JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE", "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER")')
+                ->orderBy('year', 'desc')
+                ->get();
+
+            // Group payslips by year first, then by month
+            $groupedByYear = $payslips->groupBy('year');
+            $yearlyDeductions = [];
+
+            foreach ($groupedByYear as $year => $yearPayslips) {
+                $monthlyGroup = $yearPayslips->groupBy('month');
+                $yearlyDeductions[$year] = [];
+                
+                foreach ($monthlyGroup as $month => $monthPayslips) {
+                    $deductions = $this->parseDeductions($monthPayslips->first());
+                    $deductionsWithTotals = [];
+                    
+                    foreach ($deductions as $deduction) {
+                        if (isset($deduction['name'])) {
+                            // Calculate totals on the fly for simplicity
+                            $staffTotal = $this->calculateStaffTotalForDeduction($deduction['name'], $user->username, $user->old_pnum ?? '');
+                            $monthlyTotal = $this->calculateMonthlyTotalForDeduction($deduction['name'], $month, $year);
+                            
+                            $totals = [
+                                'staff_total' => number_format($staffTotal, 2),
+                                'monthly_total' => number_format($monthlyTotal, 2)
+                            ];
+                            
+                            $deductionsWithTotals[] = array_merge($deduction, $totals);
+                        }
+                    }
+                    
+                    $yearlyDeductions[$year][$month] = $deductionsWithTotals;
+                }
+            }
+
+            return view('pages.staff.payslips.deductions', compact('yearlyDeductions', 'payslips'));
+            
+        } catch (\Exception $e) {
+            \Log::error('Error in deductions method: ' . $e->getMessage());
+            \Log::error('Stack trace: ' . $e->getTraceAsString());
+            
+            // Return empty data on error
+            return view('pages.staff.payslips.deductions', [
+                'yearlyDeductions' => [],
+                'payslips' => collect()
+            ]);
+        }
+    }
+
+    private function parseDeductions($payslip)
+    {
+        $deductions = [];
+        $deductionsText = $payslip->deductions;
+        
+        // Parse the deductions string
+        // Format: "Pay As You Earn (PAYE) 29,343.41 : SSANU Dues 5,779.48 : ..."
+        $deductionItems = explode(' : ', $deductionsText);
+        
+        foreach ($deductionItems as $item) {
+            if (trim($item) && !str_contains($item, 'Total Deductions')) {
+                // Extract deduction name and amount
+                $parts = explode(' ', trim($item));
+                $amount = array_pop($parts); // Get the last part (amount)
+                $name = implode(' ', $parts); // Join the rest as name
+                
+                $deductions[] = [
+                    'name' => $name,
+                    'amount' => $amount
+                ];
+            }
+        }
+        
+        return $deductions;
+    }
+
+
+    private function preCalculateStaffTotals($username, $oldPnum)
+    {
+        $staffTotals = [];
+        
+        try {
+            // Get all payslips for this staff member from payslips2 table only
+            $personnelNumbers = array_filter([$username, $oldPnum]);
+            $payslips = Payslip2::whereIn('personnelno', $personnelNumbers)
+                ->select('deductions')
+                ->get();
+            
+            // Process payslips
+            foreach ($payslips as $payslip) {
+                if ($payslip->deductions) {
+                    $deductions = $this->parseDeductions($payslip);
+                    foreach ($deductions as $deduction) {
+                        if (isset($deduction['name']) && isset($deduction['amount'])) {
+                            $key = $deduction['name'];
+                            $amount = floatval(str_replace(',', '', $deduction['amount']));
+                            $staffTotals[$key] = ($staffTotals[$key] ?? 0) + $amount;
+                        }
+                    }
+                }
+            }
+            
+            // Format all totals
+            foreach ($staffTotals as $key => $total) {
+                $staffTotals[$key] = number_format($total, 2);
+            }
+        } catch (\Exception $e) {
+            \Log::error('Error in preCalculateStaffTotals: ' . $e->getMessage());
+        }
+        
+        return $staffTotals;
+    }
+
+    private function preCalculateMonthlyTotals()
+    {
+        $monthlyTotals = [];
+        
+        try {
+            // Get all payslips from payslips2 table only grouped by month and year
+            $payslips = Payslip2::select('month', 'year', 'deductions')
+                ->get()
+                ->groupBy(function($item) {
+                    return $item->month . '_' . $item->year;
+                });
+            
+            // Process payslips
+            foreach ($payslips as $monthYear => $monthPayslips) {
+                $monthlyTotals[$monthYear] = [];
+                foreach ($monthPayslips as $payslip) {
+                    if ($payslip->deductions) {
+                        $deductions = $this->parseDeductions($payslip);
+                        foreach ($deductions as $deduction) {
+                            if (isset($deduction['name']) && isset($deduction['amount'])) {
+                                $key = $deduction['name'];
+                                $amount = floatval(str_replace(',', '', $deduction['amount']));
+                                $monthlyTotals[$monthYear][$key] = ($monthlyTotals[$monthYear][$key] ?? 0) + $amount;
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // Format all totals
+            foreach ($monthlyTotals as $monthYear => $deductions) {
+                foreach ($deductions as $key => $total) {
+                    $monthlyTotals[$monthYear][$key] = number_format($total, 2);
+                }
+            }
+        } catch (\Exception $e) {
+            \Log::error('Error in preCalculateMonthlyTotals: ' . $e->getMessage());
+        }
+        
+        return $monthlyTotals;
+    }
+
+    private function calculateStaffTotalForDeduction($deductionName, $username, $oldPnum)
+    {
+        try {
+            $personnelNumbers = array_filter([$username, $oldPnum]);
+            $payslips = Payslip2::whereIn('personnelno', $personnelNumbers)
+                ->select('deductions')
+                ->get();
+            
+            $total = 0;
+            foreach ($payslips as $payslip) {
+                if ($payslip->deductions) {
+                    $deductions = $this->parseDeductions($payslip);
+                    foreach ($deductions as $deduction) {
+                        if (isset($deduction['name']) && $deduction['name'] === $deductionName && isset($deduction['amount'])) {
+                            $amount = floatval(str_replace(',', '', $deduction['amount']));
+                            $total += $amount;
+                        }
+                    }
+                }
+            }
+            return $total;
+        } catch (\Exception $e) {
+            \Log::error('Error in calculateStaffTotalForDeduction: ' . $e->getMessage());
+            return 0;
+        }
+    }
+    
+
+    private function calculateMonthlyTotalForDeduction($deductionName, $month, $year)
+    {
+        try {
+            $payslips = Payslip2::where('month', $month)
+                ->where('year', $year)
+                ->select('deductions')
+                ->get();
+            
+            $total = 0;
+            foreach ($payslips as $payslip) {
+                if ($payslip->deductions) {
+                    $deductions = $this->parseDeductions($payslip);
+                    foreach ($deductions as $deduction) {
+                        if (isset($deduction['name']) && $deduction['name'] === $deductionName && isset($deduction['amount'])) {
+                            $amount = floatval(str_replace(',', '', $deduction['amount']));
+                            $total += $amount;
+                        }
+                    }
+                }
+            }
+            return $total;
+        } catch (\Exception $e) {
+            \Log::error('Error in calculateMonthlyTotalForDeduction: ' . $e->getMessage());
+            return 0;
+        }
+    }
+    public function uploadPayslipsm(Request $request)
+    {
+        // $count = Payslip2::where('year', '2024')
+        //      ->where('month', 'December')
+        //      ->count();
+        //      dd($count);
+        $recordRounter=0;
+       //dd($request->all());
+       $request->paysliptoupload;
+       $request->validate([
+        'paysliptoupload' => 'required'//|mimes:pdf|max:16384',
+    ]);
+
+    $fileName = time() . '.' . $request->paysliptoupload->extension();
+    $pdfPath =$request->paysliptoupload->move(public_path('uploadss'), $fileName);
+    $request->paysliptoupload;
+       //print $file = $request->file('paysliptoupload');
+       // $fullPath = $file->getPathname();
+
+      // dd($request->all());
+        $filepath=$request->paysliptoupload;
+        $parser = new Parser();
+        //$pdf = $parser->parseFile("c:\Users\hp\Downloads\garbaslip2_searchable.pdf"); // Path to your PDF
+        $pdf = $parser->parseFile("$pdfPath"); // Path to your PDF
+        $text = $pdf->getText();
+        $lines = explode("\n", $text);
+
+        $data = [];
+        foreach ($lines as $line) {
+            $columns = preg_split('/\s{3,}/', trim($line));
+            if (!empty($columns)) {
+                $data[] = $columns;
+            }
+        }
+
+        $allEmployees = [];
+        $earnings = [];
+        $deductions = [];
+        $section = '';
+        $currentEmployee = [];
+
+        foreach ($data as $line) {
+            $line = is_array($line) ? implode(" ", $line) : $line; // Ensure $line is a string
+
+            // Detect Sections
+            if (trim($line) === "Earnings") {
+                $section = "Earnings";
+                $earnings = [];
+                continue;
+            } elseif (trim($line) === "Deductions") {
+                $section = "Deductions";
+                $deductions = [];
+                continue;
+            } elseif (strpos($line, "Net Pay") !== false) {
+                // Store earnings and deductions
+                $currentEmployee['earnings'] = implode(" : ", array_map(fn($k, $v) => "$k $v", array_keys($earnings), $earnings));
+                $currentEmployee['deductions'] = implode(" : ", array_map(fn($k, $v) => "$k $v", array_keys($deductions), $deductions));
+
+                $allEmployees[] = $currentEmployee;
+                $currentEmployee = [];
+                continue;
+            }
+
+            // Extract key-value pairs
+            if (preg_match('/(.*?)\s+([\d,.]+)/', $line, $matches)) {
+                $key = trim($matches[1]);
+                $value = trim($matches[2]);
+
+                if ($section === "Earnings") {
+                    $earnings[$key] = $value;
+                } elseif ($section === "Deductions") {
+                    $deductions[$key] = $value;
+                }
+            }
+        }
+
+        // Filtering Earnings and Deductions Separately
+        $allEarnings = array_map(fn($emp) => $emp['earnings'], $allEmployees);
+        $allDeductions = array_map(fn($emp) => $emp['deductions'], $allEmployees);
+
+        // Step 1: Split the array into separate records
+        $records = [];
+        $currentRecord = [];
+
+        foreach ($data as $line) {
+            if ($line === "Ahmadu Bello University, Zaria") {
+                if (!empty($currentRecord)) {
+                    $records[] = array_values($currentRecord);
+                }
+                $currentRecord = [];
+            }
+            $currentRecord[] = $line;
+        }
+
+        // Save the last record
+        if (!empty($currentRecord)) {
+            $records[] = $currentRecord;
+        }
+
+        $recordCounter = 0;
+        $before = Payslip2::count();
+        $extractedData = []; // Store current employee data
+
+        foreach ($data as $line) {
+            $line = is_array($line) ? implode(" ", $line) : $line;
+
+            // DETECT NEW RECORD (Ahmadu Bello University, Zaria)
+            if (trim($line) === "Ahmadu Bello University, Zaria") {
+                // INSERT PREVIOUS RECORD (if exists)
+                if (!empty($extractedData)) {
+                    // Get corresponding earnings & deductions
+                    $employeeData = $allEmployees[$recordCounter] ?? [];
+
+                    $insertData = array_merge($extractedData, [
+                        'earnings' => $employeeData['earnings'] ?? '',
+                        'deductions' => $employeeData['deductions'] ?? '',
+                        'created_at' => now(),
+                        'updated_at' => now()
+                    ]);
+
+                    if (!empty($insertData)) {
+                        Payslip2::insertOrIgnore($insertData);
+                        $recordCounter++; // Increment for the next employee
+                    }
+                }
+
+                // RESET extracted data for new record
+                $extractedData = [];
+                continue;
+            }
+
+            //  EXTRACT EMPLOYEE DETAILS
+            if (strpos($line, "Month End") !== false) {
+                $parts = explode(' ', $line);
+               // $extractedData['year'] = $parts[count($parts) - 1] ?? '';
+                $extractedData['year'] = explode(' ', $line)[1];// Extract last word (year)
+                $extractedData['month'] = explode(',', $line)[0] ?? '';
+            } elseif (strpos($line, "Name:") !== false) {
+                $extractedData['name'] = trim(explode(": ", $line)[1] ?? '');
+            } elseif (strpos($line, "Personnel No:") !== false) {
+                $extractedData['personnelno'] = trim(explode(": ", $line)[1] ?? '');
+            } elseif (strpos($line, "Grade") !== false) {
+                $gradevalue = explode(" ", $line);
+                $extractedData['grade'] = implode(" ", array_slice($gradevalue, 1));
+            } elseif (strpos($line, "Faculty") !== false) {
+                $facvalue = explode(" ", $line);
+                $extractedData['faculty'] = implode(" ", array_slice($facvalue, 1));
+            } elseif (strpos($line, "Designation:") !== false) {
+                $extractedData['designation'] = trim(explode(": ", $line)[1] ?? '');
+            } elseif (strpos($line, "Department:") !== false) {
+                $extractedData['department'] = trim(explode(": ", $line)[1] ?? '');
+            } elseif (strpos($line, "Bank:") !== false) {
+                $extractedData['bank'] = trim(explode(": ", $line)[1] ?? '');
+            } elseif (strpos($line, "Account No.:") !== false) {
+                $extractedData['accountno'] = trim(explode(": ", $line)[1] ?? '');
+            } elseif (strpos($line, "TIN: ") !== false) {
+                $extractedData['tin'] = trim(explode(": ", $line)[1] ?? '');
+            } elseif (strpos($line, "NHF No.: ") !== false) {
+                $extractedData['nhfno'] = trim(explode(": ", $line)[1] ?? '');
+            }
+            // elseif (strpos($line, "Net Pay") !== false) {
+            //     $extractedData['netpay'] = preg_replace('/[^0-9.]/', '', $line);
+            // }
+            //  elseif (strpos($line, "Total Amount Payable") !== false) {
+            //     $extractedData['totalamountpayable'] = preg_replace('/[^0-9.]/', '', $line);
+            // }
+            elseif (strpos($line, "Net Pay") !== false){
+                $extractedData['netpay'] = $line; // Extract Net Pay
+            }
+            elseif (strpos($line, "Total Amount Payable") !== false){
+                $extractedData['totalamountpayable'] = $line; // Extract Total Amount Payable
+            }
+        }
+
+        //  INSERT LAST RECORD (if any remains)
+        if (!empty($extractedData)) {
+            $employeeData = $allEmployees[$recordCounter] ?? [];
+
+            $insertData = array_merge($extractedData, [
+                'earnings' => $employeeData['earnings'] ?? '',
+                'deductions' => $employeeData['deductions'] ?? '',
+                'created_at' => now(),
+                'updated_at' => now()
+            ]);
+
+            if (!empty($insertData)) {
+                Payslip2::insertOrIgnore($insertData);
+            }
+        }
+
+$after = Payslip2::count();
+
+       // Simulate an error to test
+      // throw new \Exception("Test Error");
+      if($after-$before>0){
+    return redirect()->route('staff.payslip.upload')->with('success',$after-$before.' Payslips were Uploaded successfully!');
+      }
+    else{
+    return redirect()->route('staff.payslip.upload')->with('error',' Sorry, No Record(s) were Inserted! You might be having a Duplicate or incorrect PDF format');
+    }
+    }
+
+
+}
+

@@ -1,0 +1,170 @@
+@extends('layout.staff.master')
+
+@section('content')
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Programme Fees Report</h3>
+                </div>
+                <div class="card-body">
+                    <!-- Filter Form -->
+                    <form method="GET" action="{{ route('reports.programme-fees') }}" class="mb-4">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label for="session">Session <span class="text-danger">*</span></label>
+                                    <select name="session" id="session" class="form-control" required>
+                                        <option value="">Select Session</option>
+                                        @for($year = 2020; $year <= date('Y') + 1; $year++)
+                                            <option value="{{ $year }}" {{ $session == $year ? 'selected' : '' }}>
+                                                {{ $year }}/{{ $year + 1 }}
+                                            </option>
+                                        @endfor
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label for="programme_type">Programme Type</label>
+                                    <select name="programme_type" id="programme_type" class="form-control">
+                                        <option value="">All Types</option>
+                                        @foreach($programmeTypes as $type)
+                                            <option value="{{ $type->prog_type_code }}" {{ $programmeType == $type->prog_type_code ? 'selected' : '' }}>
+                                                {{ $type->prog_type_name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label for="entry_mode">Student Type</label>
+                                    <select name="entry_mode" id="entry_mode" class="form-control">
+                                        <option value="">All Students</option>
+                                        <option value="New" {{ $entryMode == 'New' ? 'selected' : '' }}>New Students</option>
+                                        <option value="Returning" {{ $entryMode == 'Returning' ? 'selected' : '' }}>Returning Students</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label>&nbsp;</label>
+                                    <div>
+                                        <button type="submit" name="generate" value="1" class="btn btn-primary">
+                                            <i class="fas fa-chart-bar"></i> Generate Report
+                                        </button>
+                                        <button type="button" class="btn btn-success" onclick="exportToExcel()">
+                                            <i class="fas fa-file-excel"></i> Export
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+
+                    @if(is_array($data) ? count($data) > 0 : $data->count() > 0)
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-striped" id="reportTable">
+                                <thead class="thead-dark">
+                                    <tr>
+                                        <th>Faculty</th>
+                                        <th>Department</th>
+                                        <th>Programme</th>
+                                        <th>Fee Item</th>
+                                        <th>Amount (₦)</th>
+                                        <th>Programme Type</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @php $grandTotal = 0; @endphp
+                                    @foreach($data as $facultyName => $faculties)
+                                        @foreach($faculties as $departmentName => $departments)
+                                            @foreach($departments as $programmeName => $fees)
+                                                @php
+                                                    $programmeTotal = $fees->sum('amount');
+                                                    $grandTotal += $programmeTotal;
+                                                    $firstFee = true;
+                                                @endphp
+                                                @foreach($fees as $fee)
+                                                    <tr>
+                                                        @if($firstFee)
+                                                            <td rowspan="{{ $fees->count() }}">{{ $facultyName }}</td>
+                                                            <td rowspan="{{ $fees->count() }}">{{ $departmentName }}</td>
+                                                            <td rowspan="{{ $fees->count() }}">{{ $programmeName }}</td>
+                                                            @php $firstFee = false; @endphp
+                                                        @endif
+                                                        <td>{{ $fee->item_name }}</td>
+                                                        <td class="text-right">{{ number_format($fee->amount, 2) }}</td>
+                                                        <td>{{ $fee->prog_type_name }}</td>
+                                                    </tr>
+                                                @endforeach
+                                                <tr class="table-info">
+                                                    <td colspan="4" class="text-right"><strong>Programme Total:</strong></td>
+                                                    <td class="text-right"><strong>₦{{ number_format($programmeTotal, 2) }}</strong></td>
+                                                    <td></td>
+                                                </tr>
+                                            @endforeach
+                                        @endforeach
+                                    @endforeach
+                                </tbody>
+                                <tfoot class="thead-dark">
+                                    <tr>
+                                        <th colspan="4">GRAND TOTAL</th>
+                                        <th class="text-right">₦{{ number_format($grandTotal, 2) }}</th>
+                                        <th></th>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    @elseif(request()->has('generate') && (is_array($data) ? count($data) == 0 : $data->count() == 0))
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i> No fee data found for the selected session and criteria.
+                        </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js"></script>
+<link rel="stylesheet" href="https://cdn.datatables.net/1.10.21/css/jquery.dataTables.min.css"/>
+<script src="https://cdn.datatables.net/buttons/1.6.2/js/dataTables.buttons.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/1.6.2/js/buttons.html5.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/1.6.2/js/buttons.print.min.js"></script>
+<link rel="stylesheet" href="https://cdn.datatables.net/buttons/1.6.2/css/buttons.dataTables.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.3/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
+<script>
+$(document).ready(function() {
+    if ($('#reportTable').length) {
+        $('#reportTable').DataTable({
+            responsive: true,
+            dom: 'Bfrtip',
+            buttons: [
+                'copy', 'csv', 'excel', 'pdf', 'print'
+            ],
+            pageLength: 25,
+            lengthMenu: [10, 25, 50, 100, 200],
+            order: []
+        });
+    }
+});
+</script>
+
+<script>
+function exportToExcel() {
+    const table = document.getElementById('reportTable');
+    if (!table) {
+        alert('No data to export');
+        return;
+    }
+
+    const wb = XLSX.utils.table_to_book(table, {sheet: "Programme Fees Report"});
+    XLSX.writeFile(wb, 'programme_fees_report.xlsx');
+}
+</script>
+@endsection

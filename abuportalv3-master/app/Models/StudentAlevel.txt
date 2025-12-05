@@ -1,0 +1,20 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class StudentAlevel extends Model
+{
+    //
+    protected $guarded = [];
+    public static $rules = [
+        'inst' => 'required|min:5',
+        'fromyear' => 'required|min:4|max:4',
+        'toyear' => 'required|min:4|max:4',
+        'qual' => 'required|min:1',
+        'degree' => 'required|min:1',
+        'course' => 'required|min:10',
+        'cgpa' => 'required|numeric'
+    ];
+}

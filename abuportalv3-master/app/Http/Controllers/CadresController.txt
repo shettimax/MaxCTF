@@ -1,0 +1,71 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use App\Models\Cadre;
+use Illuminate\Support\Facades\Auth;
+
+class CadresController extends Controller
+{
+    public function __construct()
+    {
+        $this->middleware('auth:staff');
+    }
+
+    public function index()
+    {
+//        
+        $user = Auth::user();
+
+        return view('pages.staff.settings.managecadres',compact('user'));
+    }
+
+    public function store(Request $request)
+    {
+//        try {
+            if (!$this->access(Auth::user(), 'complex')) {
+                return view("pages.staff.error.access");
+            }
+//            return $request;
+
+            $this->validate($request, [
+                'cadre' => 'required',
+                'category' => 'required'
+            ]);
+
+            if ($request->cadre_id > 0)
+                $DB = Cadre::find($request->cadre_id);
+            else if($DB = Cadre::where('name',$request->cadre)->first()){
+                $request->session()->flash('flash_error_message', 'Duplicate Cadre Name');
+                return back();
+            }else
+                $DB = new Cadre();
+
+            $DB->name = $request->cadre;
+            $DB->category = $request->category;
+            $DB->save();
+
+          /*  $employee = Employee::where('personnel_no',$request->chairman)->first();
+            if($employee){
+                $employeeUser = $employee->user();
+                $employeeUser->makeConfiguration("CCH",$DB->id,'Complex',"Complex Chairman","");
+            }*/
+
+            if ($request->cadre_id > 0)
+                $request->session()->flash('flash_message', 'Cadre has been updated');
+            else
+                $request->session()->flash('flash_message', 'Cadre has been added');
+            return redirect()->back();
+
+    }
+
+    public function edit($id)
+    {
+        $model = Cadre::find($id);
+        if (!$this->access(Auth::user(), "complex"))
+            return view("pages.errors.nopermission");
+
+        return view('pages.staff.settings.managecadres', compact('model'));
+    }
+}

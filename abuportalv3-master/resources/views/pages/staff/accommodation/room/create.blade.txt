@@ -1,0 +1,74 @@
+@inject('Accommodation', 'App\Models\Accommodation')
+
+<div class='row'>
+    <div class='col-xs-12 col-md-10'>
+        <div class='row'>
+            <div class='col-xs-1 col-md-3'></div>
+            <div class ='col-xs-10 col-md-6'>
+                <div class='row'>
+                    <div class='col-12 text-center'>
+                        <h2 >Create Room in {{$block->name}}</h2>
+                    </div>
+                </div>
+                <form class='form' name='createroomfrm' id='createroomfrm' action='{{route('accommodation.admin.room.store')}}' method='POST'>
+                    @if ($errors->any())
+                    <div class="alert alert-danger">
+                        Fix the errors highlighted.
+                    </div>
+                    @endif
+                    @if (isset($success))
+                    <div class="alert alert-success">
+                        Room created successfully!
+                    </div>
+                    @endif
+                    <div class="form-controls">
+                        <label for="hostelname">Hostel:</label>
+                        <p class="form-control-static">{{$block->hostel->name}}</p>
+                    </div>
+                    <div class="form-controls">
+                        <label for="blockname">Block:</label>
+                        <p class="form-control-static">{{$block->name}}</p>
+                        <input type="hidden" name='blockid' id='blockid' value='{{$block->id}}'/>
+                    </div>
+                    <div class="form-controls @if($errors->has('roomno')) has-error @endif">
+                        <label for="roomno">Room No.:</label>
+                        <input type="text" name='roomno' class="form-control" id="roomno"  placeholder="Room no" />
+                        <small id="roomnoerror" class="widgeterror @if($errors->has('roomno')) show @else hidden @endif">Room number is required and must be unique within {{$block->name}} block</small>
+                    </div>
+                    <div class="form-controls @if($errors->has('roomno')) has-error @endif">
+                        <label for="bedspace">Bedspace.:</label>
+                        <input type="text" name='bedspace' class="form-control" id="bedspace"  placeholder="Bedspace" />
+                        <small id="bespaceerror" class="widgeterror @if($errors->has('bedspace')) show @else hidden @endif">Bespace is required and must be a number above 0</small>
+                    </div>
+                    <div class="form-controls">
+                        <label for="roomfee">Room Fee:</label>
+                        <select name='roomfee' id='roomfee' class='form-control'>
+                            <option value='blockfee'>Base on Block Fee (&#8358;{{number_format($block->getFee(),2)}})</option>
+                            <option value='asspecified'>As Specified</option>
+                        </select>
+                    </div>
+                    <div id = 'roomfeediv' class="form-controls @if($errors->has('roomfee')) has-error @endif hidden">
+                        <label for="roomfee">Room Fee (&#8358;):</label>
+                        <div class='input-group'>
+                            <span class="input-group-addon">&#8358;</span>
+                            <input type="text" name='roomfee' class="form-control" id="roomfee"  placeholder="Room Fee" value=''>
+                        </div>
+                        <small id="roomfeeerror" class="widgeterror @if($errors->has('roomfee')) show @else hidden @endif">Room fee must be numeric.</small>
+                    </div>
+                    <!--<div class="form-controls">
+                        <label>Status</label> <br />
+                        <label class='checkbox-inline'><input type='radio' name='status' value='1' checked /> Available</label>
+                        <label class='checkbox-inline'><input type='radio' name='status' value='0'/> Unavailable</label>
+                    </div>-->
+                    <input type='hidden' name='_token' value='{{csrf_token()}}' />
+                    <input id='createroom' type='submit' name='submit' value='Create Room' class='btn btn-primary'/>
+                    <br /><br />
+                </form>
+            </div>
+            <div class='col-xs-1 col-md-3'></div>
+        </div>
+    </div>
+    <div class='col-xs-12 col-md-1'>
+        <a href="#" class="roomaction roomlistaction btn btn-sm btn-default"><i class='icon icon-list6 icon-2x'></i> Back to Rooms</a> <br />
+    </div>
+</div>

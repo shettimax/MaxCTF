@@ -1,0 +1,183 @@
+<?php
+
+namespace App\Http\Controllers\Staff;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+
+class ResitReportController extends Controller
+{
+    //
+
+    public function __construct()
+    {
+        $this->middleware(['auth:staff']);
+    }
+
+    public function index(Request $request)
+    {
+        $students = array();
+        return view("pages.staff.reports.resit.report",compact('students'));
+    }
+
+    public function resitData(Request $request)
+    {
+
+        try {
+            $students = array();
+            if ($request->ajax()) {
+                $facultyid = $request->query->get('faculty');
+                $departmentid = $request->query->get('department');
+                $programmetypeid = $request->query->get('progtype');
+                $programmeid = $request->query->get('programme');
+                $session = $request->query->get('session');
+                $level = $request->query->get('level');
+
+
+                $arropts = [
+                    ['resit_courses.session','=',$session],
+                ];
+                if ($facultyid != '%') {
+                    $arropts[] = ["faculties.id", "=", $facultyid];
+                }
+                if ($departmentid != '%') {
+                    $arropts[] = ["departments.id", "=", $departmentid];
+                }
+                if ($programmetypeid != '%') {
+                    $arropts[] = ["programme_types.prog_type_code", "=", $programmetypeid];
+                }
+                if ($programmeid != '%') {
+                    $arropts[] = ["programmes.id", "=", $programmeid];
+                }
+                if ($level != '%') {
+                    $arropts[] = ["courses.courselevel", "=", $level];
+                }
+
+
+                    $students = DB::table("resit_courses")
+                        ->join('session_regs', function($join) use($session){
+                            $join->on('resit_courses.student_id', '=', 'session_regs.student_id')
+                                ->on('resit_courses.session', "=",'session_regs.session');
+                        })
+//                    ->join("session_regs_", "transactions.student_id", "=", "session_regs.student_id")
+                        ->join("students", "students.id", "=", "session_regs.student_id")
+                        ->join("courses", "resit_courses.course_id", "=", "courses.id")
+                        ->leftjoin("levels", "session_regs.level_id", "=", "levels.id")
+                        ->leftjoin("programmes", "students.programme_id", "=", "programmes.id")
+                        ->leftjoin("programme_types", "programmes.programme_type_id", "=", "programme_types.id")
+                        ->leftjoin("departments", "programmes.department_id", "=", "departments.id")
+                        ->leftjoin("faculties", "departments.faculty_id", "=", "faculties.id")
+                        ->select(["students.matric_number", DB::raw("CONCAT(surname,', ',firstname,' ',IFNULL(other_names, ''))  AS fullname"),
+                             "programmes.name AS programme", "departments.name AS department", "faculties.name AS faculty", "levels.name as level",
+                            "students.gender",
+                            DB::raw("COUNT(resit_courses.id) AS totalCourses"),
+                            DB::raw("SUM(resit_courses.course_unit) AS totalUnits"),
+                            DB::raw("GROUP_CONCAT(courses.coursecode SEPARATOR ', ') AS courses"),
+                            DB::raw("(SELECT SUM(transaction_amount) FROM transactions WHERE transactions.student_id = students.id AND transactions.code = 'RST' AND transactions.payment_status = 'Paid') AS amount_paid")])
+                        ->where($arropts)
+                        ->orderBy("faculties.name")
+                        ->orderBy("departments.name")
+                        ->orderBy("programme_types.prog_type_name")
+                        ->orderBy("programmes.name")
+                        ->orderBy("surname");
+
+
+
+
+
+
+
+                $students = $students->get();
+                $arrtotalamounts = array();
+
+
+                return view('pages.staff.reports.resit.data', compact('students', 'arrtotalamounts'))->render();
+            }
+
+            return view('pages.staff.reports.payments.bymethod', compact('students'));
+        }catch (\Exception $e){
+            return $e->getMessage().$e->getTraceAsString();
+        }
+
+    }
+
+    public function perCourse(Request $request)
+    {
+        $students = array();
+        return view("pages.staff.reports.resit.percourse",compact('students'));
+    }
+
+    public function pserCourseData(Request $request)
+    {
+
+        try {
+            $students = array();
+            if ($request->course_id) {
+                $facultyid = $request->query->get('faculty');
+                $departmentid = $request->query->get('department');
+                $programmetypeid = $request->query->get('progtype');
+                $programmeid = $request->query->get('programme');
+                $session = $request->query->get('session');
+                $level = $request->query->get('level');
+                $course_id = $request->query->get('course_id');
+
+
+                $arropts = [
+                    ['resit_courses.session','=',$session]
+                    ,['resit_courses.course_id','=',$course_id]
+
+                ];
+//                if ($facultyid != '%') {
+//                    $arropts[] = ["faculties.id", "=", $facultyid];
+//                }
+//                if ($departmentid != '%') {
+//                    $arropts[] = ["departments.id", "=", $departmentid];
+//                }
+//                if ($level != '%') {
+//                    $arropts[] = ["courses.courselevel", "=", $level];
+//                }
+//
+//                if($course_id!="%"){
+//                    $arropts [] = ['resit_courses.course_id','=',$course_id];
+//                }
+
+                    $students = DB::table("resit_courses")
+                        ->join('session_regs', function($join) use($session){
+                            $join->on('resit_courses.student_id', '=', 'session_regs.student_id')
+                                ->on('resit_courses.session', "=",'session_regs.session');
+                        })
+                    ->join("courses", "resit_courses.course_id", "=", "courses.id")
+                        ->join("students", "students.id", "=", "session_regs.student_id")
+                        ->leftJoin("levels", "session_regs.level_id", "=", "levels.id")
+                        ->leftJoin("programmes", "students.programme_id", "=", "programmes.id")
+                        ->leftJoin("programme_types", "programmes.programme_type_id", "=", "programme_types.id")
+                        ->leftJoin("departments", "programmes.department_id", "=", "departments.id")
+                        ->leftJoin("faculties", "departments.faculty_id", "=", "faculties.id")
+                        ->select(["students.matric_number", DB::raw("CONCAT(surname,', ',firstname,' ',IFNULL(other_names, ''))  AS fullname"),
+                             "programmes.name AS programme", "departments.name AS department", "faculties.name AS faculty", "levels.name as level",
+                            "students.gender","courses.coursecode AS course",
+                            DB::raw("(SELECT SUM(transaction_amount) FROM transactions WHERE transactions.student_id = students.id AND transactions.code = 'RST' AND transactions.payment_status = 'Paid') AS amount_paid")
+                            ,DB::raw("(SELECT SUM(amount) FROM resit_courses WHERE student_id=students.id AND session = $session) AS due")
+                        ])
+                        ->where($arropts)
+                        ->orderBy("faculties.name")
+                        ->orderBy("departments.name")
+                        ->orderBy("programme_types.prog_type_name")
+                        ->orderBy("programmes.name")
+                        ->orderBy("surname")
+                        ->havingRaw("due<=amount_paid");
+
+                $students = $students->get();
+
+
+                return view('pages.staff.reports.resit.percoursedata', compact('students'))->render();
+            }
+
+            return view('pages.staff.reports.payments.bymethod', compact('students'));
+        }catch (\Exception $e){
+            return $e->getMessage().$e->getTraceAsString();
+        }
+
+    }
+}

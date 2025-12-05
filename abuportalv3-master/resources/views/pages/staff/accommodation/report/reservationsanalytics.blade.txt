@@ -1,0 +1,380 @@
+@extends('layout.staff.master')
+
+@section('css')
+<link rel="stylesheet" href="{{ asset('DataTables/datatables.min.css') }}">
+<style>
+.row {
+    margin-left: unset;
+    margin-right: unset;
+}
+
+
+#records {
+    overflow-x: auto;
+    border-color: #cccccc;
+    border-width: 1px;
+    border-radius: 5px;
+    min-height: 50px;
+    padding: 10px;
+}
+
+.breadcrumb {
+    margin-bottom: unset;
+}
+
+.heading-line-bottom {
+    margin: unset;
+}
+</style>
+@endsection
+
+@section('content')
+<section class="pt-10 pl-5">
+    <div class="section-content">
+        <div class="row  mt-20">
+            <form action="" id="admittedform">
+                @csrf
+                <input type="hidden" name="role_id" id="role_id">
+                <input type="hidden" name="user_id" id="user_id">
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <label for="hostel">Hostel:</label>
+                        <select id="hostel" name="hostel" class="form-control is-valid" required>
+                            <option value="">Select Hostel</option>
+
+                        </select>
+                    </div>
+
+                    <div class="col-md-3 mb-3">
+                        <label for="block">Block:</label>
+                        <select id="block" name="block" class="form-control is-invalid" disabled required>
+                            <option value="">Select Block</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-3 mb-3">
+                        <label for="room">Room:</label>
+                        <select id="room" name="room" class="form-control is-invalid" disabled required>
+                            <option value="">Select Room</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-3 mb-3">
+                        <label for="session">Session:</label>
+                        <select id="session" name="session" class="form-control is-valid" disabled required>
+                            <option value="">Select Session</option>
+
+                        </select>
+                    </div>
+                </div>
+            </form>
+            <br />
+            <button style="margin-left: 10px;" class="btn btn-success btn-generate" type="button">Generate</button>
+            <br />
+            <br />
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-12">
+            <div id="records">
+                <div id="load" style="display: none; position: relative;" class="table-responsive">
+                    <!-- Quick Stats -->
+                    <!-- Stats Cards in Two Columns with Styling -->
+                    <div class="container">
+                        <!-- Stats Cards in Two Columns -->
+                        <div class="row">
+                            <!-- First Column -->
+                            <div class="col-md-6">
+                                <div class="card mb-3 shadow-sm">
+                                    <div class="card-header bg-primary text-white">
+                                        Bed Space Summary
+                                    </div>
+                                    <div class="card-body">
+                                        <p id="totalBedsCard" class="mb-2">Total Bed Spaces: </p>
+                                        <p id="occupiedCard" class="mb-2">Occupied: </p>
+                                        <p id="availableCard" class="mb-2">Available: </p>
+                                        <p id="pendingCard" class="mb-2">Pending Reservations: </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Second Column -->
+                            <div class="col-md-6">
+                                <div class="card mb-3 shadow-sm">
+                                    <div class="card-header bg-success text-white">
+                                        Payment Summary
+                                    </div>
+                                    <div class="card-body">
+                                        <p id="totalPaymentCard" class="mb-2">Total Payments: </p>
+                                        <p id="paidStudentsCard" class="mb-2">Paid Students: </p>
+                                        <p id="unpaidStudentsCard" class="mb-2">Unpaid Students: </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Charts -->
+                        <div class="mt-4">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div id="occupancyChart" style="width: 100%; height: 400px;"></div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div id="paymentChart" style="width: 100%; height: 400px;"></div>
+                                </div>
+                            </div>
+
+                            <!-- Below row for reservationStatusChart -->
+                            <div class="row mt-4">
+                                <div class="col-12">
+                                    <div id="reservationStatusChart" style="width: 100%; height: 400px;"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+        </div>
+    </div>
+</section>
+@endsection
+
+@section('js')
+<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+
+<script src="{{ asset('DataTables/datatables.min.js') }}"></script>
+<script>
+google.charts.load('current', {
+    'packages': ['corechart']
+});
+</script>
+<script>
+//Load hostels
+$.ajax({
+    url: '{{route("hostels.dropdown")}}'
+}).done(function(data) {
+    $("#hostel").html("<option value=''>Select Hostel</option><option value='%'>All Hostels</option>" + data);
+});
+
+const $hostel = $('#hostel');
+const $block = $('#block');
+const $room = $('#room');
+const $session = $('#session');
+
+$('#hostel').on('change', function() {
+    const hostelId = $(this).val();
+    
+    if (!hostelId) {
+        $block.html('<option value="">Select Block</option>').prop('disabled', true);
+        $room.html('<option value="">Select Room</option>').prop('disabled', true);
+        $session.html('<option value="">Select Session</option>').prop('disabled', true);
+        return;
+    }
+    
+    $.ajax({
+        url: `{{ url('/staff/accommodation/get-blocks') }}/${encodeURIComponent(hostelId)}`,
+        method: 'GET',
+        beforeSend: () => {
+            toastr.info('Loading blocks...');
+            $block.prop('disabled', true);
+            $block.html('<option value="">Select Block</option><option value="%">All Blocks</option>');
+            $room.html('<option value="">Select Room</option>').prop('disabled', true);
+            $session.html('<option value="">Select Session</option>').prop('disabled', true);
+        },
+        success: function(data) {
+            $.each(data, function(_, block) {
+                $block.append(`<option value="${block.id}">${block.name}</option>`);
+            });
+            $block.prop('disabled', false);
+            toastr.success('Blocks loaded.');
+        },
+        error: function() {
+            toastr.error('Failed to load blocks.');
+            $block.prop('disabled', false);
+        }
+    });
+});
+
+$('#block').on('change', function() {
+    const blockId = $(this).val();
+    
+    if (!blockId) {
+        $room.html('<option value="">Select Room</option>').prop('disabled', true);
+        $session.html('<option value="">Select Session</option>').prop('disabled', true);
+        return;
+    }
+    
+    $.ajax({
+        url: `{{ url('/staff/accommodation/get-rooms') }}/${encodeURIComponent(blockId)}`,
+        method: 'GET',
+        beforeSend: () => {
+            toastr.info('Loading rooms...');
+            $room.prop('disabled', true);
+            $room.html('<option value="">Select Room</option><option value="%">All Rooms</option>');
+            $session.html('<option value="">Select Session</option>').prop('disabled', true);
+        },
+        success: function(data) {
+            $.each(data, function(_, room) {
+                $room.append(`<option value="${room.id}">${room.room_no}</option>`);
+            });
+            $room.prop('disabled', false);
+            toastr.success('Rooms loaded.');
+        },
+        error: function() {
+            toastr.error('Failed to load rooms.');
+            $room.prop('disabled', false);
+        }
+    });
+});
+
+let cachedSessions = null; // Store sessions after first fetch
+
+$('#room').on('change', function() {
+
+    if (cachedSessions) {
+        populateSessions(cachedSessions, $session);
+    } else {
+        $.ajax({
+            url: '{{ route("accommodation.admin.getsessions") }}',
+            method: 'GET',
+            beforeSend: () => {
+                toastr.info('Loading sessions...');
+                $session.prop('disabled', true);
+            },
+            success: function(sessions) {
+                cachedSessions = sessions; // Cache the result
+                populateSessions(sessions, $session);
+                toastr.success('Sessions loaded.');
+            },
+            error: function() {
+                toastr.error('Failed to load sessions.');
+                $session.prop('disabled', true);
+            }
+        });
+    }
+});
+
+function populateSessions(sessions, $dropdown) {
+    $dropdown.html('<option value="">Select Session</option>');
+    $.each(sessions, function(index, session) {
+        $dropdown.append(`<option value="${session}">${session}/${session+1}</option>`);
+    });
+    $dropdown.prop('disabled', false);
+}
+
+function drawOccupancyChart(data) {
+    var chartData = google.visualization.arrayToDataTable([
+        ['Status', 'Count'],
+        ['Occupied', data.occupied],
+        ['Available', data.available]
+    ]);
+
+    var options = {
+        title: 'Bed Space Occupancy',
+        pieHole: 0.4,
+        colors: ['#10b981', '#ef4444']
+    };
+
+    var chart = new google.visualization.PieChart(document.getElementById('occupancyChart'));
+    chart.draw(chartData, options);
+}
+
+function drawPaymentChart(data) {
+    var chartData = google.visualization.arrayToDataTable([
+        ['Payment Status', 'Count'],
+        ['Paid Students', data.paid_students],
+        ['Unpaid Students', data.unpaid_students]
+    ]);
+
+    var options = {
+        title: 'Payment Status',
+        pieSliceText: 'value',
+        colors: ['#14b8a6', '#6b7280']
+    };
+
+    var chart = new google.visualization.PieChart(document.getElementById('paymentChart'));
+    chart.draw(chartData, options);
+}
+
+function drawReservationStatusChart(data) {
+    var chartData = google.visualization.arrayToDataTable([
+        ['Reservation Status', 'Count', {
+            role: 'style'
+        }],
+        ['Reserved', data.reservation_status.reserved, '#3b82f6'],
+        ['Occupied', data.reservation_status.occupied, '#10b981'],
+        ['Cancelled', data.reservation_status.cancelled, '#ef4444'],
+        ['Expired', data.reservation_status.expired, '#f59e0b'],
+        ['Revoked', data.reservation_status.revoked, '#8b5cf6']
+    ]);
+
+    var options = {
+        title: 'Reservation Status Breakdown',
+        legend: {
+            position: 'none'
+        },
+        hAxis: {
+            minValue: 0
+        },
+        bar: {
+            groupWidth: '60%'
+        }
+    };
+
+    var chart = new google.visualization.ColumnChart(document.getElementById('reservationStatusChart'));
+    chart.draw(chartData, options);
+}
+
+$(".btn-generate").click(function() {
+    $('#load').hide(); // Hide while loading new data
+    toastr.info('Generating reservations statistics...', 'Please wait');
+
+    $.ajax({
+        url: `{{ route('accommodation.reports.reservationsanalytics') }}`, // Update to your correct Laravel route
+        method: "GET",
+        data: {
+            "_token": "{{ csrf_token() }}",
+            "hostel": $hostel.val(),
+            "block": $block.val(),
+            "room": $room.val(),
+            "session": $session.val()
+        },
+        dataType: "json",
+        success: function(data) {
+            //alert(data.total_beds);
+            toastr.success('Statistics loaded successfully');
+            // Show the container
+            $('#load').fadeIn();
+            // Update cards
+            $('#totalBedsCard').text(`Total Bed Spaces: ${data.total_beds}`);
+            $('#occupiedCard').text(`Occupied: ${data.occupied}`);
+            $('#availableCard').text(`Available: ${data.available}`);
+            $('#pendingCard').text(`Pending Reservations: ${data.pending}`);
+            const formattedPayment = new Intl.NumberFormat('en-NG', {
+                style: 'currency',
+                currency: 'NGN',
+                minimumFractionDigits: 0
+            }).format(data.total_payment);
+            $('#totalPaymentCard').text(`Total Payments: ${formattedPayment}`);
+            // $('#totalPaymentCard').text(`Total Payments: ₦${data.total_payment.toLocaleString()}`);
+            $('#paidStudentsCard').text(`Paid Students: ${data.paid_students}`);
+            $('#unpaidStudentsCard').text(`Unpaid Students: ${data.unpaid_students}`);
+
+            // Draw Google Charts
+            drawOccupancyChart(data);
+            drawPaymentChart(data);
+            drawReservationStatusChart(data);
+        },
+        error: function(xhr, status, error) {
+            $('#load').hide(); // Hide stats/charts if something goes wrong
+            toastr.error('Failed to load statistics. Please try again.');
+            console.error(error);
+        }
+    });
+});
+</script>
+
+@endsection

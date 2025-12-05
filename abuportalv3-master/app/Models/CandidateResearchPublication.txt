@@ -1,0 +1,46 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class CandidateResearchPublication extends Model
+{
+    protected $guarded = [];
+    public static $publicationrules = [
+        "candidateid"=>"required|exists:candidates,id",
+        "year"=>"required|max:4",
+        "institution"=>"required|min:13",
+        "qualificationid"=>"required|exists:qualifications,id",
+    ];
+
+    public static $bookChapter = [
+        "candidateid"=>"required|exists:candidates,id",
+        "year"=>"required|max:4",
+        "title"=>"required|string",
+        "authors"=>"required",
+        "publisher"=>"required|string",
+        "volume"=>"required",
+        "chapter"=>"required",
+        "page"=>"required"
+    ];
+    public static $journal = [
+        "candidateid"=>"required|exists:candidates,id",
+        "year"=>"required|max:4",
+        "title"=>"required|string",
+        "authors"=>"required",
+        "journal"=>"required",
+        "volume"=>"required",
+        "issue"=>"required",
+        "page"=>"required"
+    ];
+    public static $conference = [
+        "candidateid"=>"required|exists:candidates,id",
+        "year"=>"required|max:4",
+        "title"=>"required|string",
+        "authors"=>"required",
+        "conference"=>"required",
+        "location"=>"required",
+        "publisher"
+    ];
+}

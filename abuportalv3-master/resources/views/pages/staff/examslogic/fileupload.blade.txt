@@ -1,0 +1,184 @@
+@extends("layout.staff.master")
+@section("css")
+    {{--    <link rel="stylesheet" href="{{ asset('js/datatables/jquery.dataTables.min.css')}}"/>--}}
+    <style>
+        label {
+            width: 100%;
+            color: #0f1824;
+            text-align: left;
+        }
+    </style>
+@endsection
+@section("pageTitle")
+    Manage Faculties
+@endsection
+@section("content")
+    <section>
+        <div class="main-section">
+            <div class="container">
+                <div class="row">
+                    <div class="col-md-120 ml-30 mr-30 mt-50">
+                        <div class="row">
+                            {{--                            <div class="heading-line-bottom pull-left mb-50">--}}
+                            {{--                                <h4 class="heading-title">Upload Results</h4>--}}
+                            {{--                            </div>--}}
+                        </div>
+                        <form action="{{route("examslogic.write")}}" method="post" enctype="multipart/form-data">
+                            @if (session('status'))
+                                <div class="alert alert-success" role="alert">
+                                    {{ session('status') }}
+                                </div>
+                            @endif
+
+                            @csrf
+                            <div class="row mb-30">
+                                <div class="col-md-3">
+                                    <label for="session">Session:</label>
+                                    <select id="sessionid" name="session" size=""
+                                            class="custom-select form-control course-select {{ $errors->has('session')?'is-invalid':'is-valid' }}"
+                                            required>
+                                        <option value="">--Select--</option>
+                                        @foreach(range(date("Y")-10, date("Y")) as $year)
+                                            <option value="{{ $year }}">{{ $year }}/{{ $year+1 }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+
+                                <div class="col-md-3">
+                                    <label for="semester">Semester:</label>
+                                    <select id="semesterid" name="semester" size=""
+                                            class="custom-select form-control course-select {{ $errors->has('semester')?'is-invalid':'is-valid' }}"
+                                            required>
+                                        <option value="">--Select--</option>
+                                        <option value="1">First</option>
+                                        <option value="2">Second</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-md-3">
+                                    <label for="course">Course:</label>
+                                    <select id="courseid" name="course" size=""
+                                            class="custom-select form-control {{ $errors->has('course')?'is-invalid':'is-valid' }}"
+                                            required>
+
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="row mb-30">
+                                <div class="col-md-3">
+                                    <label for="row">First Row:</label>
+                                    <select class="custom-select form-control" size="" name="row" required>
+                                        <?php
+                                        for ($i = 0; $i <= 20; $i++) {
+                                        ?>
+                                        <option value="<?php echo $i ?>"><?php echo $i + 2 ?></option>
+                                        <?php
+                                        }
+                                        ?>
+                                    </select>
+                                </div>
+
+                                <div class="col-md-3">
+                                    <label for="reg_column">Reg. Num. Column:</label>
+                                    <select class="custom-select form-control" size="" name="reg_column" required>
+                                        <?php
+                                        for ($i = 0; $i < 26; $i++) {
+                                        ?>
+                                        <option value="<?php echo($i) ?>"><?php echo chr($i + 65) ?></option>
+                                        <?php
+                                        }
+                                        ?>
+                                    </select>
+                                </div>
+
+                                <div class="col-md-3">
+                                    <label for="ca_column">CA Column:</label>
+                                    <select class="custom-select form-control" size="" name="ca_column" required>
+                                        <?php
+                                        for ($i = 0; $i < 26; $i++) {
+                                        ?>
+                                        <option value="<?php echo($i) ?>"><?php echo chr($i + 65) ?></option>
+                                        <?php
+                                        }
+                                        ?>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="row mb-30">
+                                <div class="col-md-3">
+                                    <label for="exams_column">Exams Column:</label>
+                                    <select class="custom-select form-control" size="" name="exams_column" required>
+                                        <?php
+                                        for ($i = 0; $i < 26; $i++) {
+                                        ?>
+                                        <option value="<?php echo($i) ?>"><?php echo chr($i + 65) ?></option>
+                                        <?php
+                                        }
+                                        ?>
+                                    </select>
+                                </div>
+
+                                <div class="col-md-3">
+                                    <label for="sheet">Excel Sheet:</label>
+                                    <select class="custom-select form-control" size="" name="sheet" required>
+                                        <?php
+                                        for ($i = 1; $i <= 20; $i++) {
+                                        ?>
+                                        <option value="<?php echo $i ?>"><?php echo "sheet$i" ?></option>
+                                        <?php
+                                        }
+                                        ?>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="row mb-30">
+                                <div class="col-md-6">
+                                    <input type="file" name="filename"/>
+                                    <input type="hidden" id="group_id" name="group_id"/>
+                                </div>
+
+                                <div class="col-md-3">
+                                    <button type="submit" id="submitbtn" class="btn btn-success text-right">
+                                        Upload
+                                    </button>
+                                </div>
+
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+@endsection
+
+@section("js")
+    <script type='text/javascript'>
+        $(document).on("change", ".course-select", function (event) {
+            var session = $('#sessionid').val();
+            var semester = $('#semesterid').val();
+            $.ajax({
+                url: '{{route("examslogic.getcourses")}}',
+                data: {'sessionid': session, 'semesterid': semester},
+                method: 'get'
+            }).done(function (data) {
+                $("#courseid").html(data);
+            });
+            return false;
+        });
+        $(document).on("change", "#courseid", function (event) {
+            var session = $('#sessionid').val();
+            var semester = $('#semesterid').val();
+            var course = $('#courseid').val();
+            $.ajax({
+                url: '{{route("examslogic.getgroup")}}',
+                data: {'sessionid': session, 'semesterid': semester, 'courseid': course},
+                method: 'get'
+            }).done(function (data) {
+                $("#group_id").val(data);
+            });
+            return false;
+        });
+    </script>
+@endsection
+

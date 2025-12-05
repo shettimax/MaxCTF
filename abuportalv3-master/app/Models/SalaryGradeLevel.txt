@@ -1,0 +1,13 @@
+<?php
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+/**
+   @property bigint $country_id country id
+@property varchar $name name
+@property timestamp $created_at cre
+ **/
+class SalaryGradeLevel extends Model
+{
+//
+}

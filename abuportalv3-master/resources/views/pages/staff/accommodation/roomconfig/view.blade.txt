@@ -1,0 +1,61 @@
+@inject('Accommodation', 'App\Models\Accommodation')
+    <div class='row'>
+        <div class='col-12 text-left'>
+            <h2 class="text-theme-colored2 font-20">ROOM {{strtoupper($roomconfig->room->room_no)}} OF {{strtoupper($roomconfig->room->block->name)}} BLOCK </h2>
+        </div>
+    </div>
+    <div class='row'>
+        <div class='col-xs-12 col-md-10 text-center'>
+            <table id='roomviewtb' class="table table-hover table-sm table-bordered">
+                <tbody>
+                    <tr>
+                        <td>Session:</td>
+                        <td>{{strtoupper($roomconfig->session)}}</td>
+                    </tr>
+                    <tr>
+                        <td>Room No.:</td>
+                        <td>{{strtoupper($roomconfig->room->room_no)}}</td>
+                    </tr>
+                    <tr>
+                        <td>Block:</td>
+                        <td>{{strtoupper($roomconfig->room->block->name)}}</td>
+                    </tr>
+                    <tr>
+                        <td>Hostel:</td>
+                        <td>{{strtoupper($roomconfig->room->block->hostel->name)}}</td>
+                    </tr>
+                    <tr>
+                        <td>Room Fee:</td>
+                        <td>&#8358;{{number_format($roomconfig->room->getFee(), 2)}}</td>
+                    </tr>
+                    <tr>
+                        <td>Bedspace:</td>
+                        <td>{{$roomconfig->bed_space}}</td>
+                    </tr>
+                    <tr>
+                        <td>Occupied:</td>
+                        <td>{{$roomconfig->occupied}}</td>
+                    </tr>
+                    <tr>
+                        <td>Reserved:</td>
+                        <td>{{($roomconfig->reserved==1)?('Yes'):('No')}}</td>
+                    </tr>
+                    <tr>
+                        <td>Status:</td>
+                        <td>{{($roomconfig->status==1)?('Ok'):('Not Ok')}}</td>
+                    </tr>
+                    <tr>
+                        <td>Occupants:</td>
+                        <td>{{($roomconfig->occupants=="")?('No Occupant'):(strtoupper($roomconfig->occupants))}}</td>
+                    </tr>
+                </tbody>
+            </table>
+
+        </div>
+        <div class='col-xs-12 col-md-1'>
+            <a id="toggleroomreservedstatus" href='#' class='roomaction btn btn-sm btn-default' data-id ='{{$roomconfig->id}}'><i class="icon icon-switch3 icon-2x"></i> {{($roomconfig->reserved=='1')?('Make Available'):('Reserve For SAD')}}</a> <br />
+            <a id="toggleroomstatus" href='#' class='roomaction btn btn-sm btn-default' data-id ='{{$roomconfig->id}}'><i class="icon icon-switch3 icon-2x"></i> {{($roomconfig->status=='1')?('Disable'):('Enable')}}</a> <br />
+            <a href='#' class='roomaction modifyroomaction btn btn-sm btn-default' data-id = '{{$roomconfig->id}}'><i class="icon icon-edit3 icon-2x"></i> Modify</a>  <br />
+            <a href="#" class="roomaction roomlistaction btn btn-sm btn-default"><i class='icon icon-list6 icon-2x'></i> Back to List</a> <br />
+        </div>
+    </div>

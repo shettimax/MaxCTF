@@ -1,0 +1,328 @@
+
+@extends('layout.candidate.master')
+@section('content')
+    <div class="main-section">
+        <div class="container">
+            <div class="col-md-12 cs-tabs box">
+                <div id="cs-tab">
+                    <ul class="nav nav-tabs">
+                        <li class="{{ $errors->any()?'':'active in' }}">
+                            <a aria-expanded="true" href="#notifications" data-toggle="tab">Notifications</a>
+                        </li>
+                    </ul>
+                    <div class="tab-content">
+                        <div class="tab-pane fade {{ $errors->any()?'':'active in' }}" id="notifications">
+
+                            <div class="panel-group cs-default simple" id="accordion-940816">
+                                <div class="panel panel-default">
+                                    <div class="panel-heading">
+                                        <h4 class="panel-title">
+                                            <a class="collapsed" href="#accordion-5548343"
+                                               data-parent="#accordion-5548343" data-toggle="collapse">
+                                                Admission Notification
+                                            </a>
+                                        </h4>
+                                    </div>
+                                    @forelse( $candforms as $candform)
+                                        <div class="panel-collapse collapse in" id="accordion-5548343">
+
+                                            <div class="panel-body">
+                                                <div class="cs-blog cs-blog-medium col-md-9">
+                                                    <div class="blog-info-sec">
+                                                        <div class="date-time">
+                                                            @php
+                                                                $dt = Carbon\Carbon::parse($candform->updated_at);
+                                                                if($candform->admissionstatus == "admitted")
+                                                                    $programme = App\Programme::find($candform->programme_admitted_id);
+                                                                else
+                                                                    $programme = $candform->formsetting->programme;
+
+                                                            @endphp
+                                                            <time datetime="2011-01-12">
+                                                                <span>{{$dt->format('M')}}</span>
+                                                                <small>{{$dt->day}}</small>
+                                                                <span style="margin: 0">{{$dt->year}}</span>
+                                                            </time>
+                                                        </div>
+                                                        <div class="blog-text">
+                                                            <h3>
+                                                                <a>
+                                                                    {{$programme->name}}
+                                                                </a>
+                                                            </h3>
+                                                            <div>
+                                                                @if($candform->admissionstatus == "admitted")
+																	I am pleased to notify you that you have been offered provisional admission to study
+																@else
+																	Please check again later admission is not released yet.
+																@endif
+                                                                <br>
+                                                                <br>
+                                                                <br>
+                                                                <table class="table table-stripped">
+                                                                    <tr>
+                                                                        <th>Programme Applied:</th>
+                                                                        <td>{{$candform->formsetting->programme->name}}</td>
+                                                                    </tr>
+                                                                    @if($candform->admissionstatus == "admitted")
+                                                                        <tr>
+                                                                            <th>Programme Admitted:</th>
+                                                                            <td>{{$programme->name}}</td>
+                                                                        </tr>
+                                                                    @endif
+                                                                    <tr>
+                                                                        <th>Department:</th>
+                                                                        <td>{{$programme->department->name}}</td>
+                                                                    </tr>
+                                                                    <tr>
+                                                                        <th>{{$programme->department->faculty->type}}</th>
+                                                                        <td>{{$programme->department->faculty->name}}</td>
+                                                                    </tr>
+                                                                    <tr>
+                                                                        <th>Session:</th>
+                                                                        <td>{{$candform->formsetting->session}}
+                                                                            /{{$candform->formsetting->session+1}}</td>
+                                                                    </tr>
+                                                                </table>
+                                                            </div>
+                                                            @if($candform->admissionstatus == "admitted")
+                                                                <p class="text-center">
+                                                                    @if($accepted && $accepted->id != $candform->id)
+                                                                        Sorry You have already accepted an offer.
+                                                                    @else
+                                                                        @if(!$candform->acceptance_date)
+                                                                            You are expected to accept this offer
+                                                                             before registration exercise is completed.
+                                                                            <div class="text-center">
+                                                                                <a href="{{ route('admission.accept',[encrypt($candform->id)]) }}"
+                                                                                   class="btn btn-success btn-sm">Accept</a>
+
+                                                                            </div>
+                                                                        @else
+                                                                            You have accepted this offer please proceed to
+                                                                            @if($candform->screeningstatus == "Qualified")
+                                                                                pay <strong>Acceptance</strong> and <strong>Other
+                                                                                    Charges</strong>.
+                                                                            @else
+                                                                                screening.
+                                                                            @endif
+                                                                        @endif
+                                                                    @endif
+                                                                    </p>
+                                                                @endif
+                                                                <div class="cs-seprator">
+                                                                    <div class="devider"></div>
+                                                                </div>
+                                                        </div>
+                                                        <div class="blog-bottom-sec">
+
+                                                            <div class="cs-thumb-post"
+                                                                 style="text-align: center;">
+                                                                @if($candform->admissionstatus == "admitted" && $candform->acceptance_date)
+                                                                    <a style="color:#fff;"
+                                                                       href="{{route('feedback.admission.index',['id'=>encrypt($candform->id)])}}"
+                                                                       class="btn btn-info btn-sm">
+                                                                        <i class="icon icon-download4"></i>
+                                                                        Download Notification
+                                                                    </a>
+                                                                @endif
+                                                                @if($candform->admissionstatus == "admitted" && $candform->screeningstatus == "Qualified"  && $candform->acceptance_date )
+                                                                    @if(!$candform->paidSundry())
+                                                                    <a style="color:#fff;"
+                                                                       href="{{route('admission.pay',['id'=>encrypt($candform->id)])}}"
+                                                                       class="btn btn-info btn-sm">
+                                                                        <i class="icon icon-credit-card"></i>
+                                                                        Pay Securely
+                                                                    </a>
+                                                                    @endif
+                                                                    @if($candform->paidSundry())
+                                                                        <a style="color:#fff;"
+                                                                           href="{{route('admission.pay',['id'=>encrypt($candform->id)])}}"
+                                                                           class="btn btn-info btn-sm">
+                                                                            <i class="icon icon-print"></i>
+                                                                            Print Receipt
+                                                                        </a>
+                                                                    @endif
+                                                                @endif
+
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-3">
+                                                    @if($candform->admissionstatus == "admitted")
+                                                        <img src="{{ asset('adm_stamp.png') }}" alt="Admitted"
+                                                             style="width: 160px;margin-bottom:10px;display:block;float:right;">
+                                                        <br>
+                                                        @if($candform->screeningstatus == "Qualified")
+                                                            <img src="{{ asset('screening_passed.png') }}"
+                                                                 alt="Admitted"
+                                                                 style="width: 160px;margin-bottom:10px;display:block;float:right;">
+                                                        @elseif($candform->screeningstatus == "Not Qualified")
+                                                            <img src="{{ asset('screening_failed.png') }}"
+                                                                 alt="Admitted"
+                                                                 style="width: 160px;margin-bottom:10px;display:block;float:right;">
+                                                        @else
+                                                            <img src="{{ asset('not_screened.png') }}"
+                                                                 alt="Admitted"
+                                                                 style="width: 120px;margin-bottom:10px;display:block;float:right;">
+                                                        @endif
+                                                    @elseif($candform->admissionstatus == "rejected" || $candform->admissionstatus == "not admitted")
+                                                        <img src="{{ asset('not_adm_stamp.png') }}"
+                                                             alt="Admitted"
+                                                             style="width: 160px;margin-bottom:10px;display:block;float:right;">
+                                                    @else
+                                                        <img src="{{ asset('pending_stamp.gif') }}"
+                                                             alt="Admitted"
+                                                             style="width: 120px;margin-bottom:10px;display:block;float:right;">
+                                                    @endif
+                                                </div>
+                                            </div>
+                                        </div>
+
+									@empty
+                                        <div>
+                                            No Post
+                                        </div>
+                                    @endforelse
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="tab-pane fade" id=""></div>
+                        <div class="tab-pane fade" id=""></div>
+
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade bd-example-modal-xl" id="myModal" tabindex="1" role="dialog" aria-labelledby="myExtraLargeModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title">Attention</h2>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body" style="font-size:16px;">
+                    <img src="{{ asset('notification2020.jpg') }}" width="800" alt="">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-danger" data-dismiss="modal">Noted</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+@endsection
+
+@section('css')
+    <style>
+        .date-time {
+            float: left;
+            text-align: center;
+            width: 60px;
+            border-radius: 3px;
+
+        }
+
+        .date-time span {
+            color: #fff;
+            display: block;
+            font-size: 11px;
+            margin: 0;
+            padding: 3px 0 4px;
+            text-transform: uppercase;
+            background-color: #062d66;
+            border-radius: 3px 3px 0 0;
+            width: 100%;
+        }
+
+        .date-time strong {
+            font-size: 28px;
+            color: #fff;
+            font-weight: 700;
+        }
+
+        .date-time em {
+            background: #062d66;
+            color: #fff;
+            display: inherit;
+            padding: 3px;
+            border-radius: 0 0 3px 3px;
+            font-style: normal;
+            letter-spacing: 1px;
+            line-height: 22px;
+            font-size: 16px;
+        }
+
+        .events-listing .date-time ~ section {
+            padding: 0 0 0 92px;
+        }
+
+        .events-listing .text {
+            display: inline-block;
+            width: 82%;
+        }
+
+        .events-listing .text span {
+            display: inline-block;
+        }
+
+        .events-listing article {
+            border-bottom: 1px solid #ccc;
+            display: table;
+            margin: 0 0 30px;
+            padding: 0 0 24px;
+            width: 100%;
+        }
+
+        .events-listing .text span a {
+            float: left;
+            font-size: 12px;
+            line-height: 20px;
+            font-weight: 700;
+            color: #fff;
+            padding: 2px 10px;
+            margin: 0 4px 12px 0;
+            text-transform: uppercase;
+            background-color: #3397c9;
+        }
+
+        .events-listing .text h2 {
+            float: left;
+            width: 100%;
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 7px;
+            line-height: 22px;
+            text-transform: uppercase;
+        }
+
+        .events-listing .text h2 a {
+            color: #333;
+        }
+
+        /*.events-listing .post-options {
+            width: 100%;
+            float: left;
+            padding: 0 0 12px;
+            margin: 0 0 9px 0;
+            background:url(assets/images/spreater-img.png) repeat-x bottom;
+        }*/
+    </style>
+@endsection
+
+
+@section('js')
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+    <script type='text/javascript'>
+        $('#myModal').modal();
+    </script>
+@endsection

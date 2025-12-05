@@ -1,0 +1,113 @@
+@extends('layout.staff.master')
+
+@section('title', 'Promotion Steps')
+
+@section('content')
+<section>
+<div class="promotion-steps-wrapper">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-12">
+                <div class="page-title-box">
+                    <div class="page-title-right">
+                        <ol class="breadcrumb m-0">
+                            <li class="breadcrumb-item"><a href="{{ route('staff.dashboard') }}">Dashboard</a></li>
+                            <li class="breadcrumb-item"><a href="{{ route('promotion') }}">Promotion</a></li>
+                            <li class="breadcrumb-item"><a href="{{ route('promotion.configuration.index') }}">Configuration</a></li>
+                            <li class="breadcrumb-item active">Steps</li>
+                        </ol>
+                    </div>
+                    <h4 class="page-title">Promotion Steps</h4>
+                </div>
+            </div>
+        </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="header-title">Manage Promotion Workflow Steps</h4>
+                    <a href="{{ route('promotion.configuration.steps.create') }}" class="btn btn-primary">
+                        <i class="mdi mdi-plus"></i> Add New Step
+                    </a>
+                </div>
+                <div class="card-body">
+                    @if(session('success'))
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            {{ session('success') }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    @endif
+
+                    @if(session('error'))
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            {{ session('error') }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    @endif
+
+                    <div class="table-responsive">
+                        <table class="table table-centered table-striped dt-responsive nowrap w-100" id="steps-table">
+                            <thead>
+                                <tr>
+                                    <th>Order</th>
+                                    <th>Step Name</th>
+                                    <th>Description</th>
+                                    <th>Required</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse($steps as $step)
+                                <tr>
+                                    <td>
+                                        <span class="badge bg-primary">{{ $step->order }}</span>
+                                    </td>
+                                    <td><strong>{{ $step->name }}</strong></td>
+                                    <td>{{ $step->description ?: 'No description' }}</td>
+                                    <td>
+                                        <span class="badge bg-{{ $step->is_required ? 'success' : 'warning' }}">
+                                            {{ $step->is_required ? 'Required' : 'Optional' }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{{ $step->status === 'Active' ? 'success' : 'danger' }}">
+                                            {{ $step->status }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <a href="{{ route('promotion.configuration.steps.edit', $step) }}"
+                                           class="btn btn-sm btn-outline-primary">
+                                            <i class="mdi mdi-pencil"></i> Edit
+                                        </a>
+                                    </td>
+                                </tr>
+                                @empty
+                                <tr>
+                                    <td colspan="6" class="text-center">No promotion steps found.</td>
+                                </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        </div>
+        </div>
+    </div>
+</div>
+</section>
+@endsection
+
+@section('js')
+<script>
+$(document).ready(function() {
+    $('#steps-table').DataTable({
+        "pageLength": 25,
+        "order": [[0, "asc"]]
+    });
+});
+</script>
+@endsection

@@ -1,0 +1,145 @@
+@extends('layout.staff.master')
+{{-- @extends('layout.staff.app-improved') --}}
+@section('content')
+
+
+<!-- Morris Charts JavaScript -->
+<link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/raphael/2.1.0/raphael-min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/morris.js/0.5.1/morris.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/morris.js/0.5.1/morris.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<script>
+// Show loading overlay on form submit
+$(document).ready(function() {
+    $('form').on('submit', function() {
+        $('#loadingOverlay').show();
+    });
+
+    // Hide loading overlay when page loads
+    $(window).on('load', function() {
+        $('#loadingOverlay').hide();
+    });
+
+    // Initialize tooltips
+    $('[data-toggle="tooltip"]').tooltip();
+
+    // Auto-hide alerts after 5 seconds
+    $('.alert').delay(5000).fadeOut();
+});
+
+// Global export functions
+window.exportToExcel = function(tableId = 'reportTable', filename = 'report') {
+    const table = document.getElementById(tableId);
+    if (!table) {
+        alert('No data to export');
+        return;
+    }
+
+    const wb = XLSX.utils.table_to_book(table, {
+        sheet: "Report"
+    });
+    const date = new Date().toISOString().split('T')[0];
+    XLSX.writeFile(wb, `${filename}_${date}.xlsx`);
+};
+
+window.printReport = function() {
+    window.print();
+};
+</script>
+<script>
+// Utility Functions
+function refreshDashboard() {
+    location.reload();
+}
+
+function exportDashboard(format) {
+    if (format === 'pdf') {
+        window.print();
+    } else if (format === 'excel') {
+        // Implement Excel export functionality
+        alert('Excel export functionality can be implemented');
+    }
+}
+
+// Auto-refresh every 5 minutes
+setInterval(function() {
+    location.reload();
+}, 300000);
+</script>
+
+<style>
+/* Bootstrap 3 specific styles */
+.huge {
+    font-size: 40px;
+}
+
+.panel-green {
+    border-color: #5cb85c;
+}
+
+.panel-green .panel-heading {
+    border-color: #5cb85c;
+    color: white;
+    background-color: #5cb85c;
+}
+
+.panel-yellow {
+    border-color: #f0ad4e;
+}
+
+.panel-yellow .panel-heading {
+    border-color: #f0ad4e;
+    color: white;
+    background-color: #f0ad4e;
+}
+
+.panel-red {
+    border-color: #d9534f;
+}
+
+.panel-red .panel-heading {
+    border-color: #d9534f;
+    color: white;
+    background-color: #d9534f;
+}
+
+.page-header {
+    padding-bottom: 9px;
+    margin: 20px 0 20px;
+    border-bottom: 1px solid #eee;
+}
+
+.text-primary {
+    color: #337ab7;
+}
+
+.text-success {
+    color: #5cb85c;
+}
+
+.text-info {
+    color: #5bc0de;
+}
+
+.text-warning {
+    color: #f0ad4e;
+}
+
+.text-danger {
+    color: #d9534f;
+}
+
+.mb-10 {
+    margin-bottom: 10px;
+}
+
+/* Print styles */
+@media print {
+    .no-print {
+        display: none !important;
+    }
+}
+</style>
+@endsection

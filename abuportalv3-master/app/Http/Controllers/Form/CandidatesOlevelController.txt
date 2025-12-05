@@ -1,0 +1,120 @@
+<?php
+
+namespace App\Http\Controllers\Form;
+
+use App\Http\Controllers\Controller;
+
+use App\Models\CandidateOlevel;
+use App\Models\OlevelExamType;
+use App\Models\CandidateOlevelResult;
+use App\Models\Subject;
+use App\Models\OlevelGrade;
+use Illuminate\Http\Request;
+use Session;
+use DB;
+use Auth;
+
+
+class CandidatesOlevelController extends Controller
+{
+    //
+    public function __construct() {
+        $this->middleware(["auth:candidate","hasEmail"]);
+    }
+
+    public function index(Request $request) {
+        //To return the user back to candidate form
+        $request->session()->keep('backurl');
+        return view('pages.forms.profile');
+    }
+
+    public function store(Request $request) {
+       /// return $request;
+        $request->session()->keep('backurl');
+        if ($request->subjects){//isMethod('post')) {
+
+            $subjects = $request->subjects;
+            $grades = $request->grades;
+            $examtype = $request->examtype;
+            $examyear = $request->examyear;
+            $examnumber = $request->examnumber;
+            $centernumber = $request->centernumber;
+            $centername = $request->centername;
+            $sitting = $request->sitting;
+            $ischecked_ss = $request->ischecked_ss;
+            $candidateid = Auth::id();
+            $olevel = CandidateOlevel::where([['candidate_id', '=', $candidateid], ['sitting', '=', $sitting]])->first();
+            if(!$olevel){
+                $olevel = new CandidateOlevel;
+                $olevel->candidate_id = $candidateid;
+                $olevel->sitting = $sitting;
+            }
+            $olevel->exam_type_id = $examtype;
+            $olevel->exam_year = $examyear;
+            $olevel->exam_number = $examnumber;
+            $olevel->center_number = $centernumber;
+            $olevel->center_name = $centername;
+            $olevel->save();
+            //return [$candidateid,$sitting,$examtype,$examyear,$examnumber,$centernumber,$centername];
+
+            //Delete existing record for student if subjects and grades array is not empty
+            if (count($subjects) > 0 && count($grades) > 0) {
+                CandidateOlevelResult::where("candidate_olevel_id","=",$olevel->id)->delete();
+//                ->delete();
+                //Add the subjects and grades
+                for ($i = 0; $i < count($subjects); $i++) {
+                    $subject = $subjects[$i];
+                    $grade = $grades[$i];
+
+                    $subj= new CandidateOlevelResult;
+                    $subj->candidate_olevel_id=$olevel->id;
+                    $subj->subject_id = $subject;
+                    $subj->grade_id = $grade;
+                    $subj->save();
+                }
+            }
+
+
+            //Delete second sitting when it is not checked
+            if ($ischecked_ss == "false") {
+                CandidateOlevel::where([['candidate_id', '=', $candidateid], ['sitting', '=', 2]])->delete();
+            }
+
+            return response()->json(true);
+        }
+        return view("pages.forms.profile.addolevel");
+    }
+
+    //MISC//
+    public function getsubjects(Request $request) {
+        $request->session()->keep('backurl');
+        $subjects = Subject::all();
+        return $subjects;
+    }
+
+    public function getgrades(Request $request) {
+        $request->session()->keep('backurl');
+        $grades = OlevelGrade::all();
+        return $grades;
+    }
+
+    public function getexamtypes(Request $request) {
+        $request->session()->keep('backurl');
+        $examtypes = OlevelExamType::all();
+        return $examtypes;
+    }
+
+    public function getolevelresults(Request $request) {
+//        return $request;
+        $request->session()->keep('backurl');
+        $sitting = $request->sitting;
+        $candidateid = Auth::id();
+        $olevels = CandidateOlevel::
+        join("candidate_olevel_results","candidate_olevel_results.candidate_olevel_id","=","candidate_olevels.id")
+            ->join("subjects","subjects.id","=","candidate_olevel_results.subject_id")
+            ->join("olevel_grades","olevel_grades.id","=","candidate_olevel_results.grade_id")
+            ->where('candidate_id', '=', $candidateid)->where('sitting', '=', $sitting)->get();
+        return $olevels;
+    }
+
+}

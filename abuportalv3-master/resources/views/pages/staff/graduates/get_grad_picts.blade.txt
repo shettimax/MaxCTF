@@ -1,0 +1,69 @@
+@extends("layout.staff.master")
+@section("content")
+    <section>
+
+        <div class="col-md-11 blog-pull-right mt-12">
+            @if($errors->has('message'))
+                <span class="alert alert-success" id="errors"
+                      style="border-radius:0;height: 48px;padding: 8px;margin-left: 320px;">
+                    Operation Successful
+                </span>
+                <script>
+                    setTimeout(function () {
+                        $("#errors").fadeOut();
+                    }, 4000);
+                </script>
+            @endif
+        </div>
+
+        <div class="container">
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="bg-lightest border-1px p-30 mb-0">
+                        <h3 class="text-theme-colored mt-0 pt-5">Import Graduates</h3>
+                        <hr>
+                        <table class="table table-bordered table-condensed table-striped variations">
+                            <thead>
+                            <tr style="font-size: 12px;">
+                                <th>REGNUMB</th>
+                            </tr>
+                            </thead>
+
+                            <tbody id="">
+
+
+                            </tbody>
+                        </table>
+                        <form id="gradupload" name="gradupload"
+                              action="{{ route("grad.pics.download") }}" method="post"
+                              enctype="multipart/form-data">
+                            <div class="row">
+
+                                <div class="col-md-3">
+                                    <div class="form-group">
+                                        @csrf
+                                        <label>Upload Excel</label>
+                                        <input name="form_attachment" class="file form-control" type="file"
+                                               data-show-upload="false" data-show-caption="true" required>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+
+                            </div>
+
+                            <div class="form-group">
+                                <input name="form_botcheck" class="form-" type="hidden" value=""/>
+                                <button type="submit" class="btn btn-dark btn-theme-colored btn-sm mt-20 pt-10 pb-10"
+                                        data-loading-text="Please wait...">Upload
+                                </button>
+                            </div>
+                        </form>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+@endsection

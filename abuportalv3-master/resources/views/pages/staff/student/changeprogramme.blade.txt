@@ -1,0 +1,86 @@
+@extends("layout.staff.master")
+
+@section("pageTitle")
+    Profile: Change Password
+@endsection
+
+@include('pages.staff.profile.custom-css')
+
+@section('biodata-page-menu', 'active')
+
+@section("content")
+    <section>
+        <div class="container pt-30 pb-30 pl-30 pr-30">
+            <div class="row">
+                <div class="col-md-12 pull-right flip sm-pull-none">
+                    <div class="blog-posts">
+                        <div class="col-md-12">
+
+                            {{--<div class="mt-30"></div>--}}
+
+                            @if ($message = Session::get('success'))
+                                <div class="alert alert-success" role="alert">
+                                    <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                                    {{ $message }}
+                                </div>
+                            @endif
+                            @if ($message = Session::get('error'))
+                                <div class="alert alert-danger" role="alert">
+                                    <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                                    {{ $message }}
+                                </div>
+                            @endif
+                            <section class="bg-white-f7 pr-30 pl-30 pb-30" style="border-left:2px solid #43B14B;border-right:2px solid #43B14B;">
+                                <div class="container pb-0">
+                                    <div class="section-title">
+                                        <div class="row">
+                                            <div class="col-md-6 col-md-offset-3">
+                                                <div class="">
+                                                    <form class="form-horizontal" method="post" action="{{ route('staff.student.programme.change') }}">
+                                                        @csrf
+                                                        <div class="form-group">
+                                                            <div class="col-md-12">
+                                                                <span><i>Programme</i></span>
+                                                                <p>{{ $student->getprogramme->name }}</p>
+                                                            </div>
+                                                        </div>
+                                                        <div class="form-group">
+                                                            <div class="col-md-12">
+                                                                <span><i>Select New Programme</i></span>
+                                                                <select name="programme" class="form-control">
+                                                                    <option>-- select --</option>
+                                                                    @foreach(App\Models\Programme::where('programmes.programme_type_id', $student->programme_type_id)->orderBy('name', 'ASC')->get() as $programme)
+                                                                        <option value="{{ $programme->id }}">{{ $programme->name }}</option>
+                                                                    @endforeach
+
+                                                                </select>
+                                                            </div>
+                                                        </div>
+
+                                                        <div class="form-group">
+                                                            <div class="col-md-12">
+                                                                <button type="submit" class="btn btn-success btn-flat"> <i class="fa fa-search"></i> Change</button>
+                                                            </div>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </section>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+@endsection
+
+@section("js")
+    <script>
+
+    </script>
+@endsection

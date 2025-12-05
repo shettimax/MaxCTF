@@ -1,0 +1,148 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Auth;
+
+class SessionReg extends Model
+{
+    //
+
+    public function student()
+    {
+        return $this->belongsTo(Student::class);
+    }
+
+    public function getPaymentOptions($checkId=null)
+    {
+        $student = $this->student;
+        $nwRet = $student->entry_session == $this->session?"New":"Returning";
+        $hasId = "";//$this->payment_option?" OR id={$this->payment_option}":"";
+        $conditions = [
+            "(mode_of_entry='{$student->mode_of_entry}')",
+            "(level_id={$this->level_id} OR level_id=0 )",
+            "(entry_session={$student->entry_session} OR entry_session=0)",
+            "(new_returning='$nwRet' OR new_returning='All')",
+            "(selected_student='No' $hasId)"
+        ];
+
+        if($checkId){
+            $pOpt = PaymentOption::where(['from_session'=>$this->session,'status'=>'Active'])
+                ->whereRaw(implode(" AND ",$conditions))->where('id',$checkId)->first();
+
+            return $pOpt?1:0;
+        }
+        return $pOpt = PaymentOption::where(['from_session'=>$this->session,'status'=>'Active'])
+            ->whereRaw(implode(" AND ",$conditions))
+            ->get();
+    }
+
+
+    public function applyPrivatePaymentOption()
+    {
+        $user = Auth::user();
+        //Exit if there isn't any privately assigned paymentOption
+        if(!$this->payment_option){
+            return;
+        }
+
+        $student = $this->student;//Get the owner of this sessionreg
+        $pOpt = PaymentOption::find($this->payment_option);//get the privately assigned paymentOption
+
+        $feesObj = $student->sessionFees($this->session);//get student fees for this sessionreg's session
+        $paid = $feesObj['amountpaid'];//amount paid for this session
+        $total_due = $feesObj['total'];//total amount due for pyment\
+
+        if($pOpt->type=="Percentage"){//if it is percentage based come into this block
+            $values = explode(":",$pOpt->value);//break the percentages
+            $hasWaiver = false;//checker for waiver in the private paymentoption
+            $total = 0;//initialize total to 0
+            $type = "";
+            $percArr = [];// list of percentages , looks like a repetition of effort but
+            //  this is used to calculate the actual percentage to be waived
+            foreach ($values as $value){
+                if(strtolower($value)=="waived" || strtolower($value)=="loan" || strtolower($value)=="lumpsum"){
+                    $hasWaiver = true;// if there is waiver keep track
+                    $type = ucwords($value);
+                }else{
+                    //check to see if the other percentage sum upto a max of 100
+                    if($total+$value <= 100 && trim($value) != ""){
+                        $total += $value;
+                        $percArr[] = $value;
+                    }
+                }
+            }
+            $percArr["Waived"] = 0;//initialize waived index to 0
+            if($total < 100){//if the rest sum up to 100 no need check waiver
+                if($hasWaiver){
+                    $percArr["Waived"] = 100 - $total;// the difference between 100 and total is assumed to be waived
+                }else{//if there is no waiver but for some reason it doesn't add up to 100
+                    $percArr[] = 100 - $total;
+                }
+            }
+            //The above are taken care of on creation by PHP but incase MIS begins to insert through DB and make mistakes
+//            return $percArr;
+            $waived = $feesObj['waived'];//amount waived so far
+            $waiver = ($percArr["Waived"]/100) * $total_due;//based in the private option how much is to be waived
+            $code = $student->mode_of_entry[0]."R";
+            if($paid+$waived >= $total_due){
+                return;
+            }
+            if($waived != $waiver){
+                $WaivedTransaction = Transaction::where(["student_id"=>$this->student_id,"session"=>$this->session,"payment_status"=>"Waived"])->first();
+                if(!$WaivedTransaction){
+                    $tcode = FeeManager::generateTransactionCode($student->id,"REG",$this->session,$code,$waiver);
+                    $WaivedTransaction = Transaction::where(["transaction_code"=>$tcode])->first();
+                }
+                $WaivedTransaction->transaction_amount = $this->loan_amount!="" && $this->loan_amount?$this->loan_amount:$waiver;
+                $WaivedTransaction->payment_status = $type=="Waived"?"Waived":"Paid";
+                $WaivedTransaction->branch_id = $type=="Waived"?"333":$pOpt->payment_code;
+                $WaivedTransaction->waived_by = $this->payment_option_assigner_id;
+                $WaivedTransaction->save();
+                $waived = $waiver;
+            }
+
+            if($paid+$waived >= $total_due){
+                return;
+            }
+            $balance = $total_due - ( $paid+$waived );
+            if($balanceTransaction = Transaction::where(["transaction_amount"=>$balance,"student_id"=>$this->student_id,"session"=>$this->session,"payment_status"=>"Not Paid"])->first()){
+                return;
+            }
+            FeeManager::generateTransactionCode($student->id,"REG",$this->session,$code);
+
+            return $percArr;
+        }else{
+            $code = $student->mode_of_entry[0]."R";
+            if($paid >= $total_due) return;
+            // $paid = Transaction::where(["student_id"=>$this->student_id,"session"=>$this->session])->whereRaw("payment_status='Paid' OR payment_status='Waived'")->sum('transaction_amount');
+            $WaivedTransaction = Transaction::where(["student_id"=>$this->student_id,"session"=>$this->session,"payment_status"=>"Waived"])->first();
+            if(!$WaivedTransaction){
+                $tcode = FeeManager::generateTransactionCode($student->id,"REG",$this->session,$code,$this->loan_amount);
+                $WaivedTransaction = Transaction::where(["transaction_code"=>$tcode])->first();
+            }
+            $WaivedTransaction->transaction_amount = $this->loan_amount;
+            $WaivedTransaction->payment_status = "Paid";
+            $WaivedTransaction->branch_id = $pOpt->payment_code;
+            $WaivedTransaction->waived_by = $this->payment_option_assigner_id;
+            $WaivedTransaction->save();
+            //$waived = $waiver;
+        }
+    }
+
+    public function selectedOption()
+    {
+        return $this->chosen_plan_id?PaymentOption::find($this->chosen_plan_id):null;
+    }
+
+    public function programme()
+    {
+        return Programme::find($this->programme_id);
+    }
+
+    public function level()
+    {
+        return $this->belongsTo(Level::class,'level_id');//Level::find($this->level_id);
+    }
+}

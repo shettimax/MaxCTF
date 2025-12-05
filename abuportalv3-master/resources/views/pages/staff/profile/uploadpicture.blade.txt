@@ -1,0 +1,87 @@
+@extends("layout.staff.master")
+
+@section("pageTitle")
+    Profile: Change Password
+@endsection
+
+@include('pages.staff.profile.custom-css')
+
+@section('biodata-page-menu', 'active')
+
+@section("content")
+    <section>
+        <div class="container pt-30 pb-30 pl-30 pr-30">
+            <div class="row">
+                <div class="col-md-12 pull-right flip sm-pull-none">
+                    <div class="blog-posts">
+                        <div class="col-md-12">
+                            <h2 class="widget-title">Change Picture</h2>
+                            <div class="double-line-bottom-theme-colored-2"></div>
+                            <div class="mt-30"></div>
+
+                            @if ($message = Session::get('success'))
+                                <div class="alert alert-success" role="alert">
+                                    <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                                    {{ $message }}
+                                </div>
+                            @endif
+                            @if ($message = Session::get('error'))
+                                <div class="alert alert-danger" role="alert">
+                                    <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                                    {{ $message }}
+                                </div>
+                            @endif
+                            <section class="bg-white-f7 pr-40 pl-40 pb-40" style="border-left:2px solid #43B14B;border-right:2px solid #43B14B;">
+                                <div class="container pb-0">
+                                    <div class="section-title">
+                                        <div class="row">
+                                            <div class="col-md-6 col-md-offset-3">
+                                                <div class="">
+                                                    <form class="form-horizontal" method="post" action="{{ route('staff.profile.picture.change', $employee->id) }}" enctype="multipart/form-data">
+                                                        @csrf
+                                                        <input type="hidden" name="employee" value="{{ $employee->id }}">
+                                                        <div class="form-group">
+                                                            <p class="alert text-danger">
+                                                                Please note that only <strong>JPG</strong> of size between 0 to 200KB can be uploaded.
+                                                            </p>
+                                                            <label class="col-md-4 control-label"></label>
+                                                            <div class="col-md-8">
+
+                                                                <img class="img img-thumbnail" src="{{ route("staff.staffprofile.profile.picture",[time()])   }}" width="150" alt="Passport"/>
+                                                                <br />
+                                                                <i>{{ $employee->title }} {{ $employee->firstname }}, {{ $employee->surname }} {{ $employee->othernames }}</i>
+                                                            </div>
+                                                        </div>
+
+                                                        <div class="form-group">
+                                                            <label>Select image to upload: </label>
+                                                            <div class="col-md-6">
+
+                                                                <input type="file" name="file" id="file" class="form-control file"/>
+                                                                <input type="hidden" value="{{csrf_token()}}" name="_token"/>
+                                                            </div>
+                                                        </div>
+
+                                                        <input type="submit" value="Upload" name="submit" class="btn btn-success"/>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </section>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+@endsection
+
+@section("js")
+    <script>
+
+    </script>
+@endsection

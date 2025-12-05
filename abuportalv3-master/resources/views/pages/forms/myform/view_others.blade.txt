@@ -1,0 +1,278 @@
+@extends("layout.candidate.master")
+
+@section("content")
+    @php $candidateFormSettings = $candidateForm->formSetting;
+    @endphp
+    <section class="bg-white-f7 pr-40 pl-40 pt-40 pb-40" style="border-left:2px solid #43B14B;">
+        <div class="row border-top pt-20">
+
+            <div class="col-md-4 border-right">
+                <div class="sidebar sidebar-left mt-sm-30">
+                    <div class="widget">
+                        <h3 class="widget-title line-bottom">{{ $candidateForm->candidateFormType()->name }}</h3>
+                        <ul class="text-black list list-divider list-border">
+                            <li><strong>Email</strong>: {{ $candidate->email }}</li>
+                            <li><strong>Course Applied</strong>: {{ $candidateForm->programme()->name }}</li>
+                        </ul>
+
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-8">
+                <div class="col-md-12">
+                    @php
+                        echo $candidateForm->programme()->requirement;
+                    @endphp
+                    <h3>Form Completion</h3>
+                    @if($candidateFormSettings->candidate_form_type_id == 22)
+                    <div class="text text-danger">
+                        <ol>
+                            <li>Candidates from Polytechnics and Colleges of Education are not qualified for Inter-University Transfer</li>
+                            <li>Candidates for Inter-University Transder should submit hard-copy of his/her transcript to the Deputy Registrar, Academic Affairs Division</li>
+                            <li>You are to attach and send your transcript to <a href="mailto:academicsecretary@abu.edu.ng)">academicsecretary@abu.edu.ng)</a></li>
+                        </ol>
+                    </div>
+                    @endif
+                    <table class="table table-hover">
+                        <tbody>
+                        <tr>
+                            <th scope="row">1</th>
+                            <td>Biodata</td>
+                            <td>
+                                @if($candidate->completedBiodata())
+                                    <span class="badge gd-green">Completed <i class="fa fa-check"></i></span>
+                                @else
+                                    <a class="btn btn-danger btn-xs" href="{{ route("forms.profile.biodata") }}">Goto
+                                        Biodata <i class="fa fa-backward"></i> </a>
+                                @endif
+                            </td>
+                        </tr>
+                        <tr>
+                            <th scope="row">2</th>
+                            <td>Contact</td>
+                            <td>
+                                @if($candidate->completedContact())
+                                    <span class="badge gd-green">Completed <i class="fa fa-check"></i></span>
+                                @else
+                                    <a class="btn btn-danger btn-xs" href="{{ route("form.profile.contact") }}">Goto
+                                        Contact <i class="fa fa-backward"></i> </a>
+                                @endif
+                            </td>
+                        </tr>
+                        <tr>
+                            <th scope="row">3</th>
+                            <td>O-Level</td>
+                            <td>
+                                @if($candidate->completedOlevel())
+                                    <span class="badge gd-green">Completed <i class="fa fa-check"></i></span>
+                                @else
+                                    <a class="btn btn-danger btn-xs" href="{{ route("candidate.addolevel") }}">Goto
+                                        O-Level <i class="fa fa-backward"></i> </a>
+                                @endif
+                            </td>
+                        </tr>
+                        <tr>
+                            <th scope="row">4</th>
+                            <td>A-level</td>
+                            <td>
+                                @if($candidate->completedAlevel())
+                                    <span class="badge gd-green">Completed <i class="fa fa-check"></i></span>
+                                @else
+                                    <a class="btn btn-warning btn-xs" href="{{ route("alevel.show") }}">Goto A-Level <i
+                                            class="fa fa-backward"></i> </a> | <strong>Optional</strong>
+                                @endif
+                            </td>
+                        </tr>
+
+                        @if($candidateFormSettings->candidate_form_type_id == 12)
+                            <form action="" method="post">
+                                @csrf
+                                <tr>
+                                    <th scope="row">5</th>
+                                    <td>Jamb No.</td>
+                                    <td>
+                                        @if($candidateForm->jamb_number=="")
+                                            <input type="text" name="jamb_number" class="form-control" value="{{ $candidateForm->jamb_number }}" placeholder="Please Enter Jamb Number">
+                                        @else
+                                            {{ $candidateForm->jamb_number  }}
+                                        @endif
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th scope="row">6</th>
+                                    <td>Jamb Year.</td>
+                                    <td>
+                                        @if($candidateForm->jamb_year=="")
+                                            <input type="text" name="jamb_year" class="form-control" value="{{ $candidateForm->jamb_year }}" placeholder="Please Enter Jamb Year">
+                                        @else
+                                            {{ $candidateForm->jamb_year }}
+                                        @endif
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th scope="row">7</th>
+                                    <td>Jamb Score.</td>
+                                    <td>
+                                        @if($candidateForm->jamb_score=="")
+                                            <input type="text" name="jamb_score" class="form-control" value="{{ $candidateForm->jamb_score }}" placeholder="Please Enter Jamb Score">
+                                        @else
+                                            {{ $candidateForm->jamb_score }}
+                                        @endif
+
+                                    </td>
+                                </tr>
+                                @if($candidateForm->jamb_number =="" || $candidateForm->jamb_year =="" || $candidateForm->jamb_score=="0")
+                                    <tr>
+                                        <td colspan="3">
+                                            <div class="text-center">
+                                                <button class="btn btn-success btn-sm">Update</button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                @endif
+                            </form>
+                        @endif
+
+                        @if($candidateFormSettings->candidate_form_type_id == 10)
+                            <form action="{{route('update.matric.post',[$candidateForm->id])}}" method="post">
+                                @csrf
+                                <tr>
+                                    <th scope="row">5</th>
+                                    <td>Matric No.</td>
+                                    <td>
+                                        @if(!$candidateForm->jamb_number)
+                                            <input type="text" name="matric_number" class="form-control" value="{{ $candidateForm->jamb_number }}" placeholder="Please Enter Matric Number">
+                                        @else
+                                            {{ $candidateForm->jamb_number  }}
+                                        @endif
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <th scope="row">7</th>
+                                    <td>CGPA.</td>
+                                    <td>
+                                        @if(!intval($candidateForm->jamb_score))
+                                            <input type="text" name="cgpa" class="form-control" value="{{ $candidateForm->jamb_score }}" placeholder="Enter Current CGPA">
+                                        @else
+                                            {{ $candidateForm->jamb_score }}
+                                        @endif
+                                    </td>
+                                </tr>
+                                @if(!$candidateForm->jamb_number  || !$candidateForm->jamb_score)
+                                    <tr>
+                                        <td colspan="3">
+                                            <div class="text-center">
+                                                <button class="btn btn-success btn-sm">Update</button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                @endif
+                            </form>
+                        @endif
+
+
+                        @if($candidateFormSettings->candidate_form_type_id == 22)
+{{--                            Candidates from Polytechnics and Colleges of Education are not qualified for Inter-University Transfer--}}
+                            <form action="{{route('update.inter.university',[$candidateForm->id])}}" method="post" enctype="multipart/form-data">
+                                @csrf
+                                <tr>
+                                    <th scope="row">5</th>
+                                    <td>Current Institution</td>
+                                    <td>
+                                            <input type="text" name="school" class="form-control" value="{{ $interUniversity && isset($interUniversity->school)?$interUniversity->school:'' }}" placeholder="Name of your current Institution">
+
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th scope="row">6</th>
+                                    <td>Current Reg. No.</td>
+                                    <td>
+                                            <input type="text" name="reg_number" class="form-control" value="{{ $interUniversity && isset($interUniversity->reg_number)?$interUniversity->reg_number:'' }}" placeholder="Registration number">
+
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <th scope="row">7</th>
+                                    <td>Current CGPA.</td>
+                                    <td>
+                                            <input type="text" name="cgpa" class="form-control" value="{{ $interUniversity && isset($interUniversity->cgpa)?$interUniversity->cgpa:'' }}" placeholder="Enter Current CGPA">
+
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <th scope="row">8</th>
+                                    <td>Current Level</td>
+                                    <td>
+                                            <input type="text" name="level" class="form-control" value="{{ $interUniversity && isset($interUniversity->level)?$interUniversity->level:'' }}" placeholder="Enter Current Level">
+
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <th scope="row">9</th>
+                                    <td>Upload Transcript.</td>
+                                    <td>
+                                        <a href="{{route('update.inter.university.transcript.file',[$candidateForm->id])}}">{{ $interUniversity && isset($interUniversity->transcript)?$interUniversity->transcript:'' }}</a>
+                                            <input type="file" name="transcript" class="form-control" value="">
+                                    </td>
+                                </tr>
+                                    <tr>
+                                        <td colspan="3">
+                                            <div class="text-center">
+                                                <button class="btn btn-success btn-sm">Update</button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                            </form>
+                        @endif
+
+                        </tbody>
+                    </table>
+                </div>
+                <div class="col-md-12">
+                    <div class="col-md-12">
+                        @if($candidate->completedOlevel() && $candidate->completedContact()
+                            && $candidate->completedBiodata()
+{{--                            && ($candidateFormSettings->candidate_form_type_id == 22?$candidate->completedAlevel():true)--}}
+                            )
+                            @if($candidateForm->isPaid())
+                                <a class="btn btn-info" href="{{ route("form.buy.pay",[$candidateForm->id]) }}">View Transaction Slip <i class="fa fa-print"></i></a>
+                                <a class="btn btn-info" href="{{ route("form.buy.completed",[$candidateForm->id]) }}">View Completed Form <i class="fa fa-print"></i></a>
+                            @else
+                                @if($candidateFormSettings->candidate_form_type_id == 12)
+                                    @if($candidateForm->jamb_number =="" || $candidateForm->jamb_year =="" || $candidateForm->jamb_score=="0")
+                                        <a class="btn btn-default" disabled>Pay Online <i class="fa fa-credit-card-alt"></i></a>
+                                        <em>Please fill all record empty records.</em>
+                                    @else
+                                        <a class="btn btn-default" href="{{ route("form.buy.pay",[$candidateForm->id]) }}">Pay Online <i class="fa fa-credit-card-alt"></i></a>
+                                    @endif
+                                @else
+                                    <a class="btn btn-default" href="{{ route("form.buy.pay",[$candidateForm->id]) }}">Pay Online <i class="fa fa-credit-card-alt"></i></a>
+                                @endif
+                            @endif
+                        @else
+                            <a class="btn btn-default" disabled>Pay Online <i class="fa fa-credit-card-alt"></i></a>
+                            <em>Please fill all record empty records.</em>
+                        @endif
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+@endsection
+
+
+@section("css")
+    <style>
+        .gd-green {
+            padding: 4px 8px;
+            background: #008822;
+            border-radius: 0;
+        }
+    </style>
+@endsection

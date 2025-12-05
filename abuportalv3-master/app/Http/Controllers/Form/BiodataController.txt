@@ -1,0 +1,134 @@
+<?php
+
+namespace App\Http\Controllers\Form;
+
+use App\Models\Country;
+use App\Models\Department;
+use App\Http\Controllers\Controller;
+use App\Models\Lga;
+use App\Models\Programme;
+use App\Models\State;
+use Illuminate\Http\Request;
+use Auth;
+use App\Models\CandidateBiodata;
+use Illuminate\Support\Facades\DB;
+
+
+class BiodataController extends Controller
+{
+    public function __construct()
+    {
+        $this->middleware(["auth:candidate","hasEmail"]);
+    }
+
+
+    public function index()
+    {
+
+       try{
+           $candidate = Auth::user();
+           $biodata = CandidateBiodata::where(["candidate_id"=>$candidate->id])->first();
+           $lgas = $biodata->lga();
+           if(!$lgas){
+                $obj = new \stdClass();
+                $obj->id = 0;
+                $obj->state_id=0;
+                $lgas = $obj;
+           }
+           return view("pages.forms.profile.biodata", compact("biodata","candidate","lgas"));
+        }catch (\Exception $e){
+          return redirect()->back()->with("error", $e->getMessage());
+       }
+    }
+
+
+    public function createBiodata(Request $request){
+       //return $request;
+
+          $errmsg = $this->validate($request,CandidateBiodata::$rules);
+        try{
+            $candidateid = Auth::id();
+            $candidatebiodata = CandidateBiodata::where(["candidate_id"=>$candidateid])->first();
+            if(!isset($candidatebiodata->id)){
+                $candidatebiodata = new CandidateBiodata;
+                $candidatebiodata->candidate_id = $candidateid;
+            }
+            $candidatebiodata->candidate_id = $candidateid;
+            $candidatebiodata->surname = $request->surname;
+            $candidatebiodata->firstname = $request->firstname;
+            $candidatebiodata->othernames = $request->othernames;
+            $candidatebiodata->marital_status = $request->marital_status;
+            $candidatebiodata->gender = $request->gender;
+            $candidatebiodata->date_of_birth = $request->date_of_birth;
+            $candidatebiodata->place_of_birth = $request->place_of_birth;
+            $candidatebiodata->home_town = $request->home_town;
+            $candidatebiodata->country_id = $request->nationality;
+            $candidatebiodata->lga_id = $request->lga;
+
+
+           $candidatebiodata->save();
+            return redirect()->back()->with("success", 'your biodata is created successfully!');
+
+        }catch(\Exception $e){
+            return redirect()->back()->with($errmsg, $e->getMessage());
+        }
+
+    }
+
+    public function get_lgas(Request $request){
+        $lgas = DB::table('lgas')
+            ->select('id', 'name')
+            ->where('state_id', 'like', $request->query->get('state_id'))
+            ->orderBy('name', 'asc')
+            ->get();
+        $result = "";
+        if ($lgas->count() > 1)
+            $result .= "<option value='%'>All LGAs</option>";
+        foreach ($lgas as $lga) {
+            $result .= "<option value='" . $lga->id . "'>" . $lga->name . "</option>";
+        }
+        return $result;
+    }
+
+    public function get_states(){
+        $states = DB::table('states')
+            ->select('id', 'name')
+            ->orderBy('name', 'asc')
+            ->get();
+        $result = "";
+        if ($states->count() > 1)
+            $result .= "<option value='%'>All States</option>";
+        foreach ($states as $state) {
+            $result .= "<option value='" . $state->id . "'>" . $state->name . "</option>";
+        }
+        return $result;
+    }
+
+    public function get_depts(Request $request)
+    {
+        try {
+            $dpts = Department::where(['faculty_id'=>$request->faculty_id])->get();
+            $data = "<option value=''>Select Department</option>";
+            foreach ($dpts as $dpt){
+                $data .= "<option value='{$dpt->id}'>{$dpt->name}</option>";
+            }
+
+            return $data;
+        }catch (\Exception $e){
+            return $e->getMessage();
+        }
+    }
+
+
+    public function get_progs(Request $request)
+    {
+        $dpts = Programme::where(['department_id'=>$request->department_id])->get();
+        $data = "<option value=''>Select Programme</option>";
+        foreach ($dpts as $dpt){
+            $data .= "<option value='{$dpt->id}'>{$dpt->name}</option>";
+        }
+
+        return $data;
+    }
+
+}

@@ -1,0 +1,173 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Resultbank;;
+use App\Models\Student;;
+use App\Models\CourseDegreePlan;;
+use App\Models\Course;;
+use App\Models\CourseGroup;;
+use App\Models\CourseLecturer;;
+use App\Models\CourseRegistration;;
+use App\Models\Faculty;;
+use App\Models\Department;;
+use App\Models\RegistrationPeriod;;
+use App\Models\Facility;;
+use App\Models\FeeManager;;
+use App\Models\StudentLevel;;
+use App\Models\Supervision;;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Auth;
+
+class GradeBookController extends Controller
+{
+
+
+    public function __construct(){
+        $this->middleware(['auth:student','mmode']);
+    }
+    /**
+     * Display a listing of the resource.
+     *
+     * @return \Illuminate\Http\Response
+     */
+
+    public function index()
+    {
+        $session="";
+         $student = Auth::user();
+         $sess=DB::table("student_levels")
+            ->select("session","semester")
+            ->where("student_id","=", $student->id)
+            ->get();
+
+        $sessions = [];
+        foreach($sess as $semester){
+            $sessions[$semester->session][]=$semester->semester;
+       }
+       //return $semesters;
+        return view('pages.student.gradebook.index', compact('sessions'));
+
+
+    }
+
+
+    public function results($session,$semester)
+    {
+        //
+        $student = Auth::user();
+        $resultstatus = DB::table("student_levels")->where(["session"=>$session,"semester"=>$semester,"student_id"=>$student->id, "result_status"=>1])->first();
+        $results = [];
+        if($resultstatus){
+        $resultsx = DB::table("tblenrolment AS e")
+                    ->select("e.coursecode AS coursecode","c.coursetitle AS coursetitle","c.courseunit AS units","e.grade AS grade","e.total","point","e.session","e.semester")
+                    ->join("courses AS c","c.coursecode","=","e.coursecode")
+                    ->join("students AS t","e.matricnumber","=","t.matric_number")
+                    ->join("student_levels AS s","s.student_id","=", "t.id")
+                    ->where(["e.matricnumber"=>$student->matric_number,"e.session"=>$session,"e.semester"=>$semester, "s.semester"=>$semester])
+                    ->groupBy(["e.session","e.semester","e.grade","c.coursecode","coursetitle","courseunit"])
+                    ->get();
+
+//        return $resultsx;
+        foreach($resultsx as $result){
+//             "s.ptcur", "s.ptcue","s.ptcp","s.tcur","s.tcue","s.tcp","s.gpa","s.cgpa","s.carry_over","s.remark"
+            $results[$result->session]["data"][] = $result;
+            $results[$result->session]["semester"] = $result->semester;
+            $results[$result->session]["studentlevel"][$result->semester] = StudentLevel::where(["session"=>$result->session,"semester"=>$result->semester,"student_id"=>$student->id])->first();
+        }
+    }
+//        return $results;
+        //return $this->checkStatusWithView($student,["resource"=>"Exam Card"], $student->currentSemester()->semester, view('pages.student.gradebook.index', compact('results','session','semester')));
+         return view("pages.student.gradebook.resultslip",compact("results",'session','semester'));
+    }
+
+    public function index1()
+    {
+        //
+        $session = 2019;
+        $semester = 1;
+        $student = Auth::user();
+        $resultsx = DB::table("resultbanks AS r")
+            ->select("r.grade AS grade","g.grouptype AS grouptype","c.coursecode AS coursecode","coursetitle","courseunit","g.session","g.semester")
+            ->join("course_groups AS g","g.id","=","r.course_group_id")
+            ->join("courses AS c","c.id","=","g.course_id")
+            ->where(["r.student_id"=>Auth::id()])
+            ->groupBy(["g.session","g.semester","r.grade","g.grouptype","c.coursecode","coursetitle","courseunit"])
+            ->get();
+        $results = [];
+        foreach($resultsx as $result){
+            $results[$result->session]["data"][] = $result;
+            $results[$result->session]["semester"] = $result->semester;
+        }
+
+        //return $this->checkStatusWithView($student,["resource"=>"Exam Card"], $student->currentSemester()->semester, view('pages.student.gradebook.index', compact('results','session','semester')));
+        return view("pages.student.gradebook.index",compact("results"));
+    }
+
+    /**
+     * Show the form for creating a new resource.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function create()
+    {
+        //
+    }
+
+    /**
+     * Store a newly created resource in storage.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function store(Request $request)
+    {
+        //
+    }
+
+    /**
+     * Display the specified resource.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function show($id)
+    {
+        //
+    }
+
+    /**
+     * Show the form for editing the specified resource.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function edit($id)
+    {
+        //
+    }
+
+    /**
+     * Update the specified resource in storage.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function update(Request $request, $id)
+    {
+        //
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function destroy($id)
+    {
+        //
+    }
+}

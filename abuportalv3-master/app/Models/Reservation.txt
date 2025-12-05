@@ -1,0 +1,530 @@
+<?php
+
+namespace App\Models;
+
+use App\Models\Student;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use App\Models\RoomConfig;
+use App\Models\Transaction;
+use App\Models\FeeManager;
+use App\Models\Accommodation;
+
+use Illuminate\Support\Facades\Log;
+use App\Notifications\ReservationExpiredNotification;
+class Reservation extends Model {
+
+    protected $casts = [
+    'expiry_date' => 'datetime',
+];
+    //
+    protected $table = 'reservations';
+
+    /**
+     * Get the roomconfig that owns the reservation.
+     */
+    public function roomconfig() {
+        return $this->belongsTo('App\Models\RoomConfig', 'room_config_id');
+    }
+
+    public function student() {
+        return $this->belongsTo('App\Models\Student', 'student_id');
+    }
+
+    public static function reserve(RoomConfig $roomconfig, Student $student, $isadmin = false) {
+        /*         * *WITHIN A TRANSACTION...** */
+        //search for reserved, paid or claimed reservation records in reservation table
+        //if any return
+        //if no record of reservation, attempt reservation on roomconfig table and on reservation table then generate transaction code
+        $result = '';
+
+        $type = 'admin';
+
+
+
+        DB::transaction(function () use (&$result, $roomconfig, $student, $isadmin) {
+            $result = 'alreadyreserved';
+            $accommodation = Accommodation::where('end_date', null)->orderBy('id', 'desc')->first();
+            if(!$accommodation){
+                throw new \Exception('noaccommodation');
+            }
+
+            $reservation = Reservation::where([
+                        ['student_id', $student->id],
+                        ['session', $accommodation->session]])
+                    ->whereIn('status', ['reserved', 'paid', 'claimed'])
+                    ->first();
+            if ($reservation) {
+                throw new \Exception('alreadyreserved');
+            }
+
+            //Attempt reservation on roomconfig table
+            $result = 'error';
+            $optarr = [
+                ['id', $roomconfig->id],
+                ['occupied', $roomconfig->occupied],
+                ['room_id', $roomconfig->room_id],
+                ['session', $roomconfig->session],
+                ['status', '1']
+            ];
+            if (!$isadmin) {
+                $optarr[] = ['reserved', '0'];
+            }
+            $roomupdatecount = RoomConfig::where($optarr)
+                    ->whereColumn('occupied', '<', 'bed_space')
+                    ->lockForUpdate()
+                    ->update(['occupied' => ($roomconfig->occupied - 0 + 1)]);
+
+            if ($roomupdatecount != 1) {
+                throw new \Exception('error');
+            }
+            $now = new \DateTime();
+            $then = self::computeExpiryDate($now);
+            $reservation = new Reservation();
+            $reservation->student_id = $student->id;
+            $reservation->room_config_id = $roomconfig->id;
+            $reservation->session = $accommodation->session;
+            $reservation->reserved_by = Auth::user()->username ?? 'unknown';
+            $reservation->status = 'reserved';
+            $reservation->reservation_date = $now->format('Y-m-d H:i:s');
+            $reservation->expiry_date = $then->format('Y-m-d H:i:s');
+            $reservation->save();
+            $newTransaction = FeeManager::generateTransactionCode($reservation->id, "ACC", $reservation->session, "UA");
+            $result = 'success';
+
+            EmployeeJournal::calculateStudentStaffAccommodationRatio($student,$reservation);
+        }, 5);
+        return $result;
+    }
+
+    public function cancelReservation() {
+        return $this->changeReservationStatus('cancelled');
+    }
+
+    public function revokeReservation() {
+        return $this->changeReservationStatus('revoked');
+    }
+
+     
+
+    public function expireReservation()
+    {
+        try {
+            $result = $this->changeReservationStatus('expired');
+
+            if (!$result) {
+                Log::warning("Reservation ID {$this->id} could not be marked as expired — invalid status or rule.");
+            } else {
+                Log::info("Reservation ID {$this->id} expired successfully.");
+
+                // Send email to student
+                /*$student = $this->student;
+                if ($student && !empty($student->email)) {
+                    $student->notify(new ReservationExpiredNotification($this));
+                }*/
+            }
+
+            return $result;
+        } catch (\Exception $e) {
+            Log::error("Failed to expire reservation ID {$this->id}: " . $e->getMessage());
+
+            // You can choose to rethrow if needed
+            //throw $e;
+
+            return false;
+        }   
+    }
+
+    public static function expireReservations($session = null) {
+        $now = new \DateTime();
+        $expiredReservations = array();
+        if (null === $session) {
+            $expiredReservations = Reservation::where([
+                        ['status', 'reserved']
+                    ])
+                    ->whereDate('expiry_date', '<=', $now->format('Y-m-d H:i:s'))
+                    ->get();
+        } else {
+            $expiredReservations = Reservation::where([
+                        ['session', $session],
+                        ['status', 'reserved']
+                    ])
+                    ->whereDate('expiry_date', '<=', $now->format('Y-m-d H:i:s'))
+                    ->get();
+        }
+
+        foreach ($expiredReservations as $res) {
+            $res->expireReservation();
+        }
+    }
+
+    public function payReservation() {
+        return $this->changeReservationStatus('paid');
+    }
+
+    public function claimReservation() {
+        return $this->changeReservationStatus('claimed');
+    }
+
+    /*public function waiveReservation() {
+        return $this->changeReservationStatus('waived');
+    }
+*/
+    private function changeReservationStatus($newstatus = 'cancelled') {
+        $newstatus = trim($newstatus);
+        if (!in_array($newstatus, array('cancelled', 'expired', 'paid', 'claimed', 'revoked', 'waived'))) {
+            return false;
+        }
+        /*         * *WITHIN A TRANSACTION...** */
+        //if newstatus is reserved set status to cancelled or expired then,
+        //update roomconfig accordingly then,
+        //delete record from transaction table that has not been paid for
+        $result = false;
+
+        //START of TRANSACTION
+        DB::transaction(function () use (&$result, $newstatus) {
+            $reservation = Reservation::where([
+                        ['id', $this->id],
+                        ['session', $this->session]
+                    ])
+                    ->whereIn('status', ['paid', 'reserved', 'claimed', 'waived'])
+                    ->first();
+            if (null === $reservation) {
+                throw new \Exception('not reserved');
+            }
+            $validoperation = false;
+            switch ($reservation->status) {
+                case 'reserved':
+                    $validoperation = (in_array($newstatus, ['paid', 'cancelled', 'expired', 'waived'])) ? (true) : (false);
+                    break;
+                case 'paid':
+                    $validoperation = (in_array($newstatus, ['claimed', 'revoked'])) ? (true) : (false);
+                    break;
+                case 'waived':
+                    $validoperation = (in_array($newstatus, ['revoked', 'reserved'])) ? (true) : (false);
+                    break;
+                case 'claimed':
+                    $validoperation = (in_array($newstatus, ['revoked'])) ? (true) : (false);
+                    break;
+                default :
+                    $validoperation = false;
+            }
+
+            if (!$validoperation) {
+                throw new \Exception('invalid operation');
+            }
+            $roomupdate = RoomConfig::where([
+                        ['id', $reservation->room_config_id],
+                        ['occupied', '>', 0]
+            ]);
+            $rmconfig = $roomupdate->first();
+
+            if ($reservation->status == 'reserved' || $newstatus == 'revoked') {
+                //update room config
+
+                if (in_array($newstatus, ['cancelled', 'expired', 'revoked'])) { //decrement occupied if cancelled or expired
+                    if ($rmconfig->occupied <= 0) {
+                        Log::info("Skipping room update. Room already unoccupied. Reservation ID: {$reservation->id}");
+                    } else {
+                        $roomupdatecount = $roomupdate->update(['occupied' => DB::raw('occupied-1')]);
+                    }
+                } else if ($newstatus == 'paid' || $newstatus == 'waived') { //add matric number to roomconfig if paid or claimed
+                    $student = Student::find($reservation->student_id);
+                    $roomupdatecount = $roomupdate->update(['occupants' => DB::raw('CONCAT_WS(",","' . trim(strtoupper($student->matric_number)) . '")')]);
+                    if ($newstatus == 'paid') {
+                        $transaction = Transaction::where([
+                                    ['student_id', $reservation->id],
+                                    ['session', $reservation->session],
+                                    ['code', 'ACC'],
+                                    ['payment_status', 'Not Paid']
+                                ])->delete();
+                    } else {
+                        $transaction = Transaction::where([
+                                    ['student_id', $reservation->id],
+                                    ['session', $reservation->session],
+                                    ['code', 'ACC'],
+                                    ['payment_status', 'Not Paid']
+                                ])->first();
+                        $transaction->payment_status = "Waived";
+                        $transaction->updated_at = new \DateTime();
+                        $transaction->branch_id = 999;
+                        $transaction->save();
+                    }
+                }
+
+                if ($roomupdatecount !== 1) {
+                    //throw new \Exception('error');
+                     Log::warning("RoomConfig update failed for Reservation ID {$reservation->id}, RoomConfig ID {$reservation->room_config_id}, likely already unoccupied.");
+                }
+
+                if ($newstatus == 'cancelled'/* || $newstatus == 'expired' */) {//Delete transactions if cancelled
+                    $transaction = Transaction::where([
+                                ['student_id', $reservation->id],
+                                ['session', $reservation->session],
+                                ['code', 'ACC'],
+                                ['payment_status', 'Not Paid']
+                            ])->delete();
+                } else if ($newstatus == 'paid') { //abort process if payment is not complete
+                    if ($this->getFee() != $this->getAmountPaid()) {
+                        throw new \Exception('not paid');
+                    }
+                }
+            }
+
+            if ($reservation->status == 'waived') {
+                if ($newstatus == 'reserved') {
+                    $occupants = $rmconfig->occupants;
+                    $student = Student::find($reservation->student_id);
+                    $occupants = str_replace(trim(strtoupper($student->matric_number)), "", $occupants);
+                    $occupants = str_replace(",,", ",", $occupants);
+                    $occupants = trim($occupants, " ,");
+                    if ($occupants == "") {
+                        $occupants = null;
+                    }
+                    $rmconfig->occupants = $occupants;
+                    $rmconfig->save();
+
+                    $now = new \DateTime();
+                    $then = self::computeExpiryDate($now);
+                    $reservation->reservation_date = $now->format('Y-m-d H:i:s');
+                    $reservation->expiry_date = $then->format('Y-m-d H:i:s');
+                    $trxnupdatecount = Transaction::where([
+                                ['student_id', $reservation->id],
+                                ['session', $reservation->session],
+                                ['code', 'ACC']
+                            ])->delete();
+                }
+            }
+
+            if (in_array($reservation->status, ['waived', 'paid', 'claimed'])) {
+                if ($newstatus == 'revoked') {
+                    $occupants = $rmconfig->occupants;
+                    $student = Student::find($reservation->student_id);
+                    $occupants = str_replace(trim(strtoupper($student->matric_number)), "", $occupants);
+                    $occupants = str_replace(",,", ",", $occupants);
+                    $occupants = trim($occupants, " ,");
+                    if ($occupants == "") {
+                        $occupants = null;
+                    }
+                    $rmconfig->occupants = $occupants;
+                    $rmconfig->save();
+                }
+            }
+
+            $reservation->status = $newstatus; //finally update reservation status
+            $reservation->save();
+            $result = true;
+        }, 3);
+        //END of TRANSACTION
+
+        return $result;
+    }
+
+    public function getAmountPaid() {
+
+        $fees = DB::table('reservations')
+                ->join('transactions', 'transactions.student_id', '=', 'reservations.id')
+                ->select('transactions.transaction_amount as amt')
+                ->where([
+                    ['transactions.code', 'ACC'],
+                    ['transactions.student_id', $this->id],
+                    ['transactions.session', $this->session]
+                ])
+                ->whereIn('transactions.payment_status', ['Paid', 'Waived'])//->toSql();
+                ->get();
+        //var_dump($fees);
+        //exit();
+        $totalfee = 0;
+        foreach ($fees as $fee) {
+            $totalfee += $fee->amt;
+        }
+        return $totalfee;
+    }
+
+    public function getFee() {
+        $student = $this->student;
+        $session = $this->session;
+        //Check if there is a configuration for category of student for the given room,block or hostel
+        $student_type = $student->mode_of_entry;
+
+
+        $res = DB::table('reservations')
+                ->join('room_configs', 'room_configs.id', '=', 'reservations.room_config_id')
+                ->join('rooms', 'rooms.id', '=', 'room_configs.room_id')
+                ->join('blocks', 'blocks.id', '=', 'rooms.block_id')
+                ->join('hostels', 'hostels.id', '=', 'blocks.hostel_id')
+                ->select([
+                    'hostels.fee as hostelfee', 'blocks.fee as blockfee', 'rooms.fee as roomfee',
+                    'rooms.id AS room_id','blocks.id AS block_id','hostels.id AS hostel_id'
+                ])
+                ->where([
+                    ['reservations.id', $this->id],
+                    ['reservations.session', $this->session]
+                ])
+                ->first();
+        //var_dump($res); exit();
+
+       if($amtCnf = AccommodationSessionFee::where(['session'=>$session,'unit_type'=>'Room','unit_id'=>$res->room_id])->whereRaw("student_type LIKE '%$student_type%'")->first()){//room fee for the student category
+            return $amtCnf->amount;
+       }
+       if($amtCnf = AccommodationSessionFee::where(['session'=>$session,'unit_type'=>'Block','unit_id'=>$res->block_id])->whereRaw("student_type LIKE '%$student_type%'")->first()){
+            return $amtCnf->amount;
+       }
+       if($amtCnf = AccommodationSessionFee::where(['session'=>$session,'unit_type'=>'Hostel','unit_id'=>$res->hostel_id])->whereRaw("student_type LIKE '%$student_type%'")->first()){
+            return $amtCnf->amount;
+       }
+       if($amtCnf = AccommodationSessionFee::where(['session'=>$session,'unit_type'=>'Hostel','unit_id'=>$res->hostel_id])->whereRaw("student_type LIKE '%$student_type%'")->first()){
+            return $amtCnf->amount;
+       }
+       if($amtCnf = AccommodationSessionFee::where(['session'=>$session,'unit_type'=>'All'])->whereRaw("student_type LIKE '%$student_type%'")->first()){
+            return $amtCnf->amount;
+       }
+
+
+        if ($res->roomfee>0) {
+            return $res->roomfee;
+
+        }
+        else if ($res->blockfee>0) {
+            return $res->blockfee;
+        }
+        else if ($res->hostelfee>0) {
+            return $res->hostelfee;
+        }
+
+        return  0;
+    }
+
+    public function isPaid() {
+        return $this->status == 'paid';
+    }
+
+    public function isReserved() {
+        return $this->status == 'reserved';
+    }
+
+    public function isCancelled() {
+        return $this->status == 'cancelled';
+    }
+
+    public function isRevoked() {
+        return $this->status == 'revoked';
+    }
+
+    public function isWaived() {
+        return $this->status == 'waived';
+    }
+
+    public function isExpired() {
+        return $this->status == 'expired';
+    }
+
+    public function isClaimed() {
+        return $this->status == 'claimed';
+    }
+
+    public function isTaken() {
+        return $this->isPaid() || $this->isClaimed() || $this->isWaived();
+    }
+
+    public function getBlock() {
+        $blk = DB::table('reservations')
+                ->join('room_configs', 'room_configs.id', '=', 'reservations.room_config_id')
+                ->join('rooms', 'rooms.id', '=', 'room_configs.room_id')
+                ->join('blocks', 'blocks.id', '=', 'rooms.block_id')
+                ->select('blocks.*')
+                ->where([
+                    ['reservations.id', $this->id],
+                    ['reservations.session', $this->session]
+                ])
+                ->first();
+        return $blk;
+    }
+
+    public function getHostel() {
+        $hostel = DB::table('reservations')
+                ->join('room_configs', 'room_configs.id', '=', 'reservations.room_config_id')
+                ->join('rooms', 'rooms.id', '=', 'room_configs.room_id')
+                ->join('blocks', 'blocks.id', '=', 'rooms.block_id')
+                ->join('hostels', 'hostels.id', '=', 'blocks.hostel_id')
+                ->select('hostels.*')
+                ->where([
+                    ['reservations.id', $this->id],
+                    ['reservations.session', $this->session]
+                ])
+                ->first();
+        return $hostel;
+    }
+
+    public function getRoom() {
+        $rooms = DB::table('reservations')
+                ->join('room_configs', 'room_configs.id', '=', 'reservations.room_config_id')
+                ->join('rooms', 'rooms.id', '=', 'room_configs.room_id')
+                ->select('room_configs.*', 'rooms.room_no')
+                ->where([
+                    ['reservations.id', $this->id],
+                    ['reservations.session', $this->session]
+                ])
+                ->first();
+        return $rooms;
+    }
+
+    public static function getPaidButExpiredReservations(Student $student, $session) {
+        $res = DB::table('reservations')
+                        ->join('transactions', 'transactions.student_id', '=', 'reservations.id')
+                        ->select('reservations.*', 'transactions.*')
+                        ->where([
+                            ['transactions.payment_status', 'Paid'],
+                            ['transactions.code', 'ACC'],
+                            ['transactions.session', $session],
+                            ['reservations.session', $session],
+                            ['reservations.student_id', $student->id]
+                        ])
+                        ->where(function ($query) {
+                            $query->where([['reservations.status', 'expired']])
+                            ->orWhere([['reservations.status', 'cancelled']])
+                            ->orWhere([['reservations.status', 'waived']]);
+                        })->get();
+        return $res;
+    }
+
+    public static function computeExpiryDate(\DateTime $now = null) {
+        if (null === $now) {
+            $now = new \DateTime();
+        }
+        $intvl = new \DateInterval('P2D');
+        $then = new \DateTime($now->format('Y-m-d H:i:s'));
+        $then->add($intvl);
+        $numday = $then->format('w'); //expiry day
+        switch ($numday) {
+            case 0: //sunday
+            case 6: //saturday
+                $dtint = new \DateInterval('PT48H');
+                $then->add($dtint);
+                break;
+            case 1: //monday
+                $then->add($intvl);
+                $h = $then->format('G');
+                $m = $then->format('i');
+                $s = $then->format('s');
+                $then->sub(new \DateInterval('PT' . $h . 'H' . $m . 'M' . ($s + 1) . 'S'));
+                break;
+            case 2: //tuesday
+                $then->add(new \DateInterval('P1D'));
+                $h = $then->format('G');
+                $m = $then->format('i');
+                $s = $then->format('s');
+                $then->sub(new \DateInterval('PT' . $h . 'H' . $m . 'M' . ($s + 1) . 'S'));
+        }
+
+        return $then;
+    }
+
+    // Note: In transactions, 'student_id' refers to 'reservation_id'
+    public function transactions()
+    {
+        return $this->hasMany(Transaction::class, 'student_id', 'id');
+    }
+
+}

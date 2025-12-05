@@ -1,0 +1,91 @@
+@extends("layout.staff.master")
+
+@section('content')
+    <section class="pt-10 pl-5">
+        <div class="section-content">
+    <div class="container">
+        <h3>Admission Statistics Report</h3>
+        <div class="table-responsive">
+            <table class="table table-bordered table-striped">
+                <thead class="thead-dark">
+                <tr>
+                    <th>Programme(s)</th>
+                    <th>Applied</th>
+                    <th>Admitted</th>
+                    <th>Screened</th>
+                    <th>Paid Acceptance</th>
+                    <th>Paid School Fee</th>
+                </tr>
+                </thead>
+                <tbody>
+                @if($report->count() > 0)
+                    @foreach ($report as $row)
+                        <tr>
+                            <td>{{ $row->programme_name }}</td>
+                            <td class="text-center">{{ $row->applied }}</td>
+                            <td class="text-center">{{ $row->admitted }}</td>
+                            <td class="text-center">{{ $row->screened }}</td>
+                            <td class="text-center">{{ $row->paid_acceptance }}</td>
+                            <td class="text-center">{{ $row->paid_school_fee }}</td>
+                        </tr>
+                    @endforeach
+                @else
+                    <tr>
+                        <td colspan="6" class="text-center text-muted">No data found for the specified criteria</td>
+                    </tr>
+                @endif
+                </tbody>
+            </table>
+        </div>
+        
+        @if($report->count() > 0)
+            <div class="mt-4">
+                <h4>Summary</h4>
+                <div class="row">
+                    <div class="col-md-2">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <h5 class="card-title">{{ $report->sum('applied') }}</h5>
+                                <p class="card-text">Total Applied</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <h5 class="card-title">{{ $report->sum('admitted') }}</h5>
+                                <p class="card-text">Total Admitted</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <h5 class="card-title">{{ $report->sum('screened') }}</h5>
+                                <p class="card-text">Total Screened</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <h5 class="card-title">{{ $report->sum('paid_acceptance') }}</h5>
+                                <p class="card-text">Paid Acceptance</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <h5 class="card-title">{{ $report->sum('paid_school_fee') }}</h5>
+                                <p class="card-text">Paid School Fee</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        @endif
+    </div>
+        </div>
+    </section>
+@endsection

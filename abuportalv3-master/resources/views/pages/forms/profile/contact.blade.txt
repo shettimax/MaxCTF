@@ -1,0 +1,127 @@
+@extends("layout.candidate.master")
+
+@section("content")
+
+
+    <section class="bg-white-f7 pr-40 pl-40 pt-40 pb-40" style="border-left:2px solid #43B14B;">
+        <div class="row">
+                    <div class="col-md-10">
+                        <div class="panel panel-default">
+                            <div class="panel-body">
+
+                                @if ($message = Session::get('success'))
+                                    <div class="alert alert-success" role="alert">
+                                        <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                                        {{ $message }}
+                                    </div>
+                                @endif
+                                <h3 class="widget-title" style="margin-bottom: 0">Contact Information</h3><div class="double-line-bottom-theme-colored-2"></div>
+
+                                <form class="form-horizontal" action="{{ route('forms.profile.create.contact') }}" method="post" id="contactform" >
+                                    @csrf
+                                    {{--<input type="hidden" name="candidate_id" value="{{ $candidate->id }}">--}}
+                                    <div class="form-group ">
+                                        <div class="col-sm-10">
+                                            <span><i>Full Name:</i></span>
+                                            <input type="text" name="fullname" value="{{ ucfirst($candidate->getFullName()) }}" class="form-control" id="fullname"  readonly>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group ">
+                                        <div class="col-sm-5">
+                                            <span>GSM Number I:</span>
+                                            <input name="gsm" value="{{ $contacts?$contacts->gsm:""}}" type="text" class="form-control " id="gsm" placeholder="FIRST GSM NUMBER" required="">
+                                            @if($errors->has("gsm"))
+                                                <span class="text-danger">{{ $errors->first("gsm") }}</span>
+                                            @endif
+                                        </div>
+
+                                        <div class="col-sm-5">
+                                            <span>GSM Number II:</span>
+                                            <input name="otherphone" value="{{ $contacts?$contacts->other_phone:""}}" type="text" class="form-control  {{ $errors->has('other_phone') ? 'error' : '' }}" id="otherphone" placeholder="Second GSM NUMBER" >
+                                            @if($errors->has("other_phone"))
+                                                <span class="text-danger">{{ $errors->first("other_phone") }}</span>
+                                            @endif
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <div class="col-sm-5">
+                                            <span>Contact Address:</span>
+                                            <input name="current_contact" value="{{ $contacts?$contacts->current_contact:""}}" type="text" class="form-control" id="current_contact" placeholder="Current Contact" required="">
+                                            @if($errors->has("current_contact"))
+                                                <span class="text-danger">{{ $errors->first("current_contact") }}</span>
+                                            @endif
+                                        </div>
+
+                                        <div class="col-sm-5">
+                                            <span>Permanent Address:</span>
+                                            <input name="permanentaddress" value="{{ $contacts?$contacts->permanent_address:""}}" type="text" class="form-control" id="permanentaddress" placeholder="Permanent Address">
+                                        </div>
+                                    </div>
+
+                                    <h3 class="widget-title" style="margin-bottom: 0">Information of Next of Kin</h3>
+                                    <div class="double-line-bottom-theme-colored-2"></div>
+
+                                    <div class="form-group">
+                                        <div class="col-sm-5">
+                                            <span>Full Name:</span>
+                                            <input name="nok_name" value="{{ $contacts?$contacts->nok_name:""}}" type="text" class="form-control" id="nok_name" placeholder="Next of kin Name" required="">
+                                            @if($errors->has("nok_name"))
+                                                <span class="text-danger">{{ $errors->first("nok_name") }}</span>
+                                            @endif
+                                        </div>
+
+                                        <div class="col-sm-5">
+                                            <span>Relationship:</span>
+                                                <select name="relationship" id="relationship" class="form-control" required="">
+                                                    <option value="">Select Relationship</option>
+{{--                                                        @if($contacts)--}}
+                                                            <option value="Parent" @if($contacts && 'Parent'== $contacts->relationship) selected @endif>Parent</option>
+                                                            <option value="Spouse" @if($contacts && 'Spouse'== $contacts->relationship) selected @endif>Spouse</option>
+                                                            <option value="Guardian" @if($contacts && 'Guardian'== $contacts->relationship) selected @endif>Guardian</option>
+                                                            <option value="Sibling" @if($contacts && 'Sibling'== $contacts->relationship) selected @endif>Sibling</option>
+                                                            <option value="Others" @if($contacts && 'Others'== $contacts->relationship) selected @endif>Others</option>
+{{--                                                        @endif--}}
+                                                </select>
+                                            @if($errors->has("relationship"))
+                                                <span class="text-danger">{{ $errors->first("relationship") }}</span>
+                                            @endif
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <div class="col-sm-5">
+                                            <span>GSM Number:</span>
+                                            <input name="nok_gsm" value="{{$contacts?$contacts->nok_gsm:""}}" type="text" class="form-control" id="nok_gsm" placeholder="Next of Kin GSM" required="">
+                                            @if($errors->has("nok_gsm"))
+                                                <span class="text-danger">{{ $errors->first("nok_gsm") }}</span>
+                                            @endif
+                                        </div>
+
+                                        <div class="col-sm-5">
+                                            <span>Email:</span>
+                                            <input name="nokemail" value="{{$contacts?$contacts->nok_email:""}}" type="text" class="form-control" id="nokname" placeholder="Next of Kin Email">
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group mt-30">
+                                        <div class="col-sm-12 ">
+                                            <button type="submit" class="btn btn-success btn-theme-color">Add Contact</button>
+                                            <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+                                        </div>
+                                    </div>
+                                </form>
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+    </section>
+
+
+@endsection
+
+
+
+

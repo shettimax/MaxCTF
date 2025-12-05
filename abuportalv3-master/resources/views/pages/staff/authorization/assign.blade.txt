@@ -1,0 +1,364 @@
+@extends("layout.staff.master")
+
+@section("content")
+   <section class="pt-40 pl-5">
+       <div class="section-content">
+           <div class="row">
+               <div class="col-sx-12 col-sm-4 col-md-4">
+                   <div class="doctor-thumb">
+                       <img src="/studentpics/user.png" alt="">
+                   </div>
+                   <div class="info p-20 bg-black-333">
+                       <h4 class="text-uppercase text-white">{{ $assigningEmployee->fullName() }}</h4>
+
+                   </div>
+               </div>
+
+               <div class="col-xs-12 col-sm-8 col-md-8">
+                   <div class="col-md-12">
+                       <div class="heading-line-bottom">
+                           <h4 class="heading-title">Manage roles & permission:
+                               <strong>{{ strtoupper($assigningUser->username) }}</strong>
+                               @if($assigningEmployee)
+                                   <strong>
+                                      | {{$assigningEmployee->firstname}} {{ $assigningEmployee->surname }}
+                                   </strong>
+                               @endif
+                           </h4>
+                       </div>
+                       <div class="panel-group accordion-theme-colored accordion-icon-left" id="accordion5" role="tablist" aria-multiselectable="true">
+                           <div class="panel panel-default">
+                               <div class="panel-heading" role="tab" id="headingOne5">
+                                   <h5 class="panel-title">
+                                       <a role="button" data-toggle="collapse" data-parent="#accordion5" href="shortcode-accordion.html#collapseOne5" aria-expanded="true" aria-controls="collapseOne5">
+                                           Roles
+                                       </a>
+                                   </h5>
+                               </div>
+                               <div id="collapseOne5" class="panel-collapse collapse in" role="tabpanel" aria-labelledby="headingOne5">
+                                   <div class="panel-body">
+                                       <div class="table-responsive">
+                                           <table class="table table-hover">
+                                               <thead>
+                                               <tr>
+                                                   <th>S/N</th>
+                                                   <th>Role</th>
+                                                   <th>Access</th>
+                                                   <th>Scope</th>
+                                                   <th></th>
+                                               </tr>
+                                               </thead>
+                                               <tbody>
+                                                   @foreach($roles as $role)
+                                                       @php
+                                                        if($role->model_id){
+                                                            $access = \App\Models\Role::formatScope($role->access_code,$role->scope);
+                                                        }else{
+                                                            $access = (object)["access"=>"","scope"=>"","ptype"=>""];
+                                                        }
+
+                                                       @endphp
+                                                       <tr>
+                                                           <th scope="row">#{{$loop->index+1}}</th>
+                                                           <td>{{ $role->name }}</td>
+                                                           <td>{{ $access->access }}</td>
+                                                           <td>
+                                                               <a class="text-primary text-underline"  data-toggle="tooltip" data-placement="right" title="{{$access->ptype}}{{$access->scope}}" style="cursor: pointer;">
+
+                                                                   {{ strlen($access->scope)>20?substr($access->scope,0,20)."...":$access->scope }}
+                                                               </a>
+                                                           </td>
+                                                           <td>
+                                                              @if($role->model_id)
+                                                                   <a class="btn btn-warning btn-xs revoke" role-id="{{$role->id}}" user-id="{{$assigningUser->id}}" role-name="{{$role->name}}" user-fullname="{{ $assigningEmployee->fullName()  }}" href="page-account.html#">
+                                                                       Revoke this
+                                                                   </a>
+                                                              @else
+                                                                   <a class="btn btn-success btn-xs assign" role-id="{{$role->id}}" user-id="{{$assigningUser->id}}" role-name="{{$role->name}}" user-fullname="{{ $assigningEmployee->fullName()  }}"  href="page-account.html#">
+                                                                       Assign this
+                                                                   </a>
+                                                              @endif
+                                                              <a class="btn btn-info btn-xs viewPerm" role-id="{{$role->id}}" role-name="{{$role->name}}" href="page-account.html#">
+                                                                  View Permission
+                                                              </a>
+                                                           </td>
+                                                       </tr>
+                                                   @endforeach
+                                               </tbody>
+                                           </table>
+                                       </div>
+                                   </div>
+                               </div>
+                           </div>
+                       </div>
+                   </div>
+               </div>
+           </div>
+       </div>
+   </section>
+   <!-- Modal -->
+   <div class="modal fade bs-example-modal-lg" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+       <div class="modal-dialog modal-lg" role="document">
+           <div class="modal-content">
+               <div class="modal-header">
+                   <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                   <h4 class="modal-title" id="myModalLabel">Modal title</h4>
+               </div>
+               <div class="modal-body">
+                   <form action="{{ route("staff.user.authorization.assign.post") }}" method="POST" id="doAssign">
+                       @csrf
+                       <input type="hidden" name="role_id"  id="role_id">
+                       <input type="hidden" name="user_id"  id="user_id">
+                       <div class="row">
+                           <div class="col-md-6 mb-4">
+                               <label for="faculty">Faculty:</label>
+                               <select id="faculty" name="faculty"
+                                       class="form-control is-valid"
+                                       required>
+                                   <option value="*">All</option>
+                                   @foreach(App\Models\Faculty::all() as $faculty)
+                                       <option value="{{$faculty->id}}">{{$faculty->name}}</option>
+                                   @endforeach
+
+                               </select>
+
+                           </div>
+
+                           <div class="col-md-6 mb-4">
+                               <label for="department">Department:</label>
+                               <select id="department" name="department"
+                                       class="form-control is-valid"
+                                       required>
+                                   <option value="">--select--</option>
+
+                               </select>
+                           </div>
+                       </div>
+                       <div class="row">
+                           <div class="col-md-12 mb-4">
+                               <label for="progtype">Programme Type:</label>
+                               <div class="row">
+                                   <div class="col-md-12">
+                                       <label class="checkbox-inline">
+                                           <input type="checkbox" id="allProgTypeCheck"  >
+                                          <strong>Select All</strong>
+                                       </label>
+                                   </div>
+
+                                   @foreach(App\Models\ProgrammeType::orderBy("short_name","ASC")->get() as $programmeType)
+                                       <div class="col-md-2">
+                                           <label class="checkbox-inline">
+                                               <input type="checkbox" id="inlineCheckbox1" name="progtype[]" value="{{$programmeType->id}}" class="progTypeCheck">
+                                               {{$programmeType->short_name}}
+                                           </label>
+                                       </div>
+                                   @endforeach
+                               </div>
+
+                           </div>
+                           <div class="col-md-12">
+                               <hr>
+                           </div>
+
+                       </div>
+                       <div class="row" style="background: rgba(30,108,147,0.09);">
+                           <div class="col-md-4 bg-white">
+                               <div class="assignDiv" id="displayFaculties">
+                                   <ol>
+                                       @foreach(App\Models\Faculty::all() as $faculty)
+                                           <li class=""><input type="checkbox" name="facultylist[]" value="{{$faculty->id}}"> {{$faculty->name}}</li>
+                                       @endforeach
+                                   </ol>
+                               </div>
+
+                           </div>
+                           <div class="col-md-4 bg-white">
+                               <div class="assignDiv" id="displayDepartments">
+                                   <ol>
+
+                                   </ol>
+                               </div>
+                           </div>
+                           <div class="col-md-4 bg-white">
+                               <div class="assignDiv" id="displayProgrammes">
+                                   <ol>
+
+                                   </ol>
+                               </div>
+                           </div>
+                       </div>
+                   </form>
+               </div>
+               <div class="modal-footer">
+                   <button type="button" class="btn btn-default btn-flat" data-dismiss="modal">Close</button>
+                   <button type="button" class="btn btn-success btn-flat" id="save">Save changes</button>
+               </div>
+           </div>
+       </div>
+   </div>
+   <div class="modal fade bs-example-modal-sm" tabindex="-1" role="dialog" aria-labelledby="mySmallModalLabel" id="deleteModal">
+       <div class="modal-dialog">
+           <div class="modal-content">
+               <div class="modal-header">
+                   <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                   <h4 class="modal-title" id="myModalLabel">Revoking access from <strong class="employee"></strong></h4>
+               </div>
+               <div class="modal-body">
+                <p class="alert alert-danger">
+                    Are you sure you want to revoke (<strong id="revoking"></strong>) access from <strong class="employee"></strong> access list?
+                </p>
+               </div>
+               <div class="modal-footer">
+                   <form action="{{ route("staff.user.authorization.unassign.post") }}" method="POST" >
+                       @csrf
+                       <input type="hidden" name="role_id"  id="role_idD">
+                       <input type="hidden" name="user_id"  id="user_idD">
+                       <button type="button" class="btn btn-default btn-flat" data-dismiss="modal">No</button>
+                       <button type="submit" class="btn btn-danger btn-flat" id="save">Yes</button>
+                   </form>
+               </div>
+           </div>
+       </div>
+   </div>
+   <div class="modal fade bs-example-modal-lg" id="viewPermissionModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+       <div class="modal-dialog modal-lg" role="document">
+           <div class="modal-content">
+               <div class="modal-header">
+                   <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                   <h4 class="modal-title" id="viewPermissionModalTitle">Modal title</h4>
+               </div>
+               <div class="modal-body" id="viewPMlBody">
+
+               </div>
+               <div class="modal-footer">
+                   <button type="button" class="btn btn-default btn-flat" data-dismiss="modal">Close</button>
+               </div>
+           </div>
+       </div>
+   </div>
+@endsection
+
+@section("js")
+    <script>
+        $(function(){
+            $("#displayDepartments, #displayProgrammes").hide();
+            $(".assign").on("click",function (e) {
+                e.preventDefault();
+                $("#myModal").modal();
+                userId = $(this).attr("user-id");
+                userFullname = $(this).attr("user-fullname");
+                roleId = $(this).attr("role-id");
+                roleName = $(this).attr("role-name");
+                $("#role_id").val(roleId);
+                $("#user_id").val(userId);
+                $("#myModalLabel").html("Assigning Role("+roleName+") to "+userFullname);
+
+            });
+            $(".revoke").on("click",function (e) {
+                e.preventDefault();
+                userId = $(this).attr("user-id");
+                userFullname = $(this).attr("user-fullname");
+                roleId = $(this).attr("role-id");
+                roleName = $(this).attr("role-name");
+                $("#deleteModal").modal();
+                $(".employee").text(userFullname);
+                $("#revoking").text(roleName);
+                $("#role_idD").val(roleId);
+                $("#user_idD").val(userId);
+            });
+
+            $("#save").on("click",function () {
+                $("#doAssign").submit();
+            });
+
+            $("#allProgTypeCheck").on('click',function (){
+                // Get the checked state of the "check all" checkbox
+                var isChecked = $(this).prop("checked");
+
+                // Set all checkboxes' checked state to match the "check all" checkbox
+                $(".progTypeCheck").prop("checked", isChecked);
+            });
+
+
+            $("#faculty").on("change",function (e) {
+                if($(this).val()!="*"){
+                    $("#displayFaculties").hide();
+                    $("#displayDepartments").show();
+                    $("input[name='facultylist[]']").prop("checked",false);
+                }else{
+                    $("#displayFaculties").show();
+                    $("#displayDepartments").hide();
+                }
+                $("#displayProgrammes").hide();
+                $("#department").empty().append("<option value='*'>All</option>");
+                $("#displayDepartments ol").empty();
+                $.getJSON(
+                    "{{ route("ajax.department",['']) }}/"+$(this).val(),
+                    function (obj) {
+                        $.each(obj,function (key,value) {
+                            $("#department").append("<option value='"+value.id+"'>"+value.name+"</option>");
+                            $("#displayDepartments ol").append("<li><input type='checkbox' name='departmentlist[]' value='"+value.id+"'> "+value.name+"</li>");
+                        });
+                    }
+                );
+            });
+
+            $("#department").on("change",function (e) {
+                if($(this).val()!="*"){
+                    $("#displayDepartments").hide();
+                    $("#displayProgrammes").show();
+                }else{
+                    $("#displayDepartments").show();
+                    $("#displayProgrammes").hide();
+                    $("#department").empty().append("<option value='*'>All</option>");
+                    $.getJSON(
+                        "{{ route("ajax.department",['']) }}/"+$("#faculty").val(),
+                        function (obj) {
+                            $.each(obj,function (key,value) {
+                                $("#department").append("<option value='"+value.id+"'>"+value.name+"</option>");
+                                $("#displayDepartments ol").append("<li><input type='checkbox' name='departmentlist[]' value='"+value.id+"'> "+value.name+"</li>");
+                            });
+                        }
+                    );
+                }
+                $("#programme").empty().append("<option value='*'>All</option>");
+                $("#displayDepartments ol").empty();
+                $.getJSON(
+                    "{{ route("staff.ajax.programmes.one",['']) }}/"+$(this).val(),
+                    function (obj) {
+                        $.each(obj,function (key,value) {
+                            $("#programme").append("<option value='"+value.id+"'>"+value.name+"</option>");
+                            $("#displayProgrammes ol").append("<li><input type='checkbox' name='programmelist[]' value='"+value.id+"'> "+value.name+"</li>");
+                        });
+                    }
+                );
+            });
+
+            $(".viewPerm").on("click",function (e) {
+                e.preventDefault();
+                roleId = $(this).attr("role-id");
+                roleName = $(this).attr("role-name");
+                $("#viewPermissionModalTitle").text("Permissions Under:"+roleName);
+                $("#viewPermissionModal").modal();
+                $.ajax({
+                    url:"{{route("staff.user.authorization.role.permission",[''])}}/"+roleId,
+                    cache: false
+                }).done(function( html ) {
+                    $("#viewPMlBody").html( html );
+                });
+            });
+        });
+    </script>
+@endsection
+
+
+@section("css")
+    <style>
+        .assignDiv{
+            height:480px;
+            padding:4px;
+            border: 1px solid silver;
+            overflow-y: scroll;
+        }
+    </style>
+@endsection

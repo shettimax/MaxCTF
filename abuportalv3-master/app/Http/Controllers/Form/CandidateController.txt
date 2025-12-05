@@ -1,0 +1,262 @@
+<?php
+
+namespace App\Http\Controllers\Form;
+
+use App\Models\Candidate;
+use App\Models\Student;
+use App\Models\CandidateForm;
+use App\Models\Transaction;
+use App\Models\CandidateAlevel;
+use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use App\Models\Qualification;
+use App\Models\QualificationGrade;
+use Intervention\Image\Facades\Image;
+use App\Http\CuteBanker\SchoolCollection;
+
+class CandidateController extends Controller
+{
+    /**
+     * Display a listing of the resource.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function __construct()
+    {
+        $this->middleware(["auth:candidate","hasEmail"]);
+    }
+
+    public function index()
+    {
+        $candidate = Auth::user();
+        //
+        $applications = Candidate::join("candidate_forms","candidate_forms.candidate_id","=","candidates.id")
+            ->join("form_settings","form_settings.id","=","candidate_forms.form_setting_id")
+            ->join("programmes","programmes.id","=","form_settings.programme_id")
+            ->select(["form_settings.*","programmes.*","candidates.*","candidate_forms.*"])
+            ->where(['candidate_forms.candidate_id'=>$candidate->id])
+            ->whereIn("form_settings.candidate_form_type_id",[1,2])->get();
+
+        $query = DB::table("candidate_forms")
+            ->join("candidates", "candidates.id", "=", "candidate_forms.candidate_id")
+            ->join("candidate_biodatas AS bio", "candidates.id", "=", "bio.candidate_id")
+            ->join("candidate_contacts AS contact", "candidates.id", "=", "contact.candidate_id")
+            ->join("form_settings", "form_settings.id", "=", "candidate_forms.form_setting_id")
+            ->leftJoin("programmes", "form_settings.programme_id", "=", "programmes.id")
+            ->leftJoin("departments", "programmes.department_id", "=", "departments.id")
+            ->leftJoin("faculties", "departments.faculty_id", "=", "faculties.id")
+            ->join("lgas", "lgas.id", "=", "bio.lga_id")
+            ->join("states", "states.id", "=", "lgas.state_id")
+            ->where("candidate_forms.candidate_id","=",$candidate->id)
+            ->select("states.name AS statename", "faculties.name AS faculty", "candidates.username AS RegNum", "candidates.email AS email", "contact.gsm","programmes.name AS prog")
+            ->first();
+        return view("pages.forms.dashboard.index",compact("applications","candidate","query"));
+    }
+
+    public static $passwordrules = [
+        "currentpassword"=>"required|min:6",
+        "newpassword"=>"required|min:6|confirmed"
+    ];
+
+    /**
+     * Show the form for creating a new resource.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function profileImage(Request $request)
+    {
+        //
+        $candidate = Auth::user();
+        $fileName = str_replace("/","_",strtoupper($candidate->id));
+        if(file_exists(public_path() .'/candidatepics/'. $fileName . '.JPG'))
+        {
+            $pathToFile = public_path()."/candidatepics/".$fileName.".JPG";
+        }else{
+            $pathToFile = public_path()."/studentpics/user.png";
+        }
+
+        return response()->file($pathToFile);
+
+    }
+
+    /**
+     * Store a newly created resource in storage.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function showAlevel()
+    {
+        //
+        $candidateid = Auth::id();
+        $alevels = CandidateAlevel::where('candidate_id', '=', $candidateid)->get();
+        return view('pages.forms.profile.addalevel', compact("alevels"));
+    }
+
+    public function addAlevel(Request $request)
+    {
+        $candidateid = Auth::user()->id;
+
+        $this->validate(request(), CandidateAlevel::$rules);
+
+        $alevels = new CandidateAlevel();
+        $alevels->candidate_id = $candidateid;
+        $alevels->institution_name = $request->inst;
+        $alevels->from_year = $request->fromyear;
+        $alevels->to_year = $request->toyear;
+        $alevels->qualification_id = $request->qual;
+        $alevels->degree_class_id = $request->degree;
+        $alevels->course = $request->course;
+        $alevels->cgpa = $request->cgpa;
+        $alevels->save();
+
+        $this->validate(request(), [
+            'file' => 'required|image|mimes:jpg,jpeg,png|max:1024'
+        ]);
+
+        $originalImage= $request->file('file');
+        $thumbnailImage = Image::make($originalImage);
+        $originalPath = public_path().'/candidatealevels/';
+        $thumbnailImage->save($originalPath.time().$originalImage->getClientOriginalName());
+
+        $file = $request->file('file');
+        $fileName = str_replace("/","_",$alevels->id) . ".JPG";
+        $file->move(public_path('/candidatealevels') , $fileName);
+
+        return redirect()->back();
+    }
+
+    public function alevelpicture()
+    {
+        $candidateid = Auth::id();
+        $path=CandidateAlevel::where('candidate_id', '=', $candidateid);
+        $matric = str_replace("/","_",$path);
+        if(file_exists(public_path() .'/candidatealevels/'. $matric . '.JPG'))
+        {
+            $pathToFile = public_path()."/candidatealevels/" .$path. ".JPG";
+        }else{
+            $pathToFile = public_path()."/candidatealevels/user.png";
+        }
+
+        return response()->file($pathToFile);
+    }
+    public function destroy(Request $request, $id) {
+        $user=Auth::user();
+        try{
+            $deletealevel = CandidateAlevel::where(['id'=>$id, 'candidate_id'=>$user->id])->first();
+            if($deletealevel){
+                $deletealevel->delete();
+                return response()->json(['status'=>1,'message'=>'A-Level Successfully Deleted']);
+            }
+            return response()->json(['status'=>0,'message'=>'Failed to Delete A-Level']);
+        }catch (\Exception $e){
+            return response()->json(['status'=>0,'message'=>'Failed to Delete A-Level.'.$e->getMessage()]);
+        }
+    }
+
+
+    /**
+     * Update the specified resource in storage.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function update(Request $request, $id)
+    {
+        //
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function changepassword(Request $request)
+    {
+        //
+        $candidateid = Auth::id();
+        $this->validate($request,CandidateController::$passwordrules);
+        $candidate = Candidate::where(['id'=>$candidateid])->first();
+        if(Hash::check($request->currentpassword,$candidate->password)){
+            $candidate->password = bcrypt($request->newpassword);
+            $candidate->save();
+            return redirect()->back()->withErrors(['message'=>'Password Changed Successfully']);
+        }
+        return redirect()->back()->withErrors(["currentpassword"=>"Invalid Password"]);
+    }
+
+public function savematric(Request $request){
+
+    $candidateid= Auth::id();
+    
+    $matric = Student::where(['matric_number'=>$request->previous_matric])->first();
+
+    if($matric){
+     
+        $candidate = CandidateForm::where(['candidate_id'=>$candidateid])->first();
+       if($candidate){
+        $candidate->ug_matric_number = $request->previous_matric;
+        $candidate->save();
+        return redirect()->back()->withErrors(['message'=>'MatricNO captured Successfully']);
+       }
+       return redirect()->back()->withErrors(['message'=>'Oops! You have not applied for any of the available programmes yet']);
+    }
+
+    return redirect()->back()->withErrors(["MatricNumber"=>"MatricNO doesn't exist"]);
+}
+
+    public function providematric()
+    {
+        //
+        return view('pages.forms.profile.capture_matric');
+    }
+
+    public function showpasswordchange()
+    {
+        //
+        return view('pages.forms.profile.changepassword');
+    }
+
+    public function createWallet(Request $request){
+        return view('pages.forms.abumfb.create');
+    }
+
+
+    public function storeWallet(Request $request)
+    {
+
+        $candidate =  Auth::user();
+        if($candidate->wallet_number){
+            return redirect(route("forms.dashboard"));
+        }
+        $schoolCollect = new SchoolCollection();
+        $responseCode = $schoolCollect->createCandidateAccount($candidate);
+
+        return response()->json(["status"=>$responseCode==1,"message"=>($responseCode==1?"Account creation successful":"Account creation failed.")],200);
+
+    }
+
+    public function viewWallet(Request $request){
+        $candidate =  Auth::user();
+        $schoolCollect = new SchoolCollection();
+        $balance = $schoolCollect->balance($candidate->wallet_number);
+        return view("pages.forms.abumfb.wallet",compact('candidate','balance'));
+    }
+
+
+    public function makePay(Request $request)
+    {
+        $transaction = Transaction::find($request->trxn56xid77);
+        $schoolCollect = new SchoolCollection();
+        // return $transaction->student();
+        return response()->json($schoolCollect->payWallet($transaction));
+
+
+    }
+
+}

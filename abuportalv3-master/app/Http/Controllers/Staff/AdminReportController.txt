@@ -1,0 +1,114 @@
+<?php
+
+namespace App\Http\Controllers\Staff;
+
+use App\Http\Controllers\Controller;
+use App\Models\Course;
+use App\Models\Department;
+use App\Models\Faculty;
+use App\Models\Programme;
+use Illuminate\Http\Request;
+
+class AdminReportController extends Controller
+{
+    public function __construct()
+    {
+        $this->middleware(['auth:staff']);
+    }
+
+    public function courses()
+    {
+        return view('pages.staff.reports.admin.courses');
+    }
+
+    public function loadCoursesFor(Request $request)
+    {
+        try {
+            $arropts = [];
+            if ($request->department != '%') {
+                $arropts[] = ["courses.department_id", "=", $request->department];
+            }
+
+            if ($request->faculty != '%') {
+                $arropts[] = ["faculties.id", "=", $request->faculty];
+            }
+
+            $records = Course::join("levels", "levels.id", "=", "courses.courselevel")
+                ->join("departments", "departments.id", "=", "courses.department_id")
+                ->join("faculties", "faculties.id", "=", "departments.faculty_id")
+                ->select(['courses.*', 'levels.name as level'])
+                ->where($arropts)
+                ->orderby('coursecode', 'ASC')
+                ->orderby('level', 'ASC')
+                ->get();
+
+            return view('pages.staff.reports.admin.ajax.load_courses', compact('records'));
+        } catch (\Exception $e) {
+            return $e->getMessage();
+        }
+    }
+
+    public function programmes()
+    {
+        return view('pages.staff.reports.admin.programmes');
+    }
+
+    public function loadProgrammesFor(Request $request)
+    {
+        try {
+            $arropts = [];
+            if ($request->department != '%') {
+                $arropts[] = ["programmes.department_id", "=", $request->department];
+            }
+
+            if ($request->faculty != '%') {
+                $arropts[] = ["faculties.id", "=", $request->faculty];
+            }
+
+            if ($request->programme_type != "%") {
+                $arropts[] = ["programmes.programme_type_id", "=", $request->programme_type];
+            }
+
+            $programmes = Programme::join("departments", "departments.id", "=", "programmes.department_id")
+                ->join("faculties", "faculties.id", "=", "departments.faculty_id")
+                ->join('programme_types', 'programme_types.id', '=', 'programmes.programme_type_id')
+                ->select(['programmes.*', 'departments.name as department', 'faculties.name as faculty', 'programme_types.prog_type_name as type'])
+                ->where($arropts)
+                ->orderby('programmes.department_id', 'ASC')
+                ->orderby('programmes.name')
+                ->get();
+
+            return view('pages.staff.reports.admin.ajax.load_programmes', compact('programmes'));
+        } catch (\Exception $e) {
+            return $e->getMessage();
+        }
+    }
+
+    public function departments()
+    {
+        return view('pages.staff.reports.admin.departments');
+    }
+
+    public function loadDepartments()
+    {
+        $departments = Department::with('parent')
+            ->select('*')
+            ->orderby('name')
+            ->get();
+
+        return view('pages.staff.reports.admin.ajax.load_departments', compact('departments'));
+    }
+
+    public function faculties()
+    {
+        return view('pages.staff.reports.admin.faculties');
+    }
+
+    public function loadFaculties()
+    {
+        $faculties = Faculty::orderBy('name')->get();
+
+        return view('pages.staff.reports.admin.ajax.load_faculties', compact('faculties'));
+    }
+
+}

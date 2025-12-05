@@ -1,0 +1,384 @@
+@extends("layout.student.master")
+
+@section("content")
+    <section class="pt-20">
+        <div class="main-section">
+            <div class="page-section "
+                 style="margin-top: 0px;margin-bottom: 0px;border-top: 0px #e0e0e0 solid;border-bottom: 0px #e0e0e0 solid;">
+                <!-- Container Start -->
+                <div class="container">
+
+                    @if(!isset($scam))
+                        <div class="row"
+                             style="padding: 10px 25px;box-shadow: 0 0 5px rgba(0,0,0,0.2);background-color: #fff;">
+                            <div class="col-md-4 col-sm-6">
+                                <div class="pricing-table bg-silver-deep text-center maxwidth400 pt-0">
+                                    <h4 class="package-type text-uppercase font-weight-400 bg-theme-colored2 text-white mt-0 mb-0 pt-15 pb-20">
+                                        Total Fees Payable</h4>
+                                    <h2 class="price text-theme-colored2 font-opensans font-weight-600 font-48 bg-white pt-0 pb-20 mt-0 mb-0">
+                                        <span
+                                            class="font-48 currency">&#8358;</span> {{ $session <2008 && $amountpaid>0?number_format($amountpaid,"2",".",","):number_format($total,"2",".",",")}}</span>
+                                    </h2>
+                                    <ul class="list price-list theme-colored text-left flip check-circle mt-0 mb-20">
+                                        <li><strong>Paid | </strong>
+                                            &#8358; {{ number_format($amountpaid,"2",".",",") }}</li>
+                                        @if($waived !=0 )
+                                            <li><strong>Waived | </strong>
+                                                &#8358; {{ number_format($waived,"2",".",",") }}</li>
+                                        @endif
+                                        @if($balance >= 0)
+                                            <li><strong> Outstanding | </strong>
+                                                &#8358; {{ number_format($balance,"2",".",",") }}</li>
+                                        @else
+                                            <li><strong> Outstanding | </strong>
+                                                &#8358; {{ number_format(0,"2",".",",") }}</li>
+                                        @endif
+                                    </ul>
+                                    <a class="btn btn-lg btn-theme-colored2 text-uppercase btn-block pt-20 pb-20 btn-flat"
+                                       href="{{ route("fees.transaction.view",[$session]) }}">View Transactions</a>
+                                </div>
+
+
+                            </div>
+                            <div class="col-md-8">
+                                <div class="element-size-100">
+                                    <div class="cs-heading-sec col-md-12">
+                                        <div class="inner-sec" style="border-bottom:1px solid #ebebe9 !important;">
+                                            @if($percentage < 100 && $session >2008)
+                                                <h1 style="font-size: 24px !important; text-align:left;">
+                                                    Make Payment
+                                                </h1>
+                                            @endif
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="element-size-100">
+
+                                    <div class="cs-team team-grid">
+                                        @if($percentage == 0)
+                                            <article class="col-sm-6 col-md-3">
+                                                <div class="thumbnail custom-fig">
+                                                    <div class="overlayslide-team">
+                                                        <figure>
+                                                            <div style="margin-left:20px;">
+                                                                <a href="{{ route("fees.payfee",[$session,"h".time()]) }}"
+                                                                   class="font-90 text-center">
+                                                                    <i class="fa fa-money font-60 text-success text-center"></i>
+                                                                </a>
+                                                            </div>
+                                                            <figcaption>
+                                                                <a href="{{ route("fees.payfee",[$session,"h".time()]) }}"
+                                                                   class=""
+                                                                   rel="" title="100%"></a>
+                                                            </figcaption>
+                                                        </figure>
+                                                    </div>
+                                                    <div class="caption text-center">
+                                                        <a href="{{ route("fees.payfee",[$session,"h".time()]) }}"
+                                                           class="text-center text-success font-24">
+                                                            Pay Fee
+                                                        </a>
+
+                                                    </div>
+                                                </div>
+                                            </article>
+                                        @elseif($percentage < 100 && $session > 2008)
+                                            <article class="col-sm-6 col-md-3">
+                                                <div class="thumbnail custom-fig">
+                                                    <div class="overlayslide-team">
+                                                        <figure>
+                                                            <div style="margin-left:20px;">
+                                                                <a href="{{ route("fees.payfee",[$session,"r".time()]) }}">
+                                                                    <img style="width:120px;"
+                                                                         src="{{ asset("money/rest.png") }}"
+                                                                         alt="Balance">
+                                                                </a>
+                                                            </div>
+                                                            <figcaption>
+                                                                <a href="{{ route("fees.payfee",[$session,"r".time()]) }}"
+                                                                   rel="" title="50%"></a>
+                                                            </figcaption>
+                                                        </figure>
+                                                    </div>
+                                                    <div class="caption">
+                                                        <a href="{{ route("fees.payfee",[$session,"r".time()]) }}">
+                                                            Pay Balance
+                                                        </a>
+
+                                                    </div>
+                                                </div>
+                                            </article>
+                                        @endif
+                                    </div>
+{{--                                    @if($amountpaid > 0 || $waived > 0)--}}
+
+                                        <div class="row">
+                                            <div class="col-md-4">
+                                                <div class="cs-team team-grid">
+                                                    <div class="panel-heading">
+                                                        <h3 class="panel-title">Transactions for {{$session}} </h3>
+                                                        <div class="pull-right">
+
+
+
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-8">
+                                                <div class="panel panel-info filterable add_bottom_45">
+
+                                                    <table class="table table-responsive table-striped table-primary">
+                                                        <thead>
+                                                        <tr class="filters">
+                                                            <th>S/N</th>
+                                                            <th>Transaction ID</th>
+                                                            <th>Amount</th>
+                                                            <th>Status</th>
+                                                        </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                        @foreach($transactions as $t)
+                                                            @if($t->session == $session)
+                                                                <tr>
+                                                                    <th>{{ $loop->index+1 }}</th>
+                                                                    <td>{{ $t->transaction_code }}</td>
+                                                                    <td>
+                                                                        &#8358; {{ number_format($t->transaction_amount,"2",".",",") }}</td>
+                                                                    <td>
+
+                                                                        @if($t->payment_status=="Not Paid")
+                                                                            <a class="btn btn-success btn-sm btn-flat"
+                                                                               href="{{ route("fees.transaction.open",[$t->id,"r".time()]) }}">
+                                                                                Pay Now
+                                                                            </a>
+                                                                        @else
+                                                                            {{ $t->payment_status }}
+                                                                        @endif
+                                                                    </td>
+                                                                </tr>
+                                                            @endif
+                                                        @endforeach
+
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
+
+{{--                                    @endif--}}
+
+                                </div>
+
+                                @php
+                                    $paymentOptions = $student->paymentOptions($session);
+                                @endphp
+
+{{--                                @if(count($paymentOptions))--}}
+                                    <div class="element-size-100">
+                                        <div class="cs-heading-sec col-md-12">
+                                            <div class="inner-sec" style="border-bottom:1px solid #ebebe9 !important;">
+                                                <h1 style="font-size: 24px !important; text-align:left;">
+                                                    Payment Options
+                                                </h1>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="element-size-100">
+
+
+                                        <div class="row">
+
+                                            <div class="col-md-12">
+                                                <div class="panel panel-info filterable add_bottom_45">
+
+                                                    <table class="table table-responsive table-striped table-primary">
+                                                        <thead>
+                                                        <tr class="filters">
+                                                            <th>S/N</th>
+                                                            <th>Plan</th>
+                                                            <th>Options (Generate Transaction)</th>
+                                                        </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                        @php
+                                                            $sn = 1;
+                                                        @endphp
+                                                        @if($percentage > 0)
+                                                            <tr>
+                                                                <td>{{$sn}}</td>
+                                                                <td>Balance</td>
+                                                                <td>
+                                                                    @if($student->transEquiv($session,$balance))
+                                                                        <a class="btn btn-warning btn-sm disabled"
+                                                                           style="text-decoration: line-through;">
+                                                                            &#8358; {{ number_format($total - ($amountpaid+$waived),"2",".",",") }}
+                                                                        </a>
+                                                                    @else
+                                                                        <a href="{{ route("fees.payfee",[$session,"r".time()]) }}"
+                                                                           class="btn btn-success btn-sm">
+                                                                            &#8358; {{ number_format($total - ($amountpaid+$waived),"2",".",",") }}
+                                                                        </a>
+                                                                    @endif
+                                                                </td>
+                                                            </tr>
+                                                            @php $sn++; @endphp
+                                                        @else
+                                                            <tr>
+                                                                <td>{{$sn}}</td>
+                                                                <td>Pay Full</td>
+                                                                <td>
+
+                                                                    <a href="{{ route("fees.paymentoption.choosen",[$session,"h"]) }}"
+                                                                       class="btn btn-success btn-sm">
+                                                                        &#8358; {{ number_format($total - ($amountpaid+$waived),"2",".",",") }}
+                                                                    </a>
+                                                                </td>
+                                                            </tr>
+                                                            @php $sn++; @endphp
+
+                                                        @endif
+                                                        @if($opt = $student->selectedOption($session))
+                                                            <tr>
+                                                                <th>{{ $sn }}</th>
+                                                                <td>{{ $opt->value }}</td>
+                                                                <td>
+                                                                    @php
+                                                                        $percs = explode(":",$opt->value);
+                                                                        $genOptions = $student->generatedOption($session);
+                                                                    @endphp
+                                                                    @foreach($percs as $perc)
+
+                                                                        @php $amt = ($perc/100)*$total; @endphp
+                                                                        @if($balance > $amt && !in_array($loop->index,$genOptions))
+                                                                            <a class="btn btn-sm btn-success"
+                                                                               href="{{ route("fees.paymentoption.choosen",[$session,$loop->index]) }}">
+                                                                                &#8358; {{ number_format($amt,"2",".",",") }}
+                                                                            </a>
+                                                                        @else
+                                                                            <a class="btn btn-warning btn-sm disabled"
+                                                                               style="text-decoration: line-through;">
+                                                                                &#8358; {{ number_format($amt,"2",".",",") }}
+                                                                            </a>
+                                                                        @endif
+
+                                                                    @endforeach
+                                                                </td>
+                                                            </tr>
+                                                        @else
+                                                            @foreach($paymentOptions as $t)
+                                                                <tr>
+                                                                    <th>{{ $sn }}</th>
+                                                                    <td>{{ $t->value }}</td>
+                                                                    <td>
+                                                                        <a class="btn btn-success btn-sm btn-flat"
+                                                                           href="{{ route("fees.paymentoption.choose",[$session,$t->id]) }}">Select
+                                                                            Plan</a>
+                                                                    </td>
+                                                                </tr>
+                                                                @php $sn++; @endphp
+                                                            @endforeach
+
+                                                        @endif
+
+
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
+
+
+                                    </div>
+{{--                                @endif--}}
+
+                            </div>
+                        </div>
+                    @else
+                        <div class="alert alert-danger">
+                            You have no access to this session.
+                            You have been warned. <strong>Anymore attempt will not be forgiven</strong>
+                        </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+    </section>
+@endsection
+
+@section("css")
+    <style>
+        progress {
+            -webkit-appearance: none;
+            appearance: none;
+            border: none;
+            height: 12px;
+            width: 100%;
+            margin: 50px 0;
+        }
+
+        progress::-webkit-progress-bar {
+            background: #ccc;
+            box-shadow: inset 0px 0px 10px 5px #aaa;
+            border-radius: 20px;
+        }
+
+        progress::-webkit-progress-value {
+            background-image: repeating-linear-gradient(45deg, #19b68c, #19b68c 8px, #19b68c 8px, #19b68c 16px);
+            border-radius: 20px;
+        }
+
+        progress::before {
+            content: attr(value);
+            position: relative;
+            left: 70%;
+            display: block;
+            margin: 5px;
+            font: caption;
+            font-size: 20px;
+            color: #FF7799;
+        }
+    </style>
+
+@endsection
+
+@section("js")
+    <script type="text/javascript" src="{{ asset("js/radialprogress.js") }}"></script>
+    <script>
+        jQuery(function () {
+
+            function progress(element, val, direction) {
+                var bar = new RadialProgress(
+                    document.getElementById(element),
+                    {
+                        spin: false,
+                        indeterminate: true,
+                        colorFg: "#59B200",
+                        thick: 12,
+                        fixedTextSize: 0.25,
+                        colorBg: "#EEEEEE",
+                        colorText: "#FFFFFF",
+                        round: 0
+                    }
+                );
+                console.log(val);
+                bar.setIndeterminate(false);
+                bar.setValue(val);
+
+                if (val >= 1.0) bar.colorFg = "#59B200";
+                else if (val >= 0.8) bar.colorFg = "#96FF73";
+                else if (val >= 0.5) bar.colorFg = "#FFDC73";
+                else if (val >= 0.3) bar.colorFg = "#FEC54E";
+                else bar.colorFg = "#FF7A4D";
+
+                bar.draw(true);
+                return bar;
+            }
+
+            progress("bar1", {{ ( ($percentage/100) < 100 ) && ( ($percentage/100) > 99.9) ?99.9:($percentage/100) }}, 0);
+            //this forces the bar to be redrawn
+        });
+
+    </script>
+@endsection

@@ -1,0 +1,335 @@
+<?php
+
+namespace App\Http\Controllers;
+
+
+use App\Models\Faculty;
+use App\Models\Country;
+use App\Models\FormSetting;
+use App\Models\State;
+use App\Models\Lga;
+use App\Models\DegreePlan;
+use App\Models\Department;
+use App\Models\Programme;
+use App\Models\ProgrammeType;
+use App\Models\Course;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Auth;
+
+class MiscController extends Controller
+{
+    //
+
+    public function __construct()
+    {
+        $this->middleware(['auth:staff', 'mmode']);
+    }
+
+
+    public function states(Request $request, $id = null)
+    {
+        //
+        if (!$id) {
+            $id = $request->country_id == 1 ? 156 : 1;
+            return State::where("countryid", "=", $id)->get();
+        } else {
+            return Country::find($id)->hasMany(State::class, "countryid")->get()->all();
+        }
+
+
+    }
+
+    public function lgas(Request $request, $id = null)
+    {
+        //
+        if (!$id) {
+            $id = $request->state_id;
+            return Lga::where("stateid", "=", $id)->get();
+        } else {
+            return State::find($id)->hasMany(Lga::class, "stateid")->get()->all();
+        }
+
+    }
+
+    public function departments(Request $request)
+    {
+        //
+        $id = $request->faculty_id;
+        return Department::where("faculty_id", "=", $id)->get();
+    }
+
+    public function a_departments(Request $request)
+    {
+        //
+        $user = Auth::user();
+        $id = $request->faculty_id;
+        $permission = $request->permission;
+        $departments = $user->accessibleDepartments($permission)->where("faculty_id", "=", $id)->get();
+        $result = "";
+        if ($departments->count() > 1)
+            $result .= "<option value='%'>All Departments</option>";
+
+        foreach ($departments as $department) {
+            $result .= "<option value='" . $department->id . "'>$department->name</option>";
+        }
+        return $result;
+    }
+
+    public function a_programme(Request $request)
+    {
+        //
+        $user = Auth::user();
+        $id = $request->department_id;
+        $permission = $request->permission;
+        $programmes = $user->accessibleProgrammes($permission)->where("department_id", "=", $id)->get();
+
+        $result = "";
+        if ($programmes->count() > 1)
+            $result .= "<option value='%'>All Programmes</option>";
+
+        foreach ($programmes as $programme) {
+            $result .= "<option value='" . $programme->id . "'>$programme->name</option>";
+        }
+
+        return $result;
+    }
+
+    public function a_faculties(Request $request)
+    {
+        //
+        $user = Auth::user();
+        $permission = $request->permission;
+        $faculties = $user->accessibleFaculties($permission)->get();
+
+        $result = "";
+
+        if ($faculties->count() > 1)
+            $result .= "<option value='%'>All Faculties</option>";
+
+        foreach ($faculties as $faculty) {
+            $result .= "<option value='" . $faculty->id . "'>$faculty->name</option>";
+        }
+
+        return $result;
+    }
+
+    public function a_programme_types(Request $request)
+    {
+        //
+        $user = Auth::user();
+        $permission = $request->permission;
+        $programmetypes = $user->accessibleProgrammeTypes($permission)->get();
+
+        $result = "";
+        if ($programmetypes->count() > 1)
+            $result .= "<option value='%'>All Programme Types</option>";
+
+        foreach ($programmetypes as $programmetype) {
+            $result .= "<option value='" . $programmetype->id . "'>$programmetype->name</option>";
+        }
+        return $result;
+    }
+
+    public function programmes(Request $request)
+    {
+        //
+        $programmes = DB::table("programmes")->join("departments", "programmes.departmentid", "=", "departments.id")
+            ->join("faculties", "departments.facultyid", "=", "faculties.id");
+        if ($request->department_id != "" && $request->department_id != "0")
+            $programmes->where("departmentid", "=", $request->department_id);
+        if ($request->faculty_id != "" && $request->faculty_id != "0")
+            $programmes->where("departments.facultyid", "=", $request->faculty_id);
+        if ($request->programmetype_id != "" && $request->programmetype_id != "0")
+            $programmes->where("programmetypeid", "=", $request->programmetype_id);
+        if ($request->programmemode != "" && $request->programmemode != "0") {
+            if ($request->programmemode == 1) {
+                $programmes->where('programmes.name', 'NOT LIKE', '%Part-Time%');
+            } else {
+                $programmes->where('programmes.name', 'LIKE', '%Part-Time%');
+            }
+        }
+
+        return $programmes->select("programmes.*")->get();
+    }
+
+    public function students(Request $request)
+    {
+        //
+        $students = DB::table("students")->join("session_regs", "students.id", "=", "session_regs.studentid")
+            ->join("programmes", "session_regs.programmeid", "=", "programmes.id")
+            ->join("departments", "programmes.departmentid", "=", "departments.id")
+            ->join("faculties", "departments.facultyid", "=", "faculties.id")
+            ->join("lgas", "students.lga_id", "=", "lgas.id")
+            ->join("states", "lgas.stateid", "=", "states.id");
+        //TODO: JOIN with hostel table and join with table that tell a student is staff or not
+        if ($request->entrysession != "" && $request->entrysession != "0") {
+            $students->where("students.entrysession", "=", $request->entrysession);
+        }
+        if ($request->staff != "" && $request->staff != "0") {
+            //Todo: Implement code when staff check is available
+        }
+        if ($request->hostel_id != "" && $request->hostel_id != "0") {
+            //Todo: Implement code when staff check is available
+            if ($request->hostel_id == -1) {
+                //Todo: Implement code for student staying off campus
+                //Hint: Use not having a record for current session in student_hostel mapping
+            } else {
+                //Todo: Implement code for student staying in campus
+            }
+        }
+        if ($request->faculty_id != "" && $request->faculty_id != "0") {
+            if ($request->department_id != "" && $request->department_id != "0") {
+                if ($request->programme_id != "" && $request->programme_id != "0") {
+                    $students->where("students.programme_id", "=", $request->programme_id);
+                } else {
+                    $students->where("departments.id", "=", $request->department_id);
+                }
+            } else {
+                $students->where("faculties.id", "=", $request->faculty_id);
+            }
+        }
+        if ($request->gender != "" && $request->gender != "0") {
+            if ($request->gender == 1) {
+                $students->where("students.gender", "=", "Female");
+            } else {
+                $students->where("students.gender", "=", "Male");
+            }
+        }
+        if ($request->religion != "" && $request->religion != "0") {
+            if ($request->religion == 1) {
+                $students->where("students.religion", "=", "Islam");
+            } else if ($request->religion == 2) {
+                $students->where("students.religion", "=", "Christianity");
+            } else {
+                $students->where("students.religion", "=", "Others");
+            }
+        }
+        if ($request->programmetype_id != "" && $request->programmetype_id != "0") {
+            $students->where("programmes.programmetypeid", "=", $request->programmetype_id);
+        }
+        if ($request->programmemode != "" && $request->programmemode != "0") {
+            if ($request->programmemode == 1) {
+                $students->where('programmes.name', 'NOT LIKE', '%Part-Time%');
+            } else {
+                $students->where('programmes.name', 'LIKE', '%Part-Time%');
+            }
+        }
+        if ($request->residency != "" && $request->residency != "0") {
+            if ($request->residency == 1) {
+                if ($request->state_id != "" && $request->state_id != "0") {
+                    if ($request->lga_id != "" && $request->lga_id != "0") {
+                        $students->where("students.lga_id", "=", $request->lga_id);
+                    } else {
+                        $students->where("lgas.stateid", "=", $request->state_id);
+                    }
+                } else {
+                    $students->where("students.country_id", "=", 125);
+                }
+            } else {
+                $students->where("students.country_id", "<>", 125);
+            }
+        }
+
+        return $students->select("students.id", "students.matricnumber")->get();
+    }
+
+    public function getprogrammesByDeptProgType($deptid, $progtypeid)
+    {
+        $programmes = Programme::where('department_id', 'LIKE', $deptid)
+            ->where('programme_type_id', 'LIKE', $progtypeid)->get();
+
+
+        return $programmes;
+    }
+
+    public function getDepartments($id)
+    {
+        return Faculty::find($id)->hasMany(Department::class, 'faculty_id')->orderBy("name")->get()->all();
+    }
+
+    public function getStates(Country $id)
+    {
+        return $id->hasMany(State::class, "country_id")->get()->all();
+    }
+
+    public function getLgas(State $id)
+    {
+        return $id->hasMany(Lga::class, "state_id")->get()->all();
+    }
+
+    public function getProgrammes($id)
+    {
+        if ($id == '%')
+            $id = '';
+        return Programme::where('department_id', 'LIKE', $id)->orderBy("name")->get()->all();
+    }
+
+    public function getCourses($deptId, $levelId)
+    {
+        return Course::where(['department_id' => $deptId, 'courselevel' => $levelId])->orderBy('coursecode')->get();
+    }
+
+    public function getFormsProgrammes(Request $request, $id)
+    {
+        $session = $request->input('session');
+        $candidate_form_type_id = $request->input('candidate_form_type_id');
+        $progs = Programme::where('department_id', 'LIKE', $id)->orderBy("name")->pluck('id');
+        
+        $query = FormSetting::join('programmes', 'programmes.id', '=', 'programme_id')
+            ->whereIn("programme_id", $progs)->where('session', $session);
+            
+        // Add candidate_form_type_id filter if provided
+        if ($candidate_form_type_id) {
+            $query->where('candidate_form_type_id', $candidate_form_type_id);
+        }
+        
+        return $query->select(['form_settings.id as id', 'programmes.name AS name'])->get();
+
+        //        return Programme::whereIn('id',$progs)->get();
+    }
+
+    public function getDegreePlan($programme, $session)
+    {
+        return DegreePlan::where(['programme_id' => $programme, 'plansession' => $session])->get();
+    }
+
+    public function studentsId(Request $request)
+    {
+
+        //        return $request;
+        $students = DB::table("students")
+            ->select(['matricnumber', 'students.id', 'surname', 'firstname', 'othernames'])
+            ->join('programmes', 'programmes.id', '=', 'students.programme_id')
+            ->join('departments', 'departments.id', '=', 'programmes.departmentid')
+            ->join('faculties', 'faculties.id', '=', 'departments.facultyid')
+            ->where(['entrysession' => $request->entrysession, "matric_gen" => "yes"]);
+        if ($request->faculty == "%") {
+
+        } else {
+            $students = $students->where('faculties.id', '=', $request->faculty);
+            if ($request->department == '%') {
+
+            } else {
+                $students = $students->where('departments.id', '=', $request->department);
+                if ($request->programme == '%') {
+
+                } else {
+                    $students = $students->where('programmes.id', '=', $request->programme);
+                }
+            }
+        }
+        //        return ;
+        $content = '';
+        $count = 1;
+        foreach ($students->get() as $student) {
+            $content .= "<tr> <th>$count</th>";
+            $content .= "<th>{$student->matricnumber}</th>";
+            $content .= "<th>{$student->surname}, {$student->firstname} {$student->othernames}</th>";
+            $content .= "<th><input type='checkbox' class='checkbox' name='studentIds[]' value='{$student->id}'/></th></tr>";
+            $count++;
+        }
+
+        return $content;
+    }
+}

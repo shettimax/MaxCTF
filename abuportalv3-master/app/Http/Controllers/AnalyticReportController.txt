@@ -1,0 +1,55 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+
+class AnalyticReportController extends Controller
+{
+    //
+
+    public function analyticsByLevel(Request $request)
+    {
+
+        $students = array();
+        if ($request->ajax()) {
+            $session = $request->query->get('session');
+            $programmetypeid = 2;
+
+            $arropts = [
+                ["session_regs.session", "=", $session],
+                ["programme_types.id", "=", $programmetypeid],
+                ["transactions.session", "=", $session],
+                ["transactions.payment_status", "=", "Paid"]
+            ];
+
+            $students = DB::table("students")
+                ->leftJoin("session_regs", "students.id", "=", "session_regs.student_id")
+                ->leftjoin("programmes", "students.programme_id", "=", "programmes.id")
+                ->leftjoin("programme_types", "programmes.programme_type_id", "=", "programme_types.id")
+                ->leftjoin("departments", "programmes.department_id", "=", "departments.id")
+                ->leftjoin("faculties", "departments.faculty_id", "=", "faculties.id")
+                ->leftJoin("lgas", "students.lga_id", "=", "lgas.id")
+                ->leftJoin("states", "lgas.state_id", "=", "states.id")
+                ->leftJoin("levels", "levels.id", "=", "session_regs.level_id")
+                ->Join('transactions','session_regs.student_id','=', 'transactions.student_id')
+                ->select([DB::raw('COUNT(gender) as numberofgender'), "gender", "states.name as state", "session_regs.level_id", "levels.name as level"])
+                ->where($arropts)
+                ->groupBy("session_regs.level_id")
+                ->groupBy("gender")
+                ->get();
+
+            foreach ($students as $student) {
+                $gender = ucfirst(strtolower($student->gender));
+                $arrstudents[$student->level][$gender] = $student->numberofgender;
+            }
+
+            return view('pages.staff.reports.students.load_analytics_by_level', compact('arrstudents'))->render();
+        }
+
+        return view('pages.staff.reports.students.analytics_by_level', compact('students'));
+
+    }
+
+}

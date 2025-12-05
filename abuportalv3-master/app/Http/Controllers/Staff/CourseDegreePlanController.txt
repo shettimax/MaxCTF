@@ -1,0 +1,265 @@
+<?php
+
+namespace App\Http\Controllers\Staff;
+
+use App\Models\Models\Course;
+use App\Models\CourseDegreePlan;
+use App\Models\CourseGroup;
+use App\Models\DegreePlan;
+use App\Models\Department;
+use App\Models\Faculty;
+use App\Http\Controllers\Controller;
+use App\Models\Programme;
+use Illuminate\Http\Request;
+use Auth;
+
+class CourseDegreePlanController extends Controller
+{
+    public function __construct()
+    {
+        $this->middleware('auth:staff');
+
+    }
+
+    public function index()
+    {
+        if (!$this->access(Auth::user(), "degreeplan"))
+            return view("pages.errors.nopermission");
+
+        return view('pages.staff.settings.managecoursedegreeplan');
+    }
+
+    public function faculties()
+    {
+        return Faculty::select('id', 'name as text')->orderby('name')->get();
+    }
+
+    public function departments()
+    {
+        $faculties = request('faculties');
+        return Department::where('faculty_id', $faculties)->select('id', 'name as text')->orderby('name')->get();
+    }
+
+    public function programmes()
+    {
+        $departments = request('departments');
+        return Programme::where('department_id', $departments)->select('id', 'name as text')->get();
+    }
+
+    public function degreePlans()
+    {
+        $session = request('session');
+        $programmes = request('programmes');
+
+        return DegreePlan::whereIn('programme_id', $programmes)->where('plansession', $session)->select(['id', 'planname'])->get();
+    }
+
+    public function courses()
+    {
+        try {
+            $plan_id = request('plans');
+            $level = request('level');
+            $departments = request('departments');
+
+//            return $plan_id;
+
+            $records = Course::where('department_id', $departments)->where('courselevel', $level)->orderby('coursecode', 'ASC')->get();
+
+            $table = "<table id='courses' align='center' class='table table-bordered table-striped table-responsive' style='width:100%;font-size:16px;font-family: Calibri; color: #0b0b0b; text-align: left'>";
+            $table .= "<thead><tr><th>S/N</th><th>Code</th><th>Title</th><th>Unit</th><th>Status</th><th>Check All <input type='checkbox' name='checkAll' id='checkAll'/></th></tr></thead><tbody>";
+
+
+            $coursesPlan = $this->coursesPlan($level, $plan_id);
+            $i = 1;
+//            return $records;
+            foreach ($records as $record) {
+                $checked = "";
+                if (in_array($record->id, $coursesPlan))
+                    $checked = "checked";
+                $table .= "<tr><td>" . ($i++) . "</td><td>" . $record->coursecode . "</td><td>" . $record->coursetitle . "</td><td style='text-align: center;'>" . $record->courseunit . "</td><td align='center'>" . $this->getCourseStatus($plan_id, $record->id, $level) . "</td>";
+                $table .= "<td style='text-align: center;'><input type='checkbox' name='course[]' class='courses' $checked value='" . $record->id . "'/></td></tr>";
+            }
+            $table .= "</tbody></table>";
+
+
+            return $table;
+        } catch (\Exception $e) {
+            return $e->getMessage();
+        }
+    }
+
+    public function mappedCourses()
+    {
+        $level = request('level_id');  //  900;//
+        $plan_id = request('plan_id');    //  791;//
+
+        $coursesPlan = $this->coursesPlan($level, $plan_id);
+
+        return Course::whereIn('id', $coursesPlan)->orderby('coursecode', 'ASC')->get();
+    }
+
+    public function show($department, $level, $plan_id)
+    {
+        $records = Course::where(['department_id' => $department, 'courselevel' => $level])->orderby('coursecode', 'ASC')->get();
+
+        $table = "<table align='center' class='table table-bordered table-striped table-responsive' style='width:100%;font-size:16px;font-family: Calibri; color: #0b0b0b; text-align: left'>";
+        $table .= "<tr><th>S/N</th><th>Code</th><th>Title</th><th>Unit</th><th>Status</th><th>Check All <input type='checkbox' name='checkAll' id='checkAll'/></th></tr>";
+        $coursesPlan = $this->coursesPlan($level, $plan_id);
+        $i = 1;
+        foreach ($records as $record) {
+            $checked = "";
+            if (in_array($record->id, $coursesPlan))
+                $checked = "checked";
+            $table .= "<tr><td>" . ($i++) . "</td><td>" . $record->coursecode . "</td><td>" . $record->coursetitle . "</td><td style='text-align: center;'>" . $record->courseunit . "</td><td>" . $this->getCourseStatus($plan_id, $record->id, $level) . "</td>";
+            $table .= "<td style='text-align: center;'><input type='checkbox' name='course[]' class='courses' $checked value='" . $record->id . "'/></td></tr>";
+        }
+        $table .= "</table>";
+        return $table;
+    }
+
+    public function getCourseStatus($plan, $course_id, $level)
+    { // Elective, Core, Cognate
+        $model = CourseDegreePlan::where(['degree_plan_id' => $plan, 'course_id' => $course_id, 'level' => $level])->first();
+        return $model != null ? $model->course_status : "";
+    }
+
+    public function coursesPlan($level, $plan_id)
+    {
+        $models = CourseDegreePlan::where(['degree_plan_id' => $plan_id, 'level' => $level])->select('course_id')->get();
+        $courses = array();
+        foreach ($models as $model) {
+            $courses[] = $model->course_id;
+        }
+        return $courses;
+    }
+
+    public function store(Request $request)
+    {
+        //return $request/;
+        try {
+            if (!$this->access(Auth::user(), 'degreeplan'))
+                return view("pages.errors.nopermission");
+
+//            return $request;
+
+            $rules = [
+                'plan' => 'required|integer',
+                'level_id' => 'required|integer',
+                'course' => 'required_without_all',
+                'status' => 'required',
+            ];
+            $validator = $request->validate($rules);
+            if (!$validator) {
+                return redirect()->route('coursedegreeplan')->withInput()->withErrors();
+            } else {
+                $courses = $request->course;
+                $level = $request->level_id;
+                $status = $request->status;
+                $plan = $request->plan;
+                foreach ($courses as $course) {
+                    $db = new CourseDegreePlan();
+                    $coursesPlan = $this->coursesPlan($level, $plan);
+                    if (in_array($course, $coursesPlan)) {
+                        $courseplanid = $this->getCoursePlanId($plan, $level, $course);
+                        $db = CourseDegreePlan::find($courseplanid);
+                    }
+                    $db->degree_plan_id = $plan;
+                    $db->level = $level;
+                    $db->course_id = $course;
+                    $db->course_status = $status;
+                    $db->save();
+                }
+                if ($request->has('courseplanid'))
+                    $request->session()->flash('flash_message', 'Course has been updated');
+                else
+                    $request->session()->flash('flash_message', 'Course has been added');
+                return redirect()->back()->withInput($request->all());
+            }
+        } catch (\Exception $e) {
+//            return view("pages.staff.error.technical");
+            echo $e->getMessage();
+        }
+    }
+
+    public function isCoursePlanCaptured($level, $course_id)
+    {
+        $model = CourseDegreePlan::where(['course_id' => $course_id, 'level' => $level])->select('course_id')->first();
+        return $model != null ? true : false;
+    }
+
+    public function getCoursePlanId($plan, $level, $course_id)
+    {
+        $model = CourseDegreePlan::where(['degree_plan_id' => $plan, 'course_id' => $course_id, 'level' => $level])->select('id')->first();
+        return $model->id;
+    }
+
+    public function edit($courseplanid)
+    {
+        $model = CourseDegreePlan::find($courseplanid);
+        return $this->checkAccessView(Auth::user(), "administrator.manage.courses.degree.plan.edit", view('pages.staff.settings.managecoursedegreeplan', compact('model')));
+    }
+
+    public function showBulkUpload()
+    {
+        return view("pages.staff.settings.uploadcoursedegreeplan");
+    }
+
+    public function bulkUpload(Request $request)
+    {
+
+//        return [substr("23456789",-4)];
+        $path = $request->file('filename')->getRealPath();
+        $data = \Excel::load($path, function ($reader) {
+        })->get();
+        $start_row = intval($request->row);
+        $row_count = 0;
+        $foundAppNumbs = [];
+        $content = array();
+        $failed = array();
+        $staffid = Auth::id();
+        $loopedProgrammes = [];
+        $all = [];
+        $content = [];
+        $content_ = [];
+        $c = 0;
+//        return $data;
+        foreach ($data as $datum) {
+            //if($c==0){$c=1;continue;}
+            $programme = Programme::where(["name" => $datum['programme']])->first();
+            if ($programme) {
+                $content_[] = $programme->name;
+                $degreePlan = DegreePlan::where(["programme_id" => $programme->id, "plansession" => 2018])->first();
+            }
+            $code = str_replace(" ", "", $datum['code']);
+            $course = Course::where(["coursecode" => $code])->first();
+            if ($course)
+                $content[$code] = $course->id;
+            else {
+                $content[$code] = 0;
+                $c = substr($code, 0, 4);
+                $crs = Course::whereRaw("coursecode LIKE '%$c%' ")->first();//department_id
+                $d_id = 0;
+                $l = 800;
+                $sm = intval(substr($code, -1)) % 2 == 0 ? 2 : 1;
+                if ($crs) {
+                    $d_id = $crs->department_id;
+                    $l = intval(substr($code, 4, 1)) * 100;
+                }
+                $course = new Course();
+                $course->coursecode = $datum['code'];
+                $course->coursetitle = $datum['title'];
+                $course->courseunit = $datum['unit'];
+                $course->department_id = $d_id;
+                $course->courselevel = $l;
+                $course->save();
+                $cg = new CourseGroup();
+                $cg->groupno = 1;
+                $cg->grouptype = 'lt';
+                $cg->session = '2018';
+                $cg->semester = $sm;
+                $cg->maxsize = 1000;
+            }
+        }
+        return $content_;
+    }
+}

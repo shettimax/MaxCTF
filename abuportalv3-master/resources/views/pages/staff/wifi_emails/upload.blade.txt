@@ -1,0 +1,275 @@
+@extends('layout.staff.master')
+
+@section('css')
+    <style>
+        .upload-area {
+            border: 2px dashed #ccc;
+            border-radius: 10px;
+            padding: 40px;
+            text-align: center;
+            background-color: #f9f9f9;
+            transition: all 0.3s ease;
+        }
+        .upload-area:hover {
+            border-color: #007bff;
+            background-color: #f0f8ff;
+        }
+        .upload-area.dragover {
+            border-color: #007bff;
+            background-color: #e3f2fd;
+        }
+        .file-info {
+            margin-top: 15px;
+            padding: 10px;
+            background-color: #e9ecef;
+            border-radius: 5px;
+            display: none;
+        }
+        .template-download {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            border-left: 4px solid #28a745;
+        }
+    </style>
+@endsection
+
+@section('content')
+    <section class="pt-10 pl-5">
+        <div class="section-content">
+
+            @if (session('success'))
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    <i class="fa fa-check-circle"></i> {{ session('success') }}
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+            @endif
+
+            @if (session('import_results'))
+                @php $results = session('import_results'); @endphp
+                <div class="alert alert-info alert-dismissible fade show" role="alert">
+                    <h6><i class="fa fa-info-circle"></i> Upload Results:</h6>
+                    <ul class="mb-0">
+                        <li><strong>Total Processed:</strong> {{ $results['success_count'] + $results['error_count'] }}</li>
+                        <li><strong>Successfully Created:</strong> {{ $results['created_count'] }}</li>
+                        <li><strong>Successfully Updated:</strong> {{ $results['updated_count'] }}</li>
+                        <li><strong>Errors:</strong> {{ $results['error_count'] }}</li>
+                    </ul>
+                    @if(!empty($results['errors']))
+                        <details class="mt-2">
+                            <summary><strong>Error Details:</strong></summary>
+                            <ul class="mt-2">
+                                @foreach($results['errors'] as $error)
+                                    <li class="text-danger">{{ $error }}</li>
+                                @endforeach
+                            </ul>
+                        </details>
+                    @endif
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+            @endif
+
+            @if (session('error'))
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="fa fa-exclamation-circle"></i> {{ session('error') }}
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+            @endif
+
+            @if ($errors->any())
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="fa fa-exclamation-circle"></i>
+                    <ul class="mb-0">
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+            @endif
+
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="fa fa-upload"></i> Upload Excel File
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <form action="{{ route('staff.wifi_emails.upload.process') }}" method="POST" enctype="multipart/form-data" id="uploadForm">
+                                @csrf
+                                
+                                <div class="upload-area" id="uploadArea">
+                                    <i class="fa fa-cloud-upload fa-3x text-muted mb-3"></i>
+                                    <h5>Drag & Drop Excel File Here</h5>
+                                    <p class="text-muted">or click to browse</p>
+                                    <input type="file" name="excel_file" id="excelFile" accept=".xlsx,.xls,.csv" style="display: none;" required>
+                                    <button type="button" class="btn btn-outline-primary" onclick="document.getElementById('excelFile').click()">
+                                        <i class="fa fa-folder-open"></i> Choose File
+                                    </button>
+                                </div>
+
+                                <div class="file-info" id="fileInfo">
+                                    <strong>Selected File:</strong> <span id="fileName"></span><br>
+                                    <strong>Size:</strong> <span id="fileSize"></span>
+                                </div>
+
+                                <div class="mt-3">
+                                    <button type="submit" class="btn btn-success" id="uploadBtn" disabled>
+                                        <i class="fa fa-upload"></i> Upload File
+                                    </button>
+                                    <button type="button" class="btn btn-secondary" id="clearBtn" style="display: none;">
+                                        <i class="fa fa-times"></i> Clear
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="template-download">
+                        <h6><i class="fa fa-download"></i> Download Template</h6>
+                        <p class="mb-2">Download the Excel template to see the required format.</p>
+                        <a href="{{ route('staff.wifi_emails.template') }}" class="btn btn-outline-success btn-sm">
+                            <i class="fa fa-download"></i> Download Template
+                        </a>
+                    </div>
+
+                    <div class="card mt-3">
+                        <div class="card-header">
+                            <h6 class="card-title mb-0">
+                                <i class="fa fa-info-circle"></i> Instructions
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <ul class="list-unstyled mb-0">
+                                <li><i class="fa fa-check text-success"></i> Excel file must contain columns: wifi_username, wifi_passwd, email_username, email_passwd</li>
+                                <li><i class="fa fa-check text-success"></i> wifi_username should match student matric numbers</li>
+                                <li><i class="fa fa-check text-success"></i> Maximum file size: 10MB</li>
+                                <li><i class="fa fa-check text-success"></i> Supported formats: .xlsx, .xls, .csv</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </section>
+@endsection
+
+@section('js')
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const uploadArea = document.getElementById('uploadArea');
+            const fileInput = document.getElementById('excelFile');
+            const fileInfo = document.getElementById('fileInfo');
+            const fileName = document.getElementById('fileName');
+            const fileSize = document.getElementById('fileSize');
+            const uploadBtn = document.getElementById('uploadBtn');
+            const clearBtn = document.getElementById('clearBtn');
+            const uploadForm = document.getElementById('uploadForm');
+
+            // Drag and drop functionality
+            uploadArea.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                uploadArea.classList.add('dragover');
+            });
+
+            uploadArea.addEventListener('dragleave', function(e) {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+            });
+
+            uploadArea.addEventListener('drop', function(e) {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+                
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    fileInput.files = files;
+                    handleFileSelect();
+                }
+            });
+
+            // Click to upload
+            uploadArea.addEventListener('click', function() {
+                fileInput.click();
+            });
+
+            // File input change
+            fileInput.addEventListener('change', handleFileSelect);
+
+            function handleFileSelect() {
+                const file = fileInput.files[0];
+                if (file) {
+                    // Validate file type
+                    const allowedTypes = [
+                        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                        'application/vnd.ms-excel',
+                        'text/csv'
+                    ];
+                    
+                    if (!allowedTypes.includes(file.type) && !file.name.match(/\.(xlsx|xls|csv)$/i)) {
+                        alert('Please select a valid Excel or CSV file.');
+                        fileInput.value = '';
+                        return;
+                    }
+
+                    // Validate file size (10MB)
+                    if (file.size > 10 * 1024 * 1024) {
+                        alert('File size must be less than 10MB.');
+                        fileInput.value = '';
+                        return;
+                    }
+
+                    fileName.textContent = file.name;
+                    fileSize.textContent = formatFileSize(file.size);
+                    fileInfo.style.display = 'block';
+                    uploadBtn.disabled = false;
+                    clearBtn.style.display = 'inline-block';
+                }
+            }
+
+            function formatFileSize(bytes) {
+                if (bytes === 0) return '0 Bytes';
+                const k = 1024;
+                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            }
+
+            // Clear button
+            clearBtn.addEventListener('click', function() {
+                fileInput.value = '';
+                fileInfo.style.display = 'none';
+                uploadBtn.disabled = true;
+                clearBtn.style.display = 'none';
+            });
+
+            // Form submission
+            uploadForm.addEventListener('submit', function(e) {
+                if (!fileInput.files[0]) {
+                    e.preventDefault();
+                    alert('Please select a file to upload.');
+                    return;
+                }
+
+                // Show loading state
+                uploadBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Uploading...';
+                uploadBtn.disabled = true;
+            });
+        });
+    </script>
+@endsection
+

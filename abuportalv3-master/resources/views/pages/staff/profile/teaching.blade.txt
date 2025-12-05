@@ -1,0 +1,227 @@
+@extends("layout.staff.master")
+
+@section("pageTitle")
+    Profile: Contacts
+@endsection
+@section('css')
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet"/>
+@endsection
+@include('pages.staff.profile.custom-css')
+
+@section('teaching-page-menu', 'active')
+
+@section("content")
+    <section>
+        <div class="container pt-30 pb-30 pl-30 pr-30">
+            <div class="row">
+                <div class="col-md-9 pull-right flip sm-pull-none">
+                    <div class="blog-posts">
+                        <div class="col-md-12">
+                            <h2 class="widget-title" style="margin-bottom: 0">
+                                <span style="float:right">
+                                    <a href="{{ route('staff.profile.cv.generate.html', $employee->id) }}"
+                                       class="btn btn-success btn-theme-colored btn-sm btn-flat">HTML</a>
+                                    {{--<a href="{{ route('staff.profile.cv.generate.word', $employee->id) }}" class="btn btn-success btn-theme-colored btn-sm btn-flat">WORD</a>--}}
+{{--                                    <a href="{{ route('staff.profile.cv.generate.pdf', $employee->id) }}"--}}
+{{--                                       class="btn btn-success btn-theme-colored btn-sm btn-flat">PDF</a>--}}
+                                </span>
+                                Teachings
+                            </h2>
+                            <div class="double-line-bottom-theme-colored-2"></div>
+                            <div class="mt-30"></div>
+
+                            @if ($message = Session::get('success'))
+                                <div class="alert alert-success" role="alert">
+                                    <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span
+                                            aria-hidden="true">&times;</span></button>
+                                    {{ $message }}
+                                </div>
+                            @endif
+                            @if ($message = Session::get('error'))
+                                <div class="alert alert-danger" role="alert">
+                                    <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span
+                                            aria-hidden="true">&times;</span></button>
+                                    {{ $message }}
+                                </div>
+                            @endif
+                            <section class="bg-white-f7 pr-40 pl-30 pt-40 pb-30" style="border-left:2px solid #43B14B;">
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <button type="button" class="btn btn-success btn-flat" data-toggle="modal"
+                                                data-target=".bs-example-modal-sm">Add Teaching
+                                        </button>
+                                        <div class="modal fade bs-example-modal-sm" role="dialog" aria-hidden="true">
+                                            <div class="modal-dialog">
+                                                <div class="modal-content">
+                                                    <form class="form-vertical"
+                                                          action="{{ route('staff.profile.teachings.add') }}"
+                                                          method="post">
+                                                        @csrf
+                                                        <input type="hidden" name="employee_id"
+                                                               value="{{ $employee->id }}"/>
+                                                        <div class="modal-header" style="padding-bottom: 0;">
+                                                            <button type="button" class="close" data-dismiss="modal"
+                                                                    aria-label="Close"><span aria-hidden="true">×</span>
+                                                            </button>
+                                                            <h4 class="modal-title" id="myModalLabel3">
+                                                                Add Teaching
+                                                                <div class="double-line-bottom-theme-colored-2"></div>
+                                                            </h4>
+                                                        </div>
+                                                        <div class="modal-body">
+                                                            <div class="row">
+                                                                <div class="col-sm-6">
+                                                                    <span><i>Faculty:</i></span>
+                                                                    <select name="faculty" id="faculty" class="form-control ">
+                                                                        <option>Select Faculty</option>
+                                                                        @foreach(App\Models\Faculty::orderBy('name')->where('is_other_institute','<>','0')->get() as $faculty)
+                                                                            <option
+                                                                                value="{{ $faculty->id }}">{{ $faculty->name }}</option>
+                                                                        @endforeach
+                                                                    </select>
+                                                                </div>
+                                                                <div class="col-sm-6">
+                                                                    <span><i>Department:</i></span>
+                                                                    <select name="department" id="department" class="form-control">
+                                                                        <option>Select Department</option>
+                                                                    </select>
+                                                                </div>
+                                                                <div class="col-sm-6">
+                                                                    <span><i>Level:</i></span>
+                                                                    <select name="level" id="level" class="form-control">
+                                                                        <option>Select Level</option>
+                                                                        @foreach (App\Models\Level::orderBy('name')->get() as $level)
+                                                                        <option value="{{$level->id}}">{{$level->name}}</option>
+                                                                        @endforeach
+                                                                    </select>
+                                                                </div>
+                                                                <div class="col-sm-6">
+                                                                    <span><i>Course:</i></span>
+                                                                    <select name="course" id="course" class="form-control">
+                                                                        <option>Select Course</option>
+                                                                    </select>
+                                                                </div>
+                                                                <div class="col-sm-6">
+                                                                    <span><i>Session:</i></span>
+                                                                    <select name="session" class="form-control">
+                                                                        <option>Select Session</option>
+                                                                        @foreach(App\Models\SessionalFeesSetting::select('session')->distinct('session')->orderby('session', 'DESC')->get() as $session)
+                                                                            <option
+                                                                                value="{{ $session->session }}">{{ $session->session }}</option>
+                                                                        @endforeach
+                                                                    </select>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="modal-footer">
+                                                            <button type="button" class="btn btn-default btn-flat"
+                                                                    data-dismiss="modal">Cancel
+                                                            </button>
+                                                            <button type="submit"
+                                                                    class="btn btn-success btn-theme-color btn-flat">Add
+                                                                Teaching
+                                                            </button>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <div class="table-responsive">
+                                            <table class="table table-hover table-striped"
+                                                   style="background-color: #ffffff;">
+                                                <thead>
+                                                <tr>
+                                                    <th></th>
+                                                    <th>Teachings</th>
+                                                    <th></th>
+                                                </tr>
+                                                </thead>
+                                                <tbody>
+                                                @php $sno = 1; @endphp
+                                                @foreach($employee->teachings as $teaching)
+                                                    <tr>
+                                                        <th scope="row">{{ $sno }}</th>
+                                                        <td>
+                                                            <strong>Course
+                                                                Code:</strong> {{ isset($teaching->course->coursecode)?$teaching->course->coursecode:'' }}
+                                                            <br/>
+                                                            <strong>Course
+                                                                Title:</strong> {{ isset($teaching->course->coursetitle)?$teaching->course->coursetitle:'' }}
+                                                            <br/>
+                                                            <strong>Session:</strong> {{ $teaching->session }}<br/>
+                                                        </td>
+                                                        <td class="text-right">
+                                                            {{--<a class="btn btn-success btn-xs" href="#"><i class="fa fa-edit"></i> </a>--}}
+                                                            <a class="btn btn-danger btn-xs deleteTeaching" href="#"
+                                                               teaching-id="{{ $teaching->id }}"><i
+                                                                    class="fa fa-trash"></i></a>
+                                                        </td>
+                                                        <form id="teaching{{$teaching->id}}" method="post"
+                                                              action="{{ route('staff.profile.teachings.delete', $teaching->id) }}">
+                                                            @csrf
+                                                            {{ method_field('DELETE') }}
+                                                        </form>
+                                                    </tr>
+                                                    @php $sno += 1; @endphp
+                                                @endforeach
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+
+
+                                {{--<hr style="width:100%;border:1px solid #cccccc;">--}}
+
+                            </section>
+
+
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    @include('pages.staff.profile.page-menu')
+                </div>
+            </div>
+        </div>
+    </section>
+
+@endsection
+
+@section("js")
+    <script>
+        $(function () {
+            $('#faculty').on('change', function () {
+                // alert()
+                $.get('{{route('ajax.department',[':id'])}}'.replace(':id', $(this).val()), function (response) {
+                    let options = `<option>Select Department</option>`
+                    $.each(response, function (k, v) {
+                        options += `<option value='${v.id}'>${v.name}</option>`
+                    })
+                    $('#department').html(options)
+                })
+            })
+
+            $('#department, #level').on('change', function() {
+                $.get('{{route('staff.ajax.courses',[':deptid',':level'])}}'.replace(':deptid',$('#department').val()).replace(':level',$('#level').val()),
+                 function(data) {
+                    let options = `<option>Select Course</option>`
+                    $.each(data, function(k, v){
+                         options += `<option value='${v.id}'>${v.coursecode} - ${v.coursetitle}</option>`
+                    })
+                    $('#course').html(options)
+                })
+            
+            })
+
+            $(".deleteTeaching").on("click", function (e) {
+                e.preventDefault();
+                $("#teaching" + ($(this).attr("teaching-id"))).submit()
+            });
+        })
+    </script>
+@endsection

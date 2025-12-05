@@ -1,0 +1,16 @@
+<option value="">Select...</option>
+@if(count($levels))
+    <option value="0">All</option>
+    <option value="Year One">Year One</option>
+    @foreach($levels as $level)
+        <option value="{{$level->id}}">{{ $level->name }}</option>
+    @endforeach
+    @if($entry=='UG')
+        <option value="Direct Entry">Direct Entry</option>
+        <option value="Special Admission">Special Admission</option>
+    @endif
+    <option value="Final Year">Final Year</option>
+    <option value="Spill Over">Spill Over</option>
+    <option value="Final Residency">Final Residency</option>
+    <option value="Private Resit">Private Resit</option>
+@endif

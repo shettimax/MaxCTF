@@ -102,7 +102,7 @@ ob_end_flush();
         <p>
         </p>
         <div class="badge-preview">
-            <h5 class="btn btn-info">🎖️CURRENT BADGE</h5>
+            <h5>🎖️CURRENT BADGE</h5>
             <br>
             <?php
 $badgePath = "badges/" . $currentBadge['id'] . ".png"; // or .jpg if needed
@@ -118,7 +118,7 @@ if (file_exists($badgePath)) {
             <p style="color:#080808;"><strong><?php echo $currentBadge['title']; ?></strong> => <?php echo $currentBadge['vibe']; ?></p>
 
             <?php if ($nextBadge): ?>
-                <p>Next Badge: <strong class="text-muted"><?php echo $nextBadge['title']; ?></strong> @<?php echo $nextBadge['required_score']; ?> pts</p>
+                <p>Next Badge: <strong class="text-muted"><?php echo $nextBadge['title']; ?></strong> @<?php echo $nextBadge['required_score']; ?> pts</p></button>
                 <div class="progress-bg full-width rounded-bar">
                     <div class="progress-fill" style="width:<?php echo $progress; ?>%;"></div>
                 </div>

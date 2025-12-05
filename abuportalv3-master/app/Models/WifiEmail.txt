@@ -1,0 +1,33 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class WifiEmail extends Model
+{
+    use HasFactory;
+
+    protected $table = 'wifi_emails';
+
+    protected $fillable = [
+        'student_id',
+        'wifi_username',
+        'wifi_passwd',
+        'email_username',
+        'email_passwd'
+    ];
+
+    protected $casts = [
+        'student_id' => 'integer',
+    ];
+
+    /**
+     * Get the student that owns the wifi email.
+     */
+    public function student()
+    {
+        return $this->belongsTo(Student::class, 'student_id');
+    }
+}

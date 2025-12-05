@@ -1,0 +1,214 @@
+@extends("layout.staff.master")
+
+@section("pageTitle")
+    Profile: Contacts
+@endsection
+
+@include('pages.staff.profile.custom-css')
+
+@section('position-page-menu', 'active')
+
+@section("content")
+    <section>
+        <div class="container pt-30 pb-30 pl-30 pr-30">
+            <div class="row">
+                <div class="col-md-9 pull-right flip sm-pull-none">
+                    <div class="blog-posts">
+                        <div class="col-md-12">
+                            <h2 class="widget-title" style="margin-bottom: 0">
+                                <span style="float:right">
+                                    <a href="{{ route('staff.profile.cv.generate.html', $employee->id) }}" class="btn btn-success btn-theme-colored btn-sm btn-flat">HTML</a>
+                                    {{--<a href="{{ route('staff.profile.cv.generate.word', $employee->id) }}" class="btn btn-success btn-theme-colored btn-sm btn-flat">WORD</a>--}}
+{{--                                    <a href="{{ route('staff.profile.cv.generate.pdf', $employee->id) }}" class="btn btn-success btn-theme-colored btn-sm btn-flat">PDF</a>--}}
+                                </span>
+                                Positions Held
+                            </h2>
+                            <div class="double-line-bottom-theme-colored-2"></div>
+                            <div class="mt-30"></div>
+
+                            @if ($message = Session::get('success'))
+                                <div class="alert alert-success" role="alert">
+                                    <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                                    {{ $message }}
+                                </div>
+                            @endif
+                            @if ($message = Session::get('error'))
+                                <div class="alert alert-danger" role="alert">
+                                    <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                                    {{ $message }}
+                                </div>
+                            @endif
+                            <section class="bg-white-f7 pr-40 pl-30 pt-40 pb-30" style="border-left:2px solid #43B14B;">
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <button type="button" class="btn btn-success btn-flat add-position">Add Position</button>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <div class="table-responsive">
+                                            <table class="table table-hover table-striped" style="background-color: #ffffff;">
+                                                <thead>
+                                                <tr>
+                                                    <th></th>
+                                                    <th>Positions Held</th>
+                                                    <th></th>
+                                                </tr>
+                                                </thead>
+                                                <tbody>
+                                                @php $sno = 1; @endphp
+                                                @foreach($employee->positionsHeld as $position)
+                                                    <tr>
+                                                        <th scope="row">{{ $sno }}</th>
+                                                        <td>
+                                                            <strong>Position:</strong> {{ $position->position }}<br />
+                                                            <strong>Organisation:</strong> {{ $position->organisation }}<br />
+                                                            <strong>Capacity:</strong> {{ $position->capacity }}<br />
+                                                            <strong>From:</strong> {{ $position->from }}<br />
+                                                            <strong>To:</strong> {{ $position->to }}<br />
+                                                        </td>
+                                                        <td class="text-right">
+                                                            <a class="btn btn-success btn-xs edit-position" href="javascript:;"
+                                                                position-id="{{ $position->id }}"
+                                                                position="{{ $position->position }}"
+                                                                organisation="{{ $position->organisation }}"
+                                                                capacity="{{ $position->capacity }}"
+                                                                from="{{ $position->from }}"
+                                                                to="{{ $position->to }}">
+                                                                <i class="fa fa-edit"></i>
+                                                            </a>
+                                                            <a class="btn btn-danger btn-xs delete-position" href="javascript:;" position-id="{{ $position->id }}"><i class="fa fa-trash"></i></a>
+                                                        </td>
+                                                    </tr>
+                                                    @php $sno += 1; @endphp
+                                                @endforeach
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                                {{--<hr style="width:100%;border:1px solid #cccccc;">--}}
+                            </section>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    @include('pages.staff.profile.page-menu')
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade bs-example-modal-sm position-modal" tabindex="-1" role="dialog">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <form class="form-vertical" action="{{ route('staff.profile.positionheld.add') }}" method="post">
+                        @csrf
+                        <input type="hidden" name="employee_id" value="{{ $employee->id }}" />
+                        <input type="hidden" name="position_id" id="position-id" value="" />
+                        <div class="modal-header" style="padding-bottom: 0;">
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span></button>
+                            <h4 class="modal-title" id="myModalLabel3">
+                                Add/Edit Position
+                                <div class="double-line-bottom-theme-colored-2"></div>
+                            </h4>
+                        </div>
+                        <div class="modal-body">
+                            <div class="row">
+                                <div class="col-sm-12">
+                                    <span><i>Position:</i></span>
+                                    <input name="position" id="position" type="text" class="form-control" placeholder="Position">
+                                </div>
+                                <div class="col-sm-12">
+                                    <span><i>Place/Organisation:</i></span>
+                                    <input name="organisation" id="organisation" type="text" class="form-control" placeholder="Organisation">
+                                </div>
+                                <div class="col-sm-12">
+                                    <span><i>Capacity:</i></span>
+                                    <select name="capacity" id="capacity" class="form-control">
+                                        <option></option>
+                                        <option>Acting</option>
+                                        <option>Substantive</option>
+                                    </select>
+                                </div>
+                                <div class="col-sm-6">
+                                    <span><i>From:</i></span>
+                                    <input name="from" id="from" type="date" class="form-control" placeholder="dd/mm/yyyy">
+                                </div>
+                                <div class="col-sm-6">
+                                    <span><i>To:</i></span>
+                                    <input name="to" id="to" type="date" class="form-control" placeholder="dd/mm/yyyy">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-default btn-flat" data-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-success btn-theme-color btn-flat" id="btn-submit">Add Position</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="modal fade bs-example-modal-sm delete-position-modal" tabindex="-1" role="dialog">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <form class="form-vertical delete-position-form" action="" method="post">
+                        @csrf
+                        {{ method_field('DELETE') }}
+                        <input type="hidden" name="employee_id" value="{{ $employee->id }}" />
+                        <div class="modal-header" style="padding-bottom: 0;">
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span></button>
+                            <h4 class="modal-title" id="myModalLabel3">
+                                Are you sure you want to delete this?
+                                <div class="double-line-bottom-theme-colored-2"></div>
+                            </h4>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-default btn-flat" data-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-danger btn-theme-color btn-flat">Delete</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+
+@endsection
+
+@section("js")
+    <script>
+        $(document).ready(function(){
+            $('.add-position, .edit-position').click(function(){
+                let position_id = $(this).attr("position-id");
+                let position = $(this).attr("position");
+                let organisation = $(this).attr("organisation");
+                let capacity = $(this).attr("capacity");
+                let position_from = $(this).attr("from");
+                let position_to = $(this).attr("to");
+                if( position_id > 0){
+                    $('#position-id').val(position_id);
+                    $('#position').val(position);
+                    $('#organisation').val(organisation);
+                    $('#capacity').val(capacity);
+                    $('#from').val(position_from);
+                    $('#to').val(position_to);
+                    $('#btn-submit').html("Edit Position");
+                }else{
+                    $('#language-id').val("");
+                    $('#position').val("");
+                    $('#organisation').val("");
+                    $('#capacity').val("");
+                    $('#from').val("");
+                    $('#to').val("");
+                    $('#btn-submit').html("Add Position");
+                }
+                $('.position-modal').modal();
+            });
+
+            $(".delete-position").on("click",function (e) {
+                let url = "{{ route('staff.profile.positionheld') }}/"+ $(this).attr('position-id');
+                $('.delete-position-form').attr('action', url);
+                $('.delete-position-modal').modal()
+            });
+        })
+    </script>
+@endsection

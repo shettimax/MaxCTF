@@ -1,0 +1,133 @@
+@extends('layout.staff.master')
+@section('css')
+    <link rel="stylesheet" href="{{ asset('DataTables/datatables.min.css') }}">
+    <style>
+        .row{
+            margin-left: unset;
+            margin-right: unset;
+        }
+
+        #records {
+            overflow-x: auto;
+            border-color: #cccccc;
+            border-width: 1px;
+            border-radius: 5px;
+            min-height: 50px;
+            padding: 10px;
+        }
+        </style>
+@endsection
+@section('content')
+    <div style="background-color:#ffffff;">
+        <div class="container">
+            <div class='row'>
+                <div class='col-12 col-md-12 text-center' id="records">
+                    <h3>Student Details</h3>
+                    <table class="table table-bordered" id="table">
+                        <thead>
+                        <tr>
+                            <th>Matric Number</th>
+                            <th>Session</th>
+                            <th>First Name</th>
+                            <th>Surname</th>
+                            <th>Other Names</th>
+                            <th>Programme</th>
+                            <th>Department</th>
+                            <th>Faculty</th>
+                            <th>Level</th>
+                            <th>State</th>
+                            <th>Gender</th>
+                            <th>Hostel</th>
+                            <th>Block</th>
+                            <th>Room No</th>
+                            <th>Payment Status</th>
+                            <th>Transaction Amount</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        @forelse($results as $student)
+                            <tr>
+                                <td>{{ $student->matric_number }}</td>
+                                <td>{{ $student->session }}</td>
+                                <td>{{ $student->firstname }}</td>
+                                <td>{{ $student->surname }}</td>
+                                <td>{{ $student->other_names }}</td>
+                                <td>{{ $student->programme }}</td>
+                                <td>{{ $student->department }}</td>
+                                <td>{{ $student->faculty }}</td>
+                                <td>{{ $student->level_id }}</td>
+                                <td>{{ $student->state }}</td>
+                                <td>{{ $student->gender }}</td>
+                                <td>{{ $student->hostel }}</td>
+                                <td>{{ $student->block }}</td>
+                                <td>{{ $student->room_no }}</td>
+                                <td>{{ $student->payment_status }}</td>
+                                <td>{{ $student->transaction_amount }}</td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="16">No records found.</td>
+                            </tr>
+                        @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+@endsection
+
+@section('js')
+    <script src="{{ asset('DataTables/datatables.min.js') }}"></script>
+    <script>
+        $(document).ready(function() {
+            $('#table').DataTable({
+                "lengthMenu": [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+                pageLength: 50,
+                dom: "<'row'<'col-sm-12'B>>" +
+                    "<'row'<'col-sm-12 col-md-6'l><'col-sm-12 col-md-6'f>>" +
+                    "<'row'<'col-sm-12'tr>>" +
+                    "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+                buttons: [
+                    {
+                        extend: 'excelHtml5',
+                        exportOptions: {
+                            columns: ':visible'
+                        }
+                    },
+                    {
+                        extend: 'pdfHtml5',
+                        orientation: 'landscape',
+                        pageSize: 'LEGAL',
+                        exportOptions: {
+                            columns: ':visible'
+                        }
+                    },
+                    {
+                        extend: 'print',
+                        messageTop: 'Candidates Report',
+                        orientation: 'landscape',
+                        pageSize: 'LEGAL'
+                    },
+                    {
+                        extend: 'colvis',
+                        columns: ':not(.noVis)',
+                        collectionLayout: 'fixed two-column',
+                        postfixButtons: [
+                            {
+                                extend: 'colvisGroup',
+                                text: 'Show all',
+                                show: ':hidden'
+                            }
+                        ]
+                    }
+                ],
+                language: {
+                    buttons: {
+                        colvis: 'Show/Hide columns'
+                    }
+                }
+            });
+        });
+    </script>
+@endsection

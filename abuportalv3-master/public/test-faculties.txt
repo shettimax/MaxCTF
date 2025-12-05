@@ -1,0 +1,35 @@
+<?php
+// Simple test file to debug faculty loading
+header('Content-Type: application/json');
+
+// Include Laravel bootstrap
+require __DIR__.'/../vendor/autoload.php';
+$app = require_once __DIR__.'/../bootstrap/app.php';
+$kernel = $app->make(Illuminate\Contracts\Http\Kernel::class);
+
+try {
+    // Test Faculty model
+    $faculties = \App\Models\Faculty::select('id', 'name')->limit(5)->get();
+    
+    // Test PromotionRecomendation model
+    $promoFaculties = \App\Models\PromotionRecomendation::select('faculty_id', 'faculty_name')
+        ->whereNotNull('faculty_id')
+        ->distinct()
+        ->limit(5)
+        ->get();
+    
+    echo json_encode([
+        'status' => 'success',
+        'faculties_from_model' => $faculties->toArray(),
+        'faculties_from_promotion' => $promoFaculties->toArray(),
+    ]);
+} catch (\Exception $e) {
+    echo json_encode([
+        'status' => 'error',
+        'message' => $e->getMessage(),
+        'file' => $e->getFile(),
+        'line' => $e->getLine()
+    ]);
+}
+
+

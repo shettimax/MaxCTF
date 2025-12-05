@@ -1,0 +1,48 @@
+<table border="1" id="reporttb">
+    <thead>
+    <tr>
+        <th>S/No</th>
+        <th>Personnel No</th>
+        <th>Name</th>
+        <th>Complex</th>
+        <th>Faculty</th>
+        <th>Department</th>
+        <th>Present Salary Step</th>
+        <th>Year</th>
+        <th>Unit Status</th>
+        <th>Unit Recommendation</th>
+        <th>Faculty Status</th>
+        <th>Faculty Recommendation</th>
+        <th>Recommended Rank</th>
+    </tr>
+    </thead>
+    <tbody>
+    @foreach($results as $result)
+        <tr>
+            <td>{{ $loop->iteration }}</td>
+            <td>{{ $result->personnel_no }}</td>
+            <td>{{ $result->name }}</td>
+            <td>{{ $result->complex_name }}</td>
+            <td>{{ $result->faculty_name }}</td>
+            <td>{{ $result->department_name }}</td>
+            <td>{{ $result->present_salary_step }}</td>
+            <td>{{ $result->year }}</td>
+            <td>{{ $result->unit_status }}</td>
+            <td>
+                @php
+                    $unitRec = json_decode($result->unit_recommendation, true);
+                @endphp
+                {{ is_array($unitRec) ? implode(', ', $unitRec) : $result->unit_recommendation }}
+            </td>
+            <td>{{ $result->faculty_status }}</td>
+            <td>
+                @php
+                    $facRec = json_decode($result->faculty_recommendation, true);
+                @endphp
+                {{ is_array($facRec) ? implode(', ', $facRec) : $result->faculty_recommendation }}
+            </td>
+            <td>{{ $result->recommended_rank }}</td>
+        </tr>
+    @endforeach
+    </tbody>
+</table>

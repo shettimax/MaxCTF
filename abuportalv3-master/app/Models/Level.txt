@@ -1,0 +1,30 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class Level extends Model
+{
+    //
+
+    public function next($programme_id)
+    {
+        $programme = Programme::find($programme_id);
+        $level = Level::where(["number"=>$this->number+1,"programme_type_id"=>$this->programme_type_id])->
+            whereRaw($programme->duration.">="
+            .($this->number+1))->first();
+        if($level) {
+            return $level;
+        }
+
+        return $this;
+    }
+
+    public static function list()
+    {
+        return Level::join("programme_types","programme_types.id","=","levels.programme_type_id")
+            ->select(["levels.*","programme_types.short_name AS prog_short_name","prog_type_code"])
+            ->get();
+    }
+}

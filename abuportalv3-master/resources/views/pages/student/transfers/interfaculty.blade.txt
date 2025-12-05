@@ -1,0 +1,176 @@
+@extends("layout.student.master")
+
+@section("content")
+
+    <?php
+    $user = auth()->user();
+    $biodata = $user->biodata();
+    ?>
+
+    <section class="pt-40 pl-5">
+        <div class="section-content">
+            <div class="row">
+                <div class="col-sx-12 col-sm-5 col-md-5 pl-2">
+                    <div class="bg-silver-light">
+                        <h4>My Forms</h4>
+                    </div>
+                    @if(count($candidateForms)>0)
+                        @foreach($candidateForms as $candidateForm)
+                            <div class="col-md-12">
+                                @php
+                                    echo $candidateForm->programme()->requirement;
+                                @endphp
+                                <h3>{{ $candidateForm->candidateFormType()->name }}</h3>
+                                <table class="table table-hover">
+                                    <tbody>
+                                    <tr>
+                                        <th scope="row">1</th>
+                                        <th>Matric Number</th>
+                                        <td> {{ $student->matric_number }} </td>
+                                    </tr>
+                                    <tr>
+                                        <th scope="row">2</th>
+                                        <th>Course Applied</th>
+                                        <td>
+                                            {{ $candidateForm->programme()->name }}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th scope="row">3</th>
+                                        <th>Session</th>
+                                        <td>
+                                            {{ $candidateForm->formSetting->session }}
+                                        </td>
+                                    </tr>
+                                    @php
+                                        $candidateFormSettings = $candidateForm->formSetting;
+            //                        @endphp
+                                    <form action="{{route('student.update.matric.post',[$candidateForm->id])}}"
+                                          method="post">
+                                        @csrf
+                                        <tr>
+                                            <th scope="row">7</th>
+                                            <td>CGPA.</td>
+                                            <td>
+                                                @if(!intval($candidateForm->jamb_score))
+                                                    <input type="text" name="cgpa" class="form-control"
+                                                           value="{{ $candidateForm->jamb_score }}"
+                                                           placeholder="Enter Current CGPA">
+                                                @else
+                                                    {{ $candidateForm->jamb_score }}
+                                                @endif
+                                            </td>
+                                        </tr>
+                                        @if(!intval($candidateForm->jamb_score))
+                                            <tr>
+                                                <td colspan="3">
+                                                    <div class="text-center">
+                                                        <button class="btn btn-success btn-sm">Update</button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        @endif
+                                    </form>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="col-md-12">
+                                <div class="col-md-12">
+                                    @if($candidateForm->isPaid())
+                                        @if(intval($candidateForm->jamb_score))
+                                            <a class="btn btn-info"
+                                               href="{{ route("transfers.interfaculty.form.buy.form.post",[$candidateForm->id]) }}">View
+                                                Transaction Slip <i class="fa fa-print"></i></a>
+                                            <a class="btn btn-info"
+                                               href="{{ route("transfers.interfaculty.form.completed",[$candidateForm->id]) }}">View
+                                                Completed Form <i class="fa fa-print"></i></a>
+                                        @else
+                                            <span
+                                                class="text-danger"> Please Enter your Current CGPA to Print Your Slips</span>
+                                        @endif
+                                    @else
+                                        <a class="btn btn-default"
+                                           href="{{ route("transfers.interfaculty.form.buy.form.post",[$candidateForm->id]) }}">Pay
+                                            Online <i class="fa fa-credit-card-alt"></i></a>
+                                    @endif
+                                </div>
+                            </div>
+                        @endforeach
+                    @else
+                        <div style="height: 100px;font-size: large" class="text-center mt-3">
+                            No form purchased!
+                        </div>
+                    @endif
+                </div>
+                <div class="col-xs-12 col-sm-7 col-md-7">
+                    <div class="availProg bg-silver-light" id="availProg">
+                        <h4>Available Programmes</h4>
+                        @foreach($programmes as $programme)
+
+                            @php
+                                $date = \Carbon\Carbon::parse($programme->end_date);
+                            @endphp
+                            <div class="upcoming-event bg-white mb-20 mt-10"
+                                 style="box-shadow: 2px 2px 4px #888888;border-top:1px solid #dddddd; border-bottom: 5px solid #5cb85c;padding-top: 4px;">
+                                <div class="row">
+                                    <div class="col-md-12" style="">
+                                        <div class="col-md-2 pt-40">
+                                            <img class="img-circle" src="{{ asset('programme.png') }}" alt="..."
+                                                 width="200">
+                                        </div>
+                                        <div class="col-md-7">
+                                            <div class="col-md-12">
+                                                <a class="btn btn-flat btn-success btn-xs">Faculty</a>
+                                                <a class="btn btn-flat btn-success btn-xs">{{ $programme->department}}</a>
+                                                <a class="btn btn-flat btn-success btn-xs">{{ $programme->prog_type_name }}</a>
+                                                <div class="font-22 text-black">
+                                                    | {{$programme->programme}}</div>
+                                                <p>
+                                                    Purchase form for <strong>{{ $programme->programme }}</strong> in
+                                                    <strong>{{ $programme->programme }}</strong>, this form
+                                                    closes {{$date->diffForHumans()}}
+                                                </p>
+                                                <div class="p-10">
+                                                    <a class="btn btn-default btn-flat font-12 mt-10 ml-5"
+                                                       href="{{ route("transfers.interfaculty.buy.form.fs",[$programme->fs_id,"fs"]) }}">
+                                                        Apply Now
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3 p-5 pt-20">
+                                            <div class="pull-right">
+                                                <strong class="font-18">Closes</strong>
+                                                <div>
+                                            <span>
+                                                {{ $date->format('jS') }}
+                                            </span>
+                                                    <span>
+                                                {{ $date->format("M") }}
+                                            </span>
+                                                    <span>
+                                                {{ $date->year }}
+                                            </span>
+                                                </div>
+                                                <ul>
+                                                    <li class="mb-10 text-theme-colored font-14">
+                                                        {{$date->diffForHumans()}}
+                                                    </li>
+                                                </ul>
+                                                <strong class="text-bold font-20 tag">
+                                                    &#8358;{{ number_format($programme->form_price,2) }}
+                                                </strong>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </section>
+
+@endsection

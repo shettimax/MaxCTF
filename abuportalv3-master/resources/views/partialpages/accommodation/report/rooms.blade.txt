@@ -1,0 +1,29 @@
+<table class='table table-sm table-condensed table-striped table-bordered'>
+    <tr>
+        <th>S/N</th>
+        <th>Block</th>
+        <th>Room No.</th>
+        <th>Bedspace</th>
+        <th>Occupied</th>
+        <th>Status</th>
+        <th>Room Owner</th>
+        <th>Occupants</th>
+    </tr>
+    @foreach($blocks as $block)
+    <tr><td colspan='7' class='text-center'><strong>BLOCK: {{strtoupper($block->name)}}</strong></td></tr>
+        @foreach($block->rooms as $room)
+            @if($room->roomconfig != null)
+            <tr>
+                <td>{{$loop->iteration}}</td>
+                <td>{{$block->name}}</td>
+                <td>{{$room->room_no}}</td>
+                <td>{{$room->roomconfig->bed_space}}</td>
+                <td>{{$room->roomconfig->occupied}}</td>
+                <td>{{($room->roomconfig->status==1)?('OK'):('NOT OK')}}</td>
+                <td>{{$room->roomconfig->owner}}</td>
+                <td>{{$room->roomconfig->occupants}}</td>
+            </tr>
+            @endif
+        @endforeach
+    @endforeach
+</table>

@@ -1,0 +1,102 @@
+@extends("layout.staff.master")
+@section("css")
+    <link rel="stylesheet" href="{{ asset('js/datatables/jquery.dataTables.min.css')}}"/>
+    <style>
+        label {
+            width: 100%;
+            color: #0f1824;
+            text-align: left;
+        }
+    </style>
+@endsection
+@section("pageTitle")
+    Response Summary
+@endsection
+@section("content")
+    <section>
+        <div class="main-section">
+            <div class="container">
+                <div class="row justify-content-center">
+                    <div class="col-md-12">
+                        <div class="row mb-30 ml-30 mr-30">
+                            <div class="row">
+                                <div class="mt-30 mb-40">
+                                    <table id="faculties-table" align="center"
+                                           class="table table-responsive table-bordered"
+                                           style="width:100%;font-size:16px;font-family: Calibri; margin-top: 2vh; text-align: left; color: #000000">
+                                        <tr>
+                                            <th>Session</th>
+                                            <th>Semester</th>
+                                            <th>Faculty</th>
+                                            <th>Department</th>
+                                            <th>Course Code</th>
+                                            <th>Course Group</th>
+                                            <th>Instructor/Lecturer</th>
+                                        </tr>
+                                        <tr>
+                                            <td>{{$coursegroup->session}}</td>
+                                            <td>{{$coursegroup->semester==1?'First':'Second'}} Semester</td>
+                                            <td>{{$coursegroup->course->department->faculty->name}}</td>
+                                            <td>{{$coursegroup->course->department->name}}</td>
+                                            <td>{{$coursegroup->course->coursecode}}</td>
+                                            <td>{{$coursegroup->grouptype=='LT'?'Lecture':'Lab'}}
+                                                Group {{$coursegroup->groupno}}</td>
+                                            <td>
+                                                @foreach($employees as $employee)
+                                                    {{$employee->fullname}}<br>
+                                                @endforeach
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </div>
+                                <h4>Comments on the question:
+                                    <strong>
+                                        {{\App\Models\SetQuestion::find($question)->question}}
+                                    </strong>
+                                </h4>
+                                <div class="mt-20">
+                                    <table id="comments" class="table table-responsive table-bordered"
+                                           style="width:100%;font-size:14px;font-family: Calibri; margin-top: 2vh; text-align: left; color: #000000">
+                                        <thead>
+                                        <tr>
+                                            <th width="5%">S/N</th>
+                                            <th>Comment</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        @if($comments->count()>0)
+                                            @php $sn=1;@endphp
+                                            @foreach($comments as $comment)
+                                                <tr>
+                                                    <th>{{$sn++}}</th>
+                                                    <td>{{$comment->comment}}</td>
+                                                </tr>
+                                            @endforeach
+                                        @else
+                                            <tr>
+                                                <td colspan="2" style="text-align: center">
+                                                    No comment posted
+                                                </td>
+                                            </tr>
+                                        @endif
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+@endsection
+
+@section("js")
+    <script src="{{asset('js/datatables/jquery.dataTables.min.js')}}"></script>
+    <script>
+        $(document).ready(function () {
+            // $('#comments').DataTable()
+        });
+    </script>
+@endsection
+

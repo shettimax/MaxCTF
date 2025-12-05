@@ -1,0 +1,478 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Transaction;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Auth;
+use App\Models\Student;;;
+use App\Models\Hostel;;
+use App\Models\AccommodationConfig;;
+use App\Models\Block;;
+use App\Models\RoomConfig;;
+use App\Models\Reservation;;
+use App\Models\Accommodation;;
+use App\Models\CourseRegistration;;
+use App\Models\Level;;
+
+class AccommodationController extends Controller {
+
+    public function __construct() {
+        $this->middleware(['auth','mmode']);
+        //$this->middleware("acceptance");//
+    }
+
+    public function index() {
+        $eligibility = self::checkEligibility(Auth::user());
+        $student = Auth::user();
+        $configs = AccommodationConfig::where('is_active',1)->get();
+        $isEligible = $student->isEligibleForAccommodation($configs);
+
+
+        if($bl = $student->hasActiveBlacklist()){
+            return view('pages.student.accommodation.notentitled', ['reason' => !$bl->message_to_student?"You have been Blacklisted":$bl->message_to_student]);
+        }
+
+        if (in_array($eligibility, ['reserved', 'paid', 'claimed', 'waived'])) {
+            return redirect(route('accommodation.reservation'));
+        } else if (in_array($eligibility, ['spillover', 'accommodation_closed', 'No Accommodation for your Level', 'defered', 'part-time', 'notregistered', 'expelled', 'suspended', 'graduated', 'notpaid', 'nobiodata', 'noprofilepix','Not Entitled'])) {
+            return view('pages.student.accommodation.notentitled', ['reason' => $eligibility]);
+        }
+
+        return view('pages.student.accommodation.index');
+    }
+
+    public function noprofile($isadmin = false) {
+        if ($isadmin) {
+            $user = Auth::user();
+            $permission = "accommodation.reservation";
+            if (!$this->access($user,$permission)){
+                return response()->json(["status" => 401, "message" => "You have no permission to do this operation"]);
+
+            }
+            return view('pages.staff.accommodation.reservation.notentitled');
+        } else {
+            return view('pages.student.accommodation.notentitled');
+        }
+    }
+
+    public function reservation(Request $request) {
+
+         $eligibility = self::checkEligibility(Auth::user());
+        $accommodation = Accommodation::orderBy('id', 'desc')->first();
+        $student = Auth::user();
+
+        if($bl = $student->hasActiveBlacklist()){
+            return view('pages.student.accommodation.notentitled', ['reason' => $bl->message_to_student?"You have been Blacklisted":$bl->message_to_student]);
+        }
+
+//        if(!$request->serfsddwrrwr){
+//            abort(500);
+//        }
+//        if ($accommodation->status != 'active') {
+//            return view('pages.student.accommodation.notentitled', ['reason' => $accommodation->status]);
+//        }
+
+        if (in_array($eligibility, ['reserved', 'paid', 'claimed', 'waived'])) {
+
+            $reservation = Reservation::where([
+                        ['student_id', Auth::user()->id],
+                        ['session', $accommodation->session]
+                    ])
+                    ->whereIn('status', ['reserved', 'paid', 'claimed', 'waived'])
+                    ->first();
+            if(Transaction::where(['student_id'=>$reservation->id,'code'=>'ACC'])->whereIn('payment_status',['Paid','Waived'])->first() ){
+                $reservation->status ='paid';
+                $reservation->save();
+            }
+            $paidbutexpiredres = Reservation::getPaidButExpiredReservations(Auth::user(), $reservation->session);
+            return view('pages.student.accommodation.reserved', array('student' => Auth::user(), "paidbutexpired" => $paidbutexpiredres->count(), 'reservation' => $reservation, 'session'=>$reservation->session));
+        } else if (in_array($eligibility, ['spillover', 'No Accommodation for your Level', 'part-time', 'defered', 'expelled', 'suspended', 'graduated'])) {
+            return view('pages.student.accommodation.notentitled', ['reason' => $eligibility]);
+        } else if (in_array($eligibility, ['accommodation_closed', 'notregistered', 'notpaid', 'nobiodata'])) {
+            return view('pages.student.accommodation.notentitled', ['reason' => $eligibility]);
+        }
+//        return Auth::user();
+
+        $hostels = Accommodation::getReservableHostel(Auth::user());
+        return view('pages.student.accommodation.reservation', array('hostels' => $hostels, 'accommodation' => $accommodation));
+    }
+
+    /* FOR CRON JOB */
+
+    public function expireReservations(Request $request) {
+        Reservation::expireReservations();
+        return response('', 200);
+    }
+
+    /* STUDENT AND ADMIN */
+
+    public static function checkEligibility(Student $student, $isadmin = false) {
+        if (!$isadmin) {
+            //verify if the student is entitled for accommodation
+            //determinant (defered, residency, staffintraining, pgd)
+            if ($student->isDefered()) {
+                return 'defered';
+            }
+            $accommodation = Accommodation::orderBy('id', 'desc')->first();
+            $checkreservation = Reservation::where([
+                ['student_id', Auth::user()->id],
+                ['session', $accommodation->session]
+            ])
+                ->whereIn('status', ['reserved', 'paid', 'claimed', 'waived'])
+                ->first();
+            // if(is_null($checkreservation)) {
+            //     if ($student->sessionReg()->first()->level_id == 5) {
+            //         return 'No Accommodation for your Level';
+            //     }
+            // }
+            $configs = AccommodationConfig::where('is_active',1)->get();
+            if (!$student->isEligibleForAccommodation($configs) && is_null($checkreservation)) {
+                return 'Not Entitled';
+            }
+
+            if ($student->residencyExhausted()) {
+                return 'No Accommodation for spillover';
+            }
+
+            if ($student->hasGraduated()) {
+                return 'graduated';
+            }
+
+
+            /* need to uncomment this section */
+            //verify if the student has registered for the session
+            //$regPeriod = $student->currentSession();
+            //$session = $regPeriod->session;
+
+                if (count(CourseRegistration::getCourseRegisteredByStudent($student, $student->currentSession()->session)) == 0) {
+                    return 'notregistered';
+                }
+
+            if (null === $student->biodata() || $student->biodata()->count() == 0) {
+                return 'nobiodata';
+            }
+
+            if (!file_exists(public_path() . '/studentpics/' . $student->matric_number . '.jpg')) {
+                //return 'noprofilepix';
+            }
+        }
+        //
+        //verify if the student has already booked for accommodation
+        $accommodation = Accommodation::where('end_date', null)->orderBy('id', 'desc')->first();
+        if (!$accommodation) {
+            return 'accommodation_closed';
+        }
+
+        $accomstatus = Reservation::where([
+                    ['student_id', $student->id],
+                    ['session', $accommodation->session]
+                ])->whereIn('status', ['reserved', 'paid', 'claimed', 'waived'])->first();
+        if ($accomstatus) {
+            //redirect the user to the appropriate page
+            return $accomstatus->status;
+        }
+
+        return 'eligible';
+    }
+
+    public function fetchrooms(Request $request) {
+
+        $accommodation = Accommodation::orderBy('id', 'desc')->first();
+        if ($accommodation->status != 'active') {
+            return "<p class='alert alert-warning'>{$accommodation->status}</p>";
+        }
+
+        if (true || $request->ajax()) {
+            $hostel = $request->query->get('hostel');
+            $block = $request->query->get('block');
+            $isadmin = ($request->query->get('isadmin') == '1') ? (true) : (false);
+            if ($isadmin) {
+                $user = Auth::user();
+                $permission = "accommodation.reservation";
+                if (!$this->access($user,$permission)){
+                    return response()->json(["status" => 401, "message" => "You have no permission to do this operation"]);
+
+                }
+                $student = Student::findOrFail($request->query->get('studentid'));
+            } else {
+                $student = Auth::user();
+            }
+            $hstls = Accommodation::getReservableHostel($student, $isadmin);
+            $hostels = ($hostel == "") ? ($hstls) : (array(Hostel::findOrFail($hostel)));
+            $block = ($block == "") ? (null) : (Block::find($block));
+
+            $accommodation = Accommodation::where('end_date', null)->orderBy('id', 'desc')->first();
+            if ($isadmin) {
+                $user = Auth::user();
+                $permission = "accommodation.reservation";
+                if (!$this->access($user,$permission)){
+                    return response()->json(["status" => 401, "message" => "You have no permission to do this operation"]);
+
+                }
+                return view('partialpages.accommodation.fetchrooms', array('accommodation' => $accommodation, 'hostels' => $hostels, 'blck' => $block, 'student' => $student, 'isadmin' => true));
+            } else {
+                return view('partialpages.accommodation.fetchrooms', array('accommodation' => $accommodation, 'hostels' => $hostels, 'blck' => $block, 'student' => $student, 'isadmin' => false));
+            }
+        } else {
+            abort(403, 'Invalid Request!');
+        }
+    }
+
+    public function reserve(Request $request) {
+        $isadmin = ($request->request->get('isadmin') == '1') ? (true) : (false);
+        $student = Auth::user();
+//        $accommodation = Accommodation::orderBy('id', 'desc')->first();
+//        if ($accommodation->status != 'active') {
+//            return "<p class='alert alert-warning'>{$accommodation->status}</p>";
+//        }
+        if ($isadmin) {
+            $user = Auth::user();
+            $permission = "accommodation.reservation";
+            if (!$this->access($user,$permission)){
+                return response()->json(["status" => 401, "message" => "You have no permission to do this operation"]);
+
+            }
+            $student = Student::findOrFail($request->request->get('studentid'));
+        }
+        $eligibility = self::checkEligibility($student);
+        if (in_array($eligibility, ['reserved', 'paid', 'claimed', 'waived'])) {
+            return response('', 204);
+        } else if (!$isadmin && in_array($eligibility, ['accommodation_closed', 'notpaid', 'nobiodata', 'noprofilepix'])) {
+            return response('', 403);
+        } else if (!$isadmin && in_array($eligibility, ['spillover', 'No Accommodation for your Level', 'part-time', 'defered', 'not_registered', 'expelled', 'suspended', 'graduated'])) {
+            return response('', 403);
+        }
+
+        $id = $request->request->get('rid');
+
+        $roomconfig = RoomConfig::find($id);
+//        try{
+            $reservation = Reservation::reserve($roomconfig, $student, $isadmin);
+//        }catch (\Exception $e){
+//            return $e->getMessage().$e->getTraceAsString();
+//        }
+
+        if ($reservation == 'error') {
+            return response('', 500);
+        } else if ($reservation == 'alreadyreserved') {
+            return response('', 204);
+        } else {
+            return response('', 200);
+        }
+    }
+
+    public function cancelReservation(Request $request, $id) {
+
+        $reservation = Reservation::findOrFail($id);
+        $student = $reservation->student;
+//        $accommodation = Accommodation::orderBy('id', 'desc')->first();
+//        if ($accommodation->status != 'active') {
+//            return "<p class='alert alert-warning'>{$accommodation->status}</p>";
+//        }
+        if (!(Auth::user() instanceof Student) || $reservation->student_id == Auth::user()->id) {//ensure the student or admin is responsible for this action
+            $reservation->cancelReservation();
+        }
+        if (Auth::user() instanceof Student) {
+            return redirect(route('accommodation.reservation'));
+        } else {
+            $user = Auth::user();
+            $permission = "accommodation.reservation";
+            if (!$this->access($user,$permission)){
+                return response()->json(["status" => 401, "message" => "You have no permission to do this operation"]);
+
+            }
+            return redirect(route('accommodation.admin.backendreservation', ['student_id' => $student->id]));
+        }
+    }
+
+    /* ADMIN */
+
+    public function revokeAccommodation(Request $request, $reservationid) {
+        //var_dump($id); exit();
+
+        $reservation = Reservation::findOrFail($reservationid);
+        $student = $reservation->student;
+        if (!in_array(self::checkEligibility($student, true), ['paid', 'claimed', 'waived'])) {
+            return redirect(route('accommodation.admin.backendreservation', ['student' => $student->id]));
+        }
+
+        $result = $reservation->revokeReservation();
+
+        return redirect(route('accommodation.admin.backendreservation', ['student' => $student->id]));
+    }
+
+    public function getStudentDetails(Request $request) {
+        $regno = $request->query->get('regno');
+        $student = Student::fromMatricNumber($regno);
+        if (!$student) {
+            throw \InvalidArgumentException("Invalid Student with Reg No. $regno");
+        }
+        $accommodation = Accommodation::orderBy('id', 'desc')->first();
+        $reservation = Reservation::where([['session', $accommodation->session], ['student', $student->id]])->whereIn('status', ['reserved', 'paid', 'claimed', 'waived'])->orderBy('id', 'DESC')->first();
+        //var_dump(self::checkEligibility($student, true)); exit();
+        return view('pages.staff.accommodation.accommodation.studentdetails', array('student' => $student, 'reservation' => $reservation, 'eligibility' => self::checkEligibility($student, true), 'isadmin' => true));
+    }
+
+    public function backendAccommodationProcess(Request $request) {
+        return view('pages.staff.accommodation.accommodation.backendaccommodationprocess');
+    }
+
+    /* public function relocateStudent(Request $request, $reservationid) {
+
+      $reservation = Reservation::findOrFail($reservationid);
+      $student = $reservation->student;
+
+
+      $eligibility = self::checkEligibility($student, true);
+      if(!in_array($eligibility,['paid','claimed','waived'])){
+      return redirect(route('accommodation.admin.backendreservation', ['student_id' => $student->id]));
+      }
+
+      } */
+
+    public function backendReservation(Request $request, $student_id) {
+
+        $student = Student::findOrFail($student_id);
+        $isadmin = false;
+        if (!Auth::user() instanceof Student) {
+            $isadmin = true;
+            $user = Auth::user();
+            $permission = "accommodation.reservation";
+            if (!$this->access($user,$permission)){
+                return response()->json(["status" => 401, "message" => "You have no permission to do this operation"]);
+
+            }
+        }
+        $eligibility = self::checkEligibility($student, true);
+        $accommodation = Accommodation::where('status', '<>', 'terminated')->orderBy('id', 'desc')->first();
+        if (in_array($eligibility, ['reserved', 'paid', 'claimed', 'waived'])) {
+            $reservation = Reservation::where([
+                        ['student_id', $student->id],
+                        ['session', $accommodation->session]
+                    ])
+                    ->whereIn('status', ['reserved', 'paid', 'claimed', 'waived'])
+                    ->first();
+            $paidbutexpiredres = Reservation::getPaidButExpiredReservations($student, $reservation->session);
+            return view('pages.staff.accommodation.reservation.reserved', array('student' => $student, "paidbutexpired" => $paidbutexpiredres->count(), 'reservation' => $reservation, 'isadmin' => $isadmin));
+        } /* else if (in_array($eligibility, ['spillover', 'No Accommodation for your Level', 'part-time', 'defered', 'expelled', 'suspended', 'graduated'])) {
+          return view('pages.student.accommodation.reservation.notentitled',['reason'=>$reason]);
+          } else if (in_array($eligibility, ['notregistered', 'notpaid', 'nobiodata'])) {
+          return view('pages.admin.accommodation.reservation.notentitled',['reason'=>$reason]);
+          }
+         */
+        $hostels = Accommodation::getReservableHostel($student, true);
+        return  view('pages.staff.accommodation.reservation.backendreservation', array('hostels' => $hostels, 'student' => $student));
+    }
+
+    public function accommodationAction(Request $request) {
+        $hasroomconfig = true;
+        $currentacc = Accommodation::where('status', '<>', 'terminated')->orderBy('id', 'desc')->first();
+        if ($currentacc) {
+            $roomconfigcount = RoomConfig::where('session', $currentacc->session)->count();
+            if ($roomconfigcount == 0) {
+                $hasroomconfig = false;
+            }
+        } else {
+            $hasroomconfig = false;
+        }
+        $accommodations = Accommodation::where('status', 'terminated')->orderBy('id', 'desc')->limit(5)->get();
+        return view('pages.staff.accommodation.accommodation.accommodationaction', ['accommodations' => $accommodations, 'currentacc' => $currentacc, 'hasroomconfig' => $hasroomconfig]);
+    }
+
+    public function newAccommodation(Request $request) {
+        $currentacc = Accommodation::where('status', 'active')->orderBy('id', 'desc')->first();
+        if ($currentacc) {
+            return redirect(route('accommodation.admin.accommodationaction'));
+        }
+        $accommodations = Accommodation::where('status', '<>', 'active')->orderBy('id', 'desc')->limit(5)->get();
+        return view('pages.staff.accommodation.accommodation.newaccsetting', ['accommodations' => $accommodations]);
+    }
+
+    public function store(Request $request) {
+        //
+        $validatedData = $request->validate([
+            'session' => 'required|unique:accommodations,session',
+            'effective_date' => 'required'
+        ]);
+        $previousacc = Accommodation::where('status', 'suspended')->get();
+        foreach ($previousacc as $prev) {
+            $prev->status = 'terminated';
+            $prev->end_date = new \DateTime();
+            $prev->save();
+        }
+        $accommodation = new Accommodation();
+        $accommodation->session = $request->request->get('session');
+        $accommodation->effective_date = new \DateTime($request->request->get('effectivedate'));
+        $accommodation->save();
+        return redirect(route('accommodation.admin.accommodationaction'));
+    }
+
+    public function terminateAccommodation(Request $request) {
+        $currentacc = Accommodation::where('status', '<>', 'terminated')->orderBy('id', 'asc')->first();
+        if ($currentacc) {
+            $currentacc->status = 'terminated';
+            $currentacc->end_date = new \DateTime();
+            $currentacc->save();
+            return true;
+        }
+        return false;
+        //return redirect(route('accommodation.admin.accommodationaction'));
+    }
+
+    public function deleteAccommodation(Request $request) {
+        $currentacc = Accommodation::where('status', '<>', 'terminated')->orderBy('id', 'desc')->first();
+        if ($currentacc) {
+            $roomconfigcount = RoomConfig::where('session', $currentacc->session)->count();
+            if ($roomconfigcount == 0) {
+                $currentacc->delete();
+            }
+        }
+        return redirect(route('accommodation.admin.accommodationaction'));
+    }
+
+    public function toggleAccommodationStatus(Request $request) {
+        $currentacc = Accommodation::where('end_date', null)->orderBy('id', 'desc')->first();
+        if ($currentacc) {
+            $currentacc->status = ($currentacc->status == 'suspended') ? ('active') : ('suspended');
+            $currentacc->save();
+        }
+        return redirect(route('accommodation.admin.accommodationaction'));
+    }
+
+    /**
+     * REPORTS
+     */
+    public function studentAccommodationStatus() {
+        return view('pages.staff.accommodation.report.studentaccstatus');
+    }
+
+    public function getStudentAccommodationStatus(Request $request) {
+        $regno = $request->query->get('regno');
+        $student = Student::fromMatricNumber($regno);
+        $accommodation = Accommodation::orderBy('id', 'desc')->first();
+        $reservation = Reservation::where([['session', $accommodation->session], ['student', $student->id]])->whereIn('status', ['reserved', 'paid', 'claimed', 'waived'])->orderBy('id', 'DESC')->first();
+        //var_dump($reservation); exit();
+        return view('pages.staff.accommodation.report.accommodationstatus', array('student' => $student, 'reservation' => $reservation, 'eligibility' => self::checkEligibility($student, true)));
+    }
+
+    public function generalAccommodationReport(Request $request) {
+        $hostels = Hostel::all();
+        return $this->checkAccessView(Auth::user(), "accommodation.reports.accommodation.overview", view('pages.staff.accommodation.report.generalaccreport', ['hostels' => $hostels]));
+    }
+
+    public function loadGeneralAccommodationReport(Request $request) {
+        $hostel = Hostel::findOrFail($request->query->get('hostel'));
+        $block = $request->query->get('block');
+        $blocks = array();
+        if ($block == "") {
+            $blocks = $hostel->blocks;
+        } else {
+            $blocks[] = Block::findOrFail($block);
+        }
+        return view('partialpages.accommodation.report.rooms', array('blocks' => $blocks));
+    }
+
+
+}

@@ -1,0 +1,284 @@
+@php use Illuminate\Support\Facades\Auth;
+use App\Http\Controllers\StudentSignatureUploadController; @endphp
+@extends('layout.student.master')
+@section('content')
+    <?php $user = Auth::user();
+    $matric = $user->matric_number;
+    $biodata = $user->biodata(); ?>
+    <section class="">
+        <div class="container pt-30 pb-30 pl-30 pr-30">
+            <div class="row">
+                <div class="col-md-9 pull-right flip sm-pull-none">
+                    <div class="blog-posts">
+                        <div class="col-md-12">
+                            <h3 class="widget-title" style="margin-bottom: 0">
+                                Signature Upload
+                            </h3>
+                            <div class="double-line-bottom-theme-colored-2"></div>
+                            <div class="mt-30"></div>
+                            
+                            @php
+                                // Build signature URL
+                                $signatureUrl = "https://static.abu.edu.ng/uploads/student/signatures/" . str_replace('/', '_', strtoupper($user->matric_number)) . ".JPG";
+                                
+                                // Check if signature exists on static server
+                                $signatureExists = false;
+                                $justUploaded = Session::get('uploaded', false);
+                                
+                                // Try to check if signature exists
+                                try {
+                                    $signatureExists = StudentSignatureUploadController::checkSignatureExist($matric);
+                                } catch (\Exception $e) {
+                                    // If check fails, assume it doesn't exist
+                                    $signatureExists = false;
+                                }
+                                
+                                // If just uploaded but check says it doesn't exist, wait a bit and try again
+                                // Add cache-busting only if we know it exists or just uploaded
+                                if ($justUploaded || $signatureExists) {
+                                    $signatureUrl .= "?v=" . time();
+                                }
+                            @endphp
+                            
+                            @if ($message = Session::get('success'))
+                                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                                    <button type="button" class="close" data-dismiss="alert"
+                                            aria-label="Close"><span
+                                            aria-hidden="true">&times;</span></button>
+                                    <strong>Success!</strong> {{ $message }}
+                                </div>
+                            @endif
+                            @if ($message = Session::get('info'))
+                                <div class="alert alert-info" role="alert">
+                                    <button type="button" class="close" data-dismiss="alert"
+                                            aria-label="Close"><span
+                                            aria-hidden="true">&times;</span></button>
+                                    {{ $message }}
+                                </div>
+                            @endif
+                            @if ($message = Session::get('error'))
+                                <div class="alert alert-danger" role="alert">
+                                    <button type="button" class="close" data-dismiss="alert"
+                                            aria-label="Close"><span
+                                            aria-hidden="true">&times;</span></button>
+                                    {{ $message }}
+                                </div>
+                            @endif
+                            
+                            {{-- Display signature if it exists or was just uploaded --}}
+                            @if($signatureExists || $justUploaded)
+                            <div id="signature-display-section">
+                                <section class="bg-white-f7 pr-30 pl-30 pt-30 pb-30"
+                                         style="border-left:2px solid #43B14B;">
+                                    <div class="row">
+                                        <div class="col-md-4 mb-3">
+                                            <h5 class="mb-3">Your Signature</h5>
+                                            <div style="border: 2px solid #ddd; padding: 10px; background: #fff; border-radius: 4px; min-height: 150px; position: relative;">
+                                                <div id="image-loading" style="text-align: center; padding: 20px;">
+                                                    <p>Loading signature...</p>
+                                                </div>
+                                                <img
+                                                    id="signature-img"
+                                                    src="{{ $signatureUrl }}"
+                                                    class="rounded" 
+                                                    alt="Student Signature" 
+                                                    style="max-width: 100%; height: auto; display: none;"
+                                                    onload="showSignatureDisplay()"
+                                                    onerror="handleImageError(this)">
+                                                <div id="image-error" style="display: none; text-align: center; padding: 20px; color: #dc3545;">
+                                                    <p>Signature image not available. Please try uploading again.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-8 mb-3">
+                                            <div id="signature-message">
+                                                @if(Session::get('uploaded', false))
+                                                    <div class="alert alert-success" role="alert">
+                                                        <i class="bi bi-check-circle-fill me-2"></i>
+                                                        <strong>Signature uploaded successfully!</strong>
+                                                        <p class="mb-0 mt-2">Your signature has been uploaded and is now available for use.</p>
+                                                    </div>
+                                                @else
+                                                    <div class="alert alert-info" role="alert">
+                                                        <i class="bi bi-info-circle-fill me-2"></i>
+                                                        <strong>Signature already uploaded</strong>
+                                                        <p class="mb-0 mt-2">Your signature is on file and available for use.</p>
+                                                    </div>
+                                                @endif
+                                                <div class="info-note d-flex align-items-center mt-3">
+                                                    <i class="bi bi-info-circle-fill me-2"></i>
+                                                    You cannot upload another signature. If you need to update your signature, please contact the administration.
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </section>
+                            </div>
+                            @endif
+                            
+                            {{-- Upload form (shown if signature doesn't exist or failed to load) --}}
+                            <div id="upload-form-section" style="display: {{ ($signatureExists || $justUploaded) ? 'none' : 'block' }};">
+                                <div class="info-note d-flex align-items-center">
+                                    <i class="bi bi-info-circle-fill me-2"></i>
+                                    Please upload a <strong>JPEG image</strong> file not larger than <strong>120
+                                        KB</strong>.
+                                </div>
+                                <section class="bg-white-f7 pr-30 pl-30 pt-30 pb-30"
+                                         style="border-left:2px solid #43B14B; height: 380px;">
+                                    <div class="col-md-8 mb3">
+                                        <form action="{{URL::route('signatureupload.uploadsignature')}}" method="POST"
+                                              enctype="multipart/form-data">
+                                            <div class="form-group">
+                                                <label>Select image to upload:</label>
+                                                <input type="file" name="file" id="file" class="form-control-file" accept="image/jpeg,image/jpg" required/>
+                                                <small class="form-text text-muted">Only JPEG/JPG files are allowed. Maximum size: 120 KB</small>
+                                                <input type="hidden" value="{{csrf_token()}}" name="_token"/>
+                                            </div>
+                                            <input type="submit" value="Upload Signature" name="submit" class="btn btn-success"/>
+                                        </form>
+                                    </div>
+                                </section>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-3">
+                    <div class="sidebar sidebar-right mt-sm-30">
+                        <div class="watermarked text-center">
+                            <img class="img img-thumbnail"
+                                 src="https://static.abu.edu.ng/uploads/student/photos/{{strtoupper($user->matric_number)}}.JPG"
+                                 width="150" alt="Passport"/>
+                            <p>
+                                <i>{{ $user->title }} {{ $user->firstname }}
+                                    , {{ $user->surname }} {{ $user->other_names }}</i>
+                            </p>
+                        </div>
+                        <div class="widget">
+                            <ul class="list-divider list-border list check">
+                                <li><a href="{{route("studentbiodata.index")}}">Biodata</a></li>
+                                {{--<li><a href="">A-level</a></li>--}}
+                                <li><a href="{{route("studentbiodata.studentolevel")}}">O-level</a></li>
+                                <li class="active"><a href="{{route("photoupload.applicant.index")}}">Upload Picture</a>
+                                </li>
+                                <li><a href="{{route("signatureupload.index")}}">Upload Signature</a></li>
+                                <li><a href="{{route("studentbiodata.changepassword")}}">Change Password</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    <meta name="_token" content="{!! csrf_token() !!}"/>
+    
+    <script>
+        function showSignatureDisplay() {
+            // Signature loaded successfully - show it and hide upload form
+            var displaySection = document.getElementById('signature-display-section');
+            var uploadSection = document.getElementById('upload-form-section');
+            var loadingDiv = document.getElementById('image-loading');
+            var errorDiv = document.getElementById('image-error');
+            var img = document.getElementById('signature-img');
+            
+            if (displaySection) {
+                displaySection.style.display = 'block';
+            }
+            if (uploadSection) {
+                uploadSection.style.display = 'none';
+            }
+            if (loadingDiv) {
+                loadingDiv.style.display = 'none';
+            }
+            if (errorDiv) {
+                errorDiv.style.display = 'none';
+            }
+            if (img) {
+                img.style.display = 'block';
+            }
+        }
+        
+        function hideSignatureDisplay() {
+            // Signature failed to load - hide signature display and show upload form
+            var displaySection = document.getElementById('signature-display-section');
+            var uploadSection = document.getElementById('upload-form-section');
+            
+            if (displaySection) {
+                displaySection.style.display = 'none';
+            }
+            if (uploadSection) {
+                uploadSection.style.display = 'block';
+            }
+        }
+        
+        var retryCount = 0;
+        var maxRetries = 3;
+        
+        function handleImageError(img) {
+            // Handle image load error
+            var errorDiv = document.getElementById('image-error');
+            var loadingDiv = document.getElementById('image-loading');
+            var uploadSection = document.getElementById('upload-form-section');
+            
+            retryCount++;
+            
+            if (errorDiv) {
+                errorDiv.style.display = 'none'; // Hide error initially
+            }
+            if (loadingDiv) {
+                loadingDiv.style.display = 'block';
+            }
+            
+            // If just uploaded, wait a bit and retry (image might not be available immediately)
+            @if($justUploaded)
+                if (retryCount < maxRetries) {
+                    setTimeout(function() {
+                        // Retry loading the image after delay
+                        var baseUrl = "{{ str_replace('/', '_', strtoupper($user->matric_number)) }}";
+                        var newUrl = "https://static.abu.edu.ng/uploads/student/signatures/" + baseUrl + ".JPG?v=" + new Date().getTime();
+                        img.src = newUrl;
+                        loadingDiv.innerHTML = '<p>Loading signature... (Attempt ' + (retryCount + 1) + ')</p>';
+                    }, 2000 * retryCount); // Increasing delay with each retry
+                } else {
+                    // Max retries reached, show error
+                    if (errorDiv) {
+                        errorDiv.style.display = 'block';
+                        errorDiv.innerHTML = '<p>Signature may still be processing. Please refresh the page in a few moments.</p>';
+                    }
+                    if (loadingDiv) {
+                        loadingDiv.style.display = 'none';
+                    }
+                }
+            @else
+                // If not just uploaded and image doesn't exist, show upload form
+                if (errorDiv) {
+                    errorDiv.style.display = 'block';
+                }
+                if (loadingDiv) {
+                    loadingDiv.style.display = 'none';
+                }
+                // Don't hide the section, just show error message
+            @endif
+        }
+        
+        // Initialize: If signature exists, try to show it
+        @if($signatureExists || $justUploaded)
+            document.addEventListener('DOMContentLoaded', function() {
+                var img = document.getElementById('signature-img');
+                var loadingDiv = document.getElementById('image-loading');
+                
+                if (img && loadingDiv) {
+                    // Check if image is already loaded
+                    if (img.complete && img.naturalHeight !== 0) {
+                        showSignatureDisplay();
+                    } else if (img.complete && img.naturalHeight === 0) {
+                        // Image failed to load immediately
+                        handleImageError(img);
+                    }
+                    // If not complete, wait for onload/onerror events
+                }
+            });
+        @endif
+    </script>
+@endsection
+

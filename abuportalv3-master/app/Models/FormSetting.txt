@@ -1,0 +1,84 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class FormSetting extends Model {
+
+    //
+
+    protected $guarded = [];
+    public function programme() {
+        return $this->belongsTo(Programme::class, 'programme_id')->first();
+    }
+
+    public function isClosed() {
+        $formclosing = new \DateTime(str_replace("00:00:00", "23:59:59", $this->late_start_date));
+        $formfinalclosing = new \DateTime(str_replace("00:00:00", "23:59:59", $this->end_date));
+        $now = new \DateTime();
+
+        $diff1 = $now->diff($formclosing);
+        $diff2 = $now->diff($formfinalclosing);
+
+        return ($diff1->format('%r') == '-');
+//        $arr_data['finalclosed'] = ($diff2->format('%r') == '-') ? (true) : (false);
+//        $arr_data['diffclosed'] = $diff1;
+//        $arr_data['difffinalclosed'] = $diff2;
+    }
+
+    public function isFinalClosed() {
+        $formfinalclosing = new \DateTime(str_replace("00:00:00", "23:59:59", $this->end_date));
+        $now = new \DateTime();
+
+        $diff2 = $now->diff($formfinalclosing);
+
+        return ($diff2->format('%r') == '-');
+    }
+
+    public function daysB4Closed() {
+        $formclosing = new \DateTime(str_replace("00:00:00", "23:59:59", $this->late_start_date));
+        $now = new \DateTime();
+
+        $diff1 = $now->diff($formclosing);
+        return $diff1->format('%a');
+    }
+
+    public function daysB4FinalClosed() {
+        $formfinalclosing = new \DateTime(str_replace("00:00:00", "23:59:59", $this->end_date));
+        $now = new \DateTime();
+
+        $diff2 = $now->diff($formfinalclosing);
+
+        return $diff2->format('%a');
+    }
+
+    public function formAvailability() {
+        if ($this->isFinalClosed()) {
+            return "finalclosed";
+        }
+        if ($this->isClosed()) {
+            return "closed";
+        }
+        return "open";
+    }
+
+    public function getFormPrice() {
+        $formprice = $this->form_price;
+        if ($this->isClosed()) {
+            $formprice = $formprice + (($formprice * $this->form_late_increment) / 100);
+        }
+        return $formprice;
+    }
+
+    public function candidateFormType()
+    {
+        return CandidateFormType::find($this->candidate_form_type_id);
+    }
+
+    public function formattedSession()
+    {
+        return $this->session . "/".($this->session+1);
+    }
+
+}

@@ -1,0 +1,153 @@
+@extends("layout.staff.master")
+
+@section("css")
+    <link rel="stylesheet" href="{{ asset('DataTables/datatables.min.css') }}">
+    <style>
+        table {
+            color: #0f1824;
+            font-size: 14px;
+            font-family: 'Roboto Slab', serif;
+            text-decoration: none;
+            /*text-transform: lowercase;*/
+        }
+    </style>
+@endsection
+@section("pageTitle")
+    Students Enrollment
+@endsection
+@section("content")
+    <section>
+        <div class="main-section">
+            <div class="container">
+                {{--                <div class="heading-line-bottom mb-50">--}}
+                {{--                    <h4 class="heading-title">Students Enrolment</h4>--}}
+                {{--                </div>--}}
+                <table class="table table-bordered mt-50">
+                    <thead>
+                    <tr>
+                        <th scope="col">Session</th>
+                        <th scope="col">Semester</th>
+                        <th scope="col">Course Code</th>
+                        <th scope="col">Course Title</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr>
+                        <td id="session">{{ $otherdetails['session'] }}/{{ $otherdetails['session'] + 1 }}</td>
+                        <td id="semester">
+                            @if ($otherdetails['semester'] == 1)
+                                <span>First</span>
+                            @elseif($otherdetails['semester'] == 2)
+                                <span>Second</span>
+                            @endif
+                        </td>
+                        <td id="coursecode">{{ $otherdetails['coursecode'] }}</td>
+                        <td id="coursetitle">{{ $otherdetails['coursetitle'] }}</td>
+                    </tr>
+                    </tbody>
+                </table>
+                <div class="mt-30">
+                    <table class="table table-bordered table-condensed table-striped" id="enrol-table">
+                        <thead>
+                        <tr>
+                            <th>S/N</th>
+                            <th>Reg No.</th>
+                            <th>Fullname</th>
+                            <th>Level</th>
+                            <th>Gender</th>
+                            <th>Programme</th>
+                            <th>Lecture</th>
+                            <th>Lab</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        @php $sn=1 @endphp
+                        @foreach($students as $student)
+                            <tr>
+                                <th>{{$sn++}}</th>
+                                <td>{{$student->matric_number}}</td>
+                                <td>{{$student->firstname}} {{$student->surname}}</td>
+                                <td>{{$student->short_name}}</td>
+                                <td>{{$student->gender}}</td>
+                                <td>{{$student->name}}</td>
+                                <td>{{$student->grouptype=="LT"? $student->groupno:""}}</td>
+                                <td>{{$student->grouptype=="LB"? $student->groupno:""}}</td>
+                            </tr>
+                        @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </section>
+@endsection
+
+@section("js")
+    <script src="{{ asset('DataTables/datatables.min.js') }}"></script>
+    <script type="text/javascript">
+        $(document).ready(function () {
+            $('#enrol-table').DataTable({
+                "lengthMenu": [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+                pageLength: 50,
+                dom: "<'row'<'col-sm-12'B>>" +
+                    "<'row'<'col-sm-12 col-md-6'l><'col-sm-12 col-md-6'f>>" +
+                    "<'row'<'col-sm-12'tr>>" +
+                    "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+                buttons: [
+                    {
+                        extend: 'excelHtml5',
+                        exportOptions: {
+                            columns: ':visible'
+                        }
+                    },
+                    {
+                        extend: 'pdfHtml5',
+                        orientation: 'landscape',
+                        pageSize: 'LEGAL',
+                        exportOptions: {
+                            columns: ':visible'
+                        }
+                    },
+                    {
+                        extend: 'print',
+                        messageTop: 'Candidates Report',
+                        orientation: 'landscape',
+                        pageSize: 'LEGAL'
+                    },
+                    // {
+                    //     extend: 'colvis',
+                    //     columns: ':not(.noVis)',
+                    //     collectionLayout: 'fixed two-column',
+                    //     postfixButtons: [ {
+                    //         extend:'colvisGroup',
+                    //         text:'Show all',
+                    //         show:':hidden'
+                    //     } ]
+                    // }
+                ],
+                language: {
+                    buttons: {
+                        colvis: 'Show/Hide columns'
+                    }
+                }
+            });
+            $('#enrol-div').html('<table class="table table-striped table-bordered table-hover table-condensed nowrap" id="enrol-table"></table>');
+
+            {{--$.getJSON("{{ url('staff/myteaching/getenrolment') }}/" + '<?php echo Request::segment(4) . "/" . Request::segment(5) . "/" . Request::segment(6); ?>', function (obj) {--}}
+            {{--    $.each(obj, function (data) {--}}
+            {{--        thead = "<thead><tr><th>S/N</th><th>Reg No.</th><th>Fullname=</th><th>Level</th><th>Gender</th><th>Programme</th><th>Lecture</th><th>Lab</th></tr></thead>";--}}
+            {{--        trows = "";--}}
+            {{--        sn = 0;--}}
+            {{--        $.each(data, function (idx, val) {--}}
+            {{--            sn = idx + 1;--}}
+            {{--            lab = (val[5]['LB']) ? val[5]['LB'] : "";--}}
+            {{--            trows = trows + "<tr><td>" + sn + "</td><td>" + val[0] + "</td><td>" + val[1] + "</td><td>" + val[2] + "</td><td>" + val[3] + "</td><td>" + val[4] + "</td><td>" + val[5]['LT'] + "</td><td>" + lab + "</td></tr>";--}}
+            {{--        });--}}
+            {{--        $("#enrol-table").html(thead + "<tbody>" + trows + "</tbody>");--}}
+            {{--        --}}
+            {{--    });--}}
+            {{--});--}}
+        });
+    </script>
+@endsection
+

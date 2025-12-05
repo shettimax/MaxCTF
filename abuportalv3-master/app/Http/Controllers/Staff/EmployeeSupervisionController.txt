@@ -1,0 +1,65 @@
+<?php
+
+namespace App\Http\Controllers\Staff;
+
+use App\Http\Controllers\Controller;
+use App\Models\Employee;
+use App\Models\EmployeeSupervision;
+use App\Models\Student;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+
+class EmployeeSupervisionController extends Controller
+{
+    public function __construct()
+    {
+        return $this->middleware('auth:staff');
+    }
+
+    public function index()
+    {
+        try {
+            $employee = Employee::find(Auth::user()->employee_id);
+            return view('pages.staff.profile.supervision', compact('employee'));
+        } catch (\Exception $e) {
+            return back()->with('error', $e->getMessage());
+        }
+    }
+
+    public function storeSupervision(Request $request)
+    {
+        try {
+            $this->validate($request, [
+                'matricnumber' => 'required'
+            ]);
+            $student = Student::where('matric_number', $request->matricnumber)->first();
+
+            $supervision = EmployeeSupervision::find($request->supervision_id);
+            if (!$supervision)
+                $supervision = new EmployeeSupervision();
+            $supervision->employee_id = $request->employee_id;
+            $supervision->student_id = $student->id;
+            $supervision->supervisor_type = $request->supervisor_type;
+            $supervision->title = $request->title;
+            $supervision->data = "";
+            $supervision->year = $request->year;
+            $supervision->status = $request->status;
+            $supervision->save();
+
+
+            return back()->with('success', 'Done!');
+        } catch (\Exception $e) {
+            return back()->with('error', $e->getMessage());
+        }
+    }
+
+    public function deleteSupervision(EmployeeSupervision $employeeSupervision)
+    {
+        try {
+            EmployeeSupervision::destroy($employeeSupervision->id);
+            return back()->with('success', 'Done!');
+        } catch (\Exception $e) {
+            return back()->with('error', $e->getMessage());
+        }
+    }
+}

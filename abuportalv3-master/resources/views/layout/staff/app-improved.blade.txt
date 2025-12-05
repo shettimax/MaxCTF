@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fee Management System - Reports</title>
+
+    <!-- Bootstrap 3.3.6 CSS -->
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <style>
+        body {
+            background-color: #f8f8f8;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding-top: 50px;
+        }
+
+        .navbar-inverse {
+            background-color: #222;
+            border-color: #080808;
+        }
+
+        .navbar-brand {
+            font-weight: 600;
+            font-size: 18px;
+        }
+
+        .panel {
+            border-radius: 3px;
+            box-shadow: 0 1px 3px rgba(0,0,0,.1);
+        }
+
+        .panel-heading {
+            font-weight: 600;
+        }
+
+        .table-striped > tbody > tr:nth-of-type(odd) {
+            background-color: #f9f9f9;
+        }
+
+        .btn {
+            border-radius: 3px;
+        }
+
+        .progress {
+            height: 10px;
+            margin-bottom: 10px;
+        }
+
+        .label {
+            font-weight: normal;
+            padding: .3em .6em;
+        }
+
+        /* Print styles */
+        @media print {
+            body {
+                background: white !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .panel {
+                box-shadow: none !important;
+                border: 1px solid #ddd !important;
+            }
+            .table {
+                font-size: 12px;
+            }
+        }
+
+        /* Mobile responsiveness */
+        @media (max-width: 768px) {
+            .panel-body {
+                padding: 10px;
+            }
+            .table-responsive {
+                font-size: 12px;
+            }
+        }
+
+        /* Loading overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.8);
+            display: none;
+            z-index: 9999;
+        }
+
+        .loading-spinner {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner">
+            <i class="fa fa-spinner fa-spin fa-3x"></i>
+            <div class="mt-2">
+                <strong>Generating Report...</strong>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="navbar navbar-inverse navbar-fixed-top no-print">
+        <div class="container-fluid">
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar">
+                    <span class="sr-only">Toggle navigation</span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+                <a class="navbar-brand" href="#">
+                    <i class="fa fa-university"></i>
+                    Fee Management System
+                </a>
+            </div>
+
+            <div class="collapse navbar-collapse" id="navbar">
+                <ul class="nav navbar-nav navbar-right">
+                    <li class="{{ request()->routeIs('dashboard*') ? 'active' : '' }}">
+                        <a href="{{ route('staff.dashboard') }}">
+                            <i class="fa fa-dashboard"></i> Dashboard
+                        </a>
+                    </li>
+                    <li class="{{ request()->routeIs('reports.fee-collection') ? 'active' : '' }}">
+                        <a href="{{ route('reports.fee-collection') }}">
+                            <i class="fa fa-line-chart"></i> Fee Collection
+                        </a>
+                    </li>
+                    <li class="{{ request()->routeIs('reports.programme-fees') ? 'active' : '' }}">
+                        <a href="{{ route('reports.programme-fees') }}">
+                            <i class="fa fa-graduation-cap"></i> Programme Fees
+                        </a>
+                    </li>
+                    <li class="{{ request()->routeIs('reports.fee-structure') ? 'active' : '' }}">
+                        <a href="{{ route('reports.fee-structure') }}">
+                            <i class="fa fa-cogs"></i> Fee Structure
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container-fluid">
+        @yield('content')
+    </div>
+
+    <!-- Footer -->
+    <footer class="text-center no-print" style="margin-top: 30px; padding: 20px 0; background: #222; color: #fff;">
+        <div class="container">
+            <p class="mb-0">
+                <i class="fa fa-copyright"></i>
+                {{ date('Y') }} Fee Management System. All rights reserved.
+            </p>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-2.2.4.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <script>
+        // Show loading overlay on form submit
+        $(document).ready(function() {
+            $('form').on('submit', function() {
+                $('#loadingOverlay').show();
+            });
+
+            // Hide loading overlay when page loads
+            $(window).on('load', function() {
+                $('#loadingOverlay').hide();
+            });
+
+            // Initialize tooltips
+            $('[data-toggle="tooltip"]').tooltip();
+
+            // Auto-hide alerts after 5 seconds
+            $('.alert').delay(5000).fadeOut();
+        });
+
+        // Global export functions
+        window.exportToExcel = function(tableId = 'reportTable', filename = 'report') {
+            const table = document.getElementById(tableId);
+            if (!table) {
+                alert('No data to export');
+                return;
+            }
+
+            const wb = XLSX.utils.table_to_book(table, {sheet: "Report"});
+            const date = new Date().toISOString().split('T')[0];
+            XLSX.writeFile(wb, `${filename}_${date}.xlsx`);
+        };
+
+        window.printReport = function() {
+            window.print();
+        };
+    </script>
+
+    @stack('scripts')
+</body>
+</html>

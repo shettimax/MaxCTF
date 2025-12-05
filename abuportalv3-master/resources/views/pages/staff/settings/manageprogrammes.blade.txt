@@ -1,0 +1,300 @@
+@extends("layout.staff.master")
+
+@section("css")
+    <link rel="stylesheet" href="{{ asset('js/datatables/jquery.dataTables.min.css')}}"/>
+    <style>
+        label {
+            width: 100%;
+            color: #0f1824;
+            text-align: left;
+        }
+    </style>
+@endsection
+
+@section("pageTitle")
+    Manage Programmes
+@endsection
+@section("content")
+<!--    --><?php
+//
+//    try{?>
+    <section>
+        <div class="main-section">
+            <div class="container">
+                <div class="row justify-content-center">
+                    <div class="col-md-12">
+                        <div class="card">
+                            <div class="card-body">
+                                @if (session('status'))
+                                    <div class="alert alert-success" role="alert">
+                                        {{ session('status') }}
+                                    </div>
+                                @endif
+                                @if (isset($errors))
+                                    <ul>
+                                        @foreach($errors as $error)
+                                            <li>{{$error}}</li>
+                                        @endforeach
+                                    </ul>
+                                @endif
+                                @if(Session::has('flash_message'))
+                                    <div class="alert alert-success">
+                                        {{ Session::get('flash_message') }}
+                                    </div>
+                                @endif
+
+                                <div class="mt-30">
+                                    <button type="button" class="btn btn-primary add pull-right mb-30 mr-30"
+                                            data-toggle="modal"
+                                            data-target=".bs-example-modal-lg">Add New
+                                    </button>
+
+                                    <div class="modal fade bs-example-modal-lg" tabindex="-1" role="dialog"
+                                         aria-labelledby="myLargeModalLabel">
+                                        <div class="modal-dialog modal-lg">
+                                            <div class="modal-content">
+                                                <div class="modal-header">
+                                                    <button type="button" class="close" data-dismiss="modal"
+                                                            aria-label="Close"><span aria-hidden="true">&times;</span>
+                                                    </button>
+                                                    <h4 class="modal-title text-left" id="myModalLabel">Add/Edit
+                                                        Programme
+                                                        <div class="double-line-bottom-theme-colored-2"></div>
+                                                    </h4>
+                                                </div>
+                                                <form class="form" action="{{route('programme.store')}}" method="POST">
+                                                    @csrf
+                                                    <div class="modal-body">
+                                                        <input type="hidden" id="programme_id" name="programme_id"
+                                                               value="0"/>
+                                                        <div class="row mb-20">
+                                                            <div class="col-md-4">
+                                                                <label for="faculty">Faculty Name:</label>
+                                                                <select
+                                                                    class="form-control {{ $errors->has('faculty')?'is-invalid':'is-valid' }}"
+                                                                    name="faculty" id="faculty"
+                                                                    placeholder="Faculty Name" required>
+                                                                    <option value="-1">Select...</option>
+                                                                    @foreach(\App\Models\Faculty::select('*')->orderby('name')->get() as $faculty)
+                                                                        <option
+                                                                            value="{{$faculty->id}}">{{$faculty->name}}</option>
+                                                                    @endforeach
+                                                                </select>
+                                                                <div id="faculty_error" class="text text-danger">
+                                                                </div>
+                                                            </div>
+                                                            <div class="col-md-4">
+                                                                <label for="department">Department Name:</label>
+                                                                <select
+                                                                    class="form-control {{ $errors->has('department')?'is-invalid':'is-valid' }}"
+                                                                    name="department" id="department"
+                                                                    placeholder="Department Name" required>
+                                                                    <option value="-1">Select...</option>
+                                                                    @foreach(\App\Models\Department::select('*')->orderby('name')->get() as $department)
+                                                                        <option
+                                                                            value="{{$department->id}}">{{$department->name}}</option>
+                                                                    @endforeach
+                                                                </select>
+                                                                <div id="department_error" class="invalid-feedback">
+                                                                </div>
+                                                            </div>
+                                                            <div class="col-md-4">
+                                                                <label for="progtype">Programme Type:</label>
+                                                                <select
+                                                                    class="form-control {{ $errors->has('progtype')?'is-invalid':'is-valid' }}"
+                                                                    name="progtype" id="progtype"
+                                                                    placeholder="Programme Type" required>
+                                                                    <option value="-1">Select...</option>
+                                                                    @foreach(\App\Models\ProgrammeType::select('*')->orderby('prog_type_name')->get() as $progtype)
+                                                                        <option
+                                                                            value="{{$progtype->id}}">{{$progtype->prog_type_name}}</option>
+                                                                    @endforeach
+                                                                </select>
+                                                                <div id="progtype_error" class="invalid-feedback">
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="row mb-20">
+                                                            <div class="col-md-4">
+                                                                <label for="programme">Programme Name:</label>
+                                                                <input type="text"
+                                                                       class="form-control {{ $errors->has('programme')?'is-invalid':'is-valid' }}"
+                                                                       id="programme" name="programme"
+                                                                       placeholder="Programme Name" required>
+                                                                <div id="programme_error" class="invalid-feedback">
+                                                                </div>
+                                                            </div>
+                                                            <div class="col-md-4">
+                                                                <label for="duration">Duration:</label>
+                                                                <input type="number"
+                                                                       class="form-control {{ $errors->has('duration')?'is-invalid':'is-valid' }}"
+                                                                       id="duration" name="duration"
+                                                                       placeholder="Duration" required>
+                                                                <div id="duration_error" class="text text-danger">
+                                                                </div>
+                                                            </div>
+                                                            <div class="col-md-4">
+                                                                <label for="artsci">Arts/Science:</label>
+                                                                <select name="artsci" id="" class="form-control">
+                                                                    <option value="Arts">Arts</option>
+                                                                    <option value="Science">Science</option>
+                                                                </select>
+                                                                <div id="artsci_error" class="text text-danger">
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="row">
+                                                            <div class="col-md-12 mb-1">
+                                                                <label for="requirement">Entry Requirement:</label>
+                                                                <textarea name="requirement" id="requirement" cols="30"
+                                                                          rows="5"></textarea>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <div class="form-group">
+                                                            <button type="button" class="btn btn-flat btn-danger"
+                                                                    data-dismiss="modal">
+                                                                Close
+                                                            </button>
+                                                            <button type="submit" name="add" id="addbtn"
+                                                                    class="btn btn-flat btn-success text-right"><span
+                                                                    class="icon icon-save"> Save </span>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row mb-30 mr-20 ml-20" id="display">
+                                    <table align="center" id="programmes"
+                                           class="table table-bordered table-striped table-responsive-lg"
+                                           style="font-size:16px;font-family: Calibri; text-align: left; color: #000000">
+                                        <thead>
+                                        <tr>
+                                            <th>S/N</th>
+                                            <th>Programme Name</th>
+                                            <th>Department</th>
+                                            <th>Faculty</th>
+                                            <th>Action</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        @php $i =1; @endphp
+                                        @foreach(\App\Models\Programme::select('*')->orderby('name')->get() as $programme)
+                                            <tr>
+                                                <td>{{$i++}}</td>
+                                                <td>{{$programme->name}}</td>
+                                                <td>{{$programme->department()->name}}</td>
+                                                <td>{{$programme->department()->faculty()->name}}</td>
+                                                <td><a class="btn btn-sm btn-primary edit" data-toggle="modal"
+                                                       data-target=".bs-example-modal-lg"
+                                                       data-id="{{$programme->id}}"
+                                                       data-name="{{$programme->name}}"
+                                                       data-duration="{{$programme->duration}}"
+                                                       data-progtype="{{$programme->programme_type_id}}"
+                                                       data-requirement="{{$programme->requirement}}"
+                                                       data-department="{{$programme->department()->id}}"
+                                                       data-faculty="{{$programme->department()->faculty()->id}}"
+                                                       data-art_science="{{$programme->art_science}}"
+                                                       href="#">
+                                                        <span class="icon icon_pencil-edit"></span> Edit</a>
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="row">
+                                    <button type="button" class="btn btn-primary add pull-right mb-30 mr-30"
+                                            data-toggle="modal"
+                                            data-target=".bs-example-modal-lg">Add New
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+<!--    --><?php //}catch (\Exception $exception){
+//        var_dump($exception->getMessage().'\n'.$exception->getTraceAsString());
+//    }?>
+@endsection
+
+@section("js")
+    <script src="{{asset('js/datatables/jquery.dataTables.min.js')}}"></script>
+    <script src="{{ asset("tinymce/tinymce.min.js") }}"></script>
+    <script>
+        $(document).ready(function () {
+
+            jQuery("body").on('submit', '#form', function (e) {
+                // e.preventDefault();
+                text = tinyMCE.activeEditor.getContent({format: 'text'});
+                text = text.substring(text.indexOf('<body>') + 6, text.indexOf("</body>"));
+                jQuery("#body").val(text);
+
+                jQuery(this).submit();
+            });
+
+            tinymce.init({
+                selector: 'textarea',
+                height: 200,
+                branding: false,
+                theme: 'modern',
+                plugins: 'print preview fullpage searchreplace autolink directionality visualblocks visualchars fullscreen image link media template codesample table charmap hr pagebreak nonbreaking anchor toc insertdatetime advlist lists textcolor wordcount imagetools contextmenu colorpicker textpattern help',
+                toolbar1: 'formatselect | bold italic strikethrough forecolor backcolor | link | alignleft aligncenter alignright alignjustify  | numlist bullist outdent indent  | removeformat',
+                image_advtab: true,
+                templates: [
+                    {title: 'Test template 1', content: 'Test 1'},
+                    {title: 'Test template 2', content: 'Test 2'}
+                ],
+                content_css: [
+                    '//fonts.googleapis.com/css?family=Lato:300,300i,400,400i',
+                    '//www.tinymce.com/css/codepen.min.css'
+                ]
+            });
+
+            $('#faculty').change(function () {
+                var faculty = $(this).val();
+                $('#department').empty();
+                $('#department').html("<option value=''>Please wait ...</option>");
+                $.getJSON("{{ url('staff/ajax/departments') }}/" + faculty, function (obj) {
+                    $('#department').html("<option value=''>Select...</option>");
+                    $.each(obj, function (key, value) {
+                        $("#department").append("<option value='" + value.id + "'>" + value.name + "</option>");
+                    });
+                });
+            });
+        });
+        $(document).on('click', '.add', function () {
+
+            $(".modal-body #faculty").val(-1);
+            $(".modal-body #programme_id").val(0);
+            $(".modal-body #department").val(-1);
+            $(".modal-body #progtype").val(-1);
+            $(".modal-body #programme").val('');
+            $(".modal-body #duration").val(0);
+
+            tinyMCE.activeEditor.setContent('');
+        });
+
+        $(document).on('click', '.edit', function () {
+            $(".modal-body #faculty").val($(this).data('faculty'));
+            $(".modal-body #programme_id").val($(this).data('id'));
+            $(".modal-body #department").val($(this).data('department'));
+            $(".modal-body #progtype").val($(this).data('progtype'));
+            $(".modal-body #programme").val($(this).data('name'));
+            $(".modal-body #duration").val($(this).data('duration'));
+            $(".modal-body #artsci").val($(this).data('artsci'));
+
+
+            tinyMCE.activeEditor.setContent($(this).data('requirement'));
+        });
+        $('#programmes').DataTable();
+    </script>
+@endsection

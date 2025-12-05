@@ -1,0 +1,49 @@
+<?php
+
+namespace App\Http\Controllers\Staff;
+
+use App\Models\Employee;
+use App\Models\EmployeeTeaching;
+use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+
+class EmployeeTeachingController extends Controller
+{
+    public function __construct()
+    {
+        return $this->middleware('auth:staff');
+    }
+
+    public function index(){
+        try{
+            $employee = Employee::find(Auth::user()->employee_id);
+            return view('pages.staff.profile.teaching', compact('employee'));
+        }catch (\Exception $e){
+            return back()->with('error', $e->getMessage());
+        }
+    }
+
+
+    public function storeTeaching(Request $request){
+        try{
+            $teaching = new EmployeeTeaching();
+            $teaching->employee_id = $request->employee_id;
+            $teaching->course_id = $request->course;
+            $teaching->session = $request->session;
+            $teaching->save();
+            return back()->with('success', 'Done!');
+        }catch (\Exception $e){
+            return back()->with('error', $e->getMessage());
+        }
+    }
+
+    public function deleteTeaching(EmployeeTeaching $employeeTeaching){
+        try{
+            EmployeeTeaching::destroy($employeeTeaching->id);
+            return back()->with('success', 'Done!');
+        }catch (\Exception $e){
+            return back()->with('error', $e->getMessage());
+        }
+    }
+}

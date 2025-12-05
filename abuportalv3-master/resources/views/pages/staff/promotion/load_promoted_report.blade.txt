@@ -1,0 +1,30 @@
+<table class="table table-bordered" id="reporttb">
+    <thead>
+    <tr>
+        <th>ID</th>
+        <th>Personnel No</th>
+        <th>Full Name</th>
+        <th>Department</th>
+        <th>Present Salary Step</th>
+        <th>Year</th>
+        <th>Action</th>
+
+    </tr>
+    </thead>
+    <tbody>
+    @foreach($results as $result)
+        <tr>
+            <td>{{ $loop->index + 1 }}</td>
+            <td>{{ $result->personnel_no }}</td>
+            <td>{{ $result->name }}</td>
+            <td>{{ $result->department_name }}</td>
+            <td>{{ $result->present_salary_step }}</td>
+            <td>{{ $result->year }}</td>
+            <td>
+                <a target="_blank" href="{{ route('staff.profile.promotion', [$result->id]) }}"
+                   class="btn btn-info btn-sm">View Letter</a>
+            </td>
+        </tr>
+    @endforeach
+    </tbody>
+</table>

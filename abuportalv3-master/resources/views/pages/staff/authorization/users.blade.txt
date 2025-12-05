@@ -1,0 +1,92 @@
+@extends("layout.staff.master")
+
+@section("content")
+    <section class="pt-40 pl-5">
+        <div class="section-content">
+            <div class="container">
+                <div class="col-md-12">
+                    <h3 class=" ml-20 mr-20">Manage Users Account</h3>
+                </div>
+                <div class="col-md-3">
+
+                    <div class="page-section">
+                        <div class="row ml-20 mr-20" style="background: #f5f5f5;min-height: 320px;">
+
+                            <form action="{{ route("user.data.post") }}" method="POST">
+                                @csrf
+                                <input type="hidden" name="user_id"  id="user_id">
+                                <div class="form-row">
+                                    <label for="faculty" class="col-md-12 col-form-label text-md-right">Faculty</label>
+                                    <div class="col-md-12">
+
+                                        <select id="faculty" name="faculty"
+                                                class="form-control is-valid"
+                                                required>
+                                            <option value="">--select--</option>
+
+                                            @foreach(App\Models\Faculty::all() as $faculty)
+                                                <option value="{{$faculty->id}}">{{$faculty->name}}</option>
+                                            @endforeach
+
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                    <label for="department" class="col-md-12 col-form-label text-md-right">Department</label>
+
+                                    <div class="col-md-12">
+
+                                        <select id="department" name="department"
+                                                class="form-control is-valid"
+                                                required>
+
+
+                                        </select>
+                                    </div>
+                                </div>
+                            </form>
+
+
+                        </div>
+                        <br/><br/><br/><br/>
+                    </div>
+                </div>
+
+                <div class="col-md-9">
+                    <div class="container-fluid" id="display">
+
+                    </div>
+                </div>
+            </div>
+        </div>
+        <script>
+
+            $("body").on("change","#faculty",function () {
+                var id = $(this).val();
+                $("#department").empty();
+                $("#department").append("<option value=''>Select...</option>");
+                $.getJSON(
+                    "{{ route("ajax.department",['']) }}/"+$(this).val(),
+                    function (obj) {
+                        $.each(obj,function (key,value) {
+                            $("#department").append("<option value='"+value.id+"'>"+value.name+"</option>");
+                        });
+                    }
+                );
+            });
+
+            //for datatable
+            $("body").on("change","#department",function(){
+                var department = $(this).val();
+                $.ajax({
+                    type:"get",
+                    url:"{{route('staff.user.authorization.post',[''])}}/"+department
+                }).done(function(data){
+
+                    $('#display').html(data);
+                });
+            });
+        </script>
+
+    </section>
+@endsection

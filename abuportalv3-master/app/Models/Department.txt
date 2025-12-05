@@ -1,0 +1,67 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class Department extends Model
+{
+
+    public function faculty()
+    {
+        return $this->belongsTo(Faculty::class)->first();
+    }
+
+    public function __faculty()
+    {
+        return $this->belongsTo(Faculty::class);
+    }
+
+    public function parent()
+    {
+        return $this->belongsTo(Faculty::class, 'faculty_id');
+    }
+
+    public function users()
+    {
+        return $this->hasMany(User::class, 'department_id');
+    }
+    public function employees()
+    {
+        return $this->hasMany(Employee::class);
+    }
+
+    public function programmes()
+    {
+        return $this->hasMany('Programme::class', 'department_id');
+    }
+    public function courses()
+    {
+        return $this->hasMany(Course::class);
+    }
+
+    public function getConfig($config)
+    {
+        $c = Configuration::whereDate('effective_date', '<=', today())
+            ->where(['name' => $config, 'unit_id' => $this->id, "unit_type" => "Department"])
+            ->orderBy('effective_date', 'DESC')->first();
+        if (!$c) {
+            if ($fact = $this->faculty()) {
+                return $fact->getConfig($config);
+            }
+            return null;
+        }
+        return $c;
+    }
+
+    public function hod()
+    {
+        return Employee::where("personnel_no", $this->head_pno)->first();
+    }
+
+    public function hodName()
+    {
+        $emp = $this->hod();
+        return $emp ? $emp->getFullName() : "";
+    }
+}

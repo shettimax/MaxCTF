@@ -1,0 +1,187 @@
+@extends('layout.student.master')
+@section('css')
+<style rel="text/css">
+    .th{
+        font-weight: bold;
+    }
+    div.sectiondiv table, div.sectiondiv td, div.sectiondiv tr{
+        border-width:0px;
+        border-color:transparent;
+        border-style: none;
+        border-collapse: collapse;
+    }
+
+    div.sectiondiv td, div.sectiondiv tr{
+        line-height: 1.5;
+    }
+    div.sectiondiv{
+        border-width: 1px;
+        border-color:#cccccc;
+        border-style: solid;
+        border-radius: 7px;
+        padding:5px;
+        margin-left: auto;
+        margin-right: auto;
+        margin-bottom: 10px;
+        box-shadow: 1px 1px 5px 0px rgba(204,204,204,.7);
+    }
+
+    div#transid{
+        border-width: 3px;
+        border-color:#666666;
+        border-style: solid;
+        border-radius: 7px;
+        padding:5px;
+        margin-left: auto;
+        margin-right: auto;
+        margin-bottom: 10px;
+        font-size: 25px;
+        max-width: 450px;
+        text-align: center;
+        font-family: 'courier new';
+        font-weight:bold;
+    }
+    .transcode{
+        border-width: 2px;
+        border-color:#666666;
+        border-style: solid;
+        border-radius: 7px;
+        padding:3px;
+        margin-left: auto;
+        margin-right: auto;
+        font-size: 14px;
+        max-width: 300px;
+        text-align: center;
+        font-family: 'courier new';
+    }
+
+    .transaction{
+        font-size: 13px;
+    }
+    table.transactiontbl{
+        border-collapse: collapse;
+        overflow:hidden;
+        border-radius: 7px !important;
+        border-width: 2px;
+        border-color:#666666;
+        margin-bottom: 5px;
+        margin-left:auto;
+        margin-right:auto;
+        width:90%;
+    }
+    table.transactiontbl tr, table.transactiontbl td{
+        line-height: .3 !important;
+        padding-top:1px;
+        padding-bottom:1px;
+        font-size: 12px;
+    }
+    .sectionheading{
+        text-align: center;
+    }
+    div.main-section{
+        min-width: 600px !important;
+    }
+    @media print{
+        #main-header, #main-status, div#footer-widget, #txnslipactions{
+            display: none;
+        }
+        div.wrapper_boxed.wrapper{
+            border-top-style:none;
+        }
+        footer .bottom-footer{
+            padding-top: 10px;
+            padding-bottom: 10px;
+            text-align: center;
+            border-top-width:0px;
+            border-top-style: solid;
+        }
+        @page {
+            margin: 0cm;
+        }
+    }
+</style>
+@endsection
+@section('content')
+
+<div class='row'>
+    <div class='col-xs-1 col-sm-2 col-md-2'></div>
+    <div class='col-xs-10 col-sm-8 col-md-8' id='tpage'>
+        <div id='biodatadiv' class="sectiondiv">
+            <h3 class="sectionheading">STUDENT INFORMATION</h3>
+            <table>
+                <tr>
+                    <td><span class='th'>Full Name: </span></td>
+                    <td>{{$user->getFullName()}}</td>
+                    <td rowspan='8' style="vertical-align: top; text-align: right;"><img class ="img-rounded" src="{{asset('man.jpg')}}"/></td>
+                </tr>
+                <tr>
+                    <td><span class='th'>Reg. No.: </span></td><td>{{strtoupper($user->matricnumber)}}</td>
+                </tr>
+                <tr>
+                    <td><span class='th'>Gender: </span> </td><td>{{$user->gender}}</td>
+                </tr>
+                <tr>
+                    <td><span class='th'>Programme: </span> </td><td>{{$user->programme()->name}}</td>
+                </tr>
+                <tr>
+                    <td><span class='th'>Department: </span> </td><td>{{$user->programme()->getDepartment->name}}</td>
+                </tr>
+                <tr>
+                    <td><span class='th'>Faculty: </span> </td><td>{{$user->programme()->getDepartment->faculty->name}}</td>
+                </tr>
+                <tr>
+                    <td><span class='th'>Mobile No: </span> </td><td>{{$user->biodata()->gsm}}</td>
+                </tr>
+                <tr>
+                    <td><span class='th'>Email: </span> </td><td>{{$user->biodata()->email}}</td>
+                </tr>
+            </table>
+        </div>
+        <div id='reservationdiv' class="sectiondiv">
+            <h3 class="sectionheading">RESERVATION DETAIL</h3>
+            <table>
+                <tr>
+                    <td><span class='th'>Hostel: </span></td><td>{{$reservation->getHostel()->name}}</td>
+                </tr>
+                <tr>
+                    <td><span class='th'>Block: </span></td><td>{{$reservation->getBlock()->name}}</td>
+                </tr>
+                <tr>
+                    <td><span class='th'>Room: </span> </td><td>{{$reservation->getRoom()->room_no}}</td>
+                </tr>
+                <tr>
+                    <td><span class='th'>Date of Reservation: </span> </td><td>{{$reservation->res_date}}</td>
+                </tr>
+                @if($reservation->isReserved())
+                <tr>
+                    <td><span class='th'>Expiry Date: </span> </td><td>{{$reservation->exp_date}}</td>
+                </tr>
+                @endif
+                <tr>
+                    <td><span class='th'>Reservation Status: </span> </td><td>{{strtoupper($reservation->status)}}</td>
+                </tr>
+            </table>
+        </div>
+        <div id='reservationdiv' class="sectiondiv">
+            <h3 class="sectionheading">PAYMENT SUMMARY</h3>
+            <table>
+                <tr>
+                    <td><span class='th'>Amount Payable: </span></td><td>&#8358;{{number_format($reservation->getFee(),2,'.',',')}}</td>
+                </tr>
+                <tr>
+                    <td><span class='th'>Amount Paid: </span></td><td><strong>WAIVED</strong></td>
+                </tr>
+                <tr>
+                    <td><span class='th'>Amount Due: </span> </td><td><strong>WAIVED</strong></td>
+                </tr>
+                <tr><td colspan="2" style="text-align: center;">
+
+                        <a class='btn btn-sm btn-primary' href="javascript:print();"><i class='icon icon-print'></i> Print</a>
+
+                    </td></tr>
+            </table>
+        </div>
+    </div>
+    <div class='col-xs-1 col-sm-2 col-md-2'></div>
+</div>
+@endsection

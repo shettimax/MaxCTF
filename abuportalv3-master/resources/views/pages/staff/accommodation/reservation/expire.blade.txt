@@ -1,0 +1,110 @@
+@extends("layout.staff.master")
+
+@section("pageTitle")
+Expired Reservations
+@endsection
+
+@section('content')
+<section>
+    <div class="container pt-30 pb-30 pl-30 pr-30">
+        <div class="row">
+            <div class="col-md-12 pull-right flip sm-pull-none">
+                <div class="blog-posts">
+                    <div class="col-md-12">
+                        <h2 class="mb-4">Expired Reservations</h2>
+
+                        @if(session('success'))
+                        <div class="alert alert-success">{{ session('success') }}</div>
+                        @endif
+
+                        <!-- Filter Form -->
+                        <form method="GET" action="{{ route('accommodation.admin.reservations.expire') }}"
+                            class="mb-4 row g-2">
+                            <div class="col-md-3">
+                                <select name="hostel_id" class="form-select">
+                                    <option value="">-- Select Hostel --</option>
+                                    @foreach($hostels as $hostel)
+                                    <option value="{{ $hostel->id }}"
+                                        {{ request('hostel_id') == $hostel->id ? 'selected' : '' }}>
+                                        {{ $hostel->name }}
+                                    </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <select name="block_id" class="form-select">
+                                    <option value="">-- Select Block --</option>
+                                    @foreach($blocks as $block)
+                                    <option value="{{ $block->id }}"
+                                        {{ request('block_id') == $block->id ? 'selected' : '' }}>
+                                        {{ $block->name }}
+                                    </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <select name="room_id" class="form-select">
+                                    <option value="">-- Select Room --</option>
+                                    @foreach($rooms as $room)
+                                    <option value="{{ $room->id }}"
+                                        {{ request('room_id') == $room->id ? 'selected' : '' }}>
+                                        {{ $room->room_number }}
+                                    </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <button type="submit" class="btn btn-primary w-100">Filter</button>
+                            </div>
+                        </form>
+
+                        <form method="POST" action="{{ route('accommodation.admin.reservations.expireSelected') }}">
+                            @csrf
+                            <table class="table table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th><input type="checkbox" id="select-all"></th>
+                                        <th>Student</th>
+                                        <th>Hostel</th>
+                                        <th>Block</th>
+                                        <th>Room</th>
+                                        <th>Expiry Date</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @forelse($expiredReservations as $reservation)
+                                    <tr>
+                                        <td><input type="checkbox" name="reservation_ids[]"
+                                                value="{{ $reservation->id }}"></td>
+                                        <td>{{ $reservation->student->name ?? 'N/A'}}
+                                            ({{ $reservation->student->reg_no ?? 'N/A'}})</td>
+                                        <td>{{ $reservation->roomConfig->room->block->hostel->name ?? 'N/A' }}</td>
+                                        <td>{{ $reservation->roomConfig->room->block->name ?? 'N/A' }}</td>
+                                        <td>{{ $reservation->roomConfig->room->name ?? 'N/A' }}</td>
+                                        <td>{{ $reservation->expiry_date->format('Y-m-d') }}</td>
+                                    </tr>
+                                    @empty
+                                    <tr>
+                                        <td colspan="6" class="text-center">No expired reservations found.</td>
+                                    </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+
+                            {{ $expiredReservations->links() }}
+
+                            <button type="submit" class="btn btn-danger mt-3">Expire Selected</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+<script>
+document.getElementById('select-all').addEventListener('change', function(e) {
+    const checkboxes = document.querySelectorAll('input[name="reservation_ids[]"]');
+    checkboxes.forEach(cb => cb.checked = e.target.checked);
+});
+</script>
+@endsection

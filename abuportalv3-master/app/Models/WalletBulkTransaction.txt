@@ -1,0 +1,202 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
+
+class WalletBulkTransaction extends Model
+{
+    //
+
+    public static function instanceForToday()
+    {
+
+        try{
+            $regTypes = [
+                "PR"=>Transaction::FEESERVICETYPEID,
+                "DR"=>Transaction::DPFEESSERVICETYPEID,"UR"=>Transaction::FEESERVICETYPEID,
+                "AR"=>Transaction::DPFEESSERVICETYPEID,
+                "HR"=>Transaction::DPFEESSERVICETYPEID,
+               // "PR"=>Transaction::PGFEESERVICETYPEID,
+                "LV"=>Transaction::LVTFEESSERVICETYPEID,
+               "PU"=>Transaction::SERVICETYPEID,"DE"=>Transaction::SERVICETYPEID,
+               "LR"=>Transaction::LVTFEESSERVICETYPEID,"UA"=>Transaction::ACCSERVICETYPEID,
+               "MS"=>Transaction::PGFRMSERVICETYPEID,"DP"=>Transaction::DPFEESSERVICETYPEID,
+               "TR"=>Transaction::SERVICETYPEID,"ND"=>Transaction::DPFEESSERVICETYPEID,
+                "PG"=>Transaction::FEESERVICETYPEID,"IU"=>Transaction::FEESERVICETYPEID,
+            ];
+            $regDetails = [
+                "PR"=>"Postgraduate Reg.",
+               "DR"=>"Diploma Reg.","UR"=>"Undergraduate Reg.","LVT"=>"LVT Reg.",
+               "AR"=>"Advanced Diploma Reg.",
+               "NR"=>"National Diploma Reg.",
+               "HR"=>"Higher Diploma Reg.","LV"=>"LVT Form.",
+               "PU"=>"Post UTME Form.","DE"=>"Direct Entry Form",
+               "LR"=>"LVT Registration.","UA"=>"Undergraduate Accommodation.",
+               "MS"=>"Masters Form","DP"=>"Diploma Form","MP"=>"Masters Form",
+               "TR"=>"Transfer Form","ND"=>"National Diploma Form",
+               "PG"=>"Postgraduate Form","IU"=>"Inter-University Transfer",
+            ];
+            foreach ($regTypes as $key=>$reg){
+                $transactions = Transaction::where(["payment_status"=>"Paid","branch_id"=>Transaction::ABUMFB_BRANCH_ID])
+                    ->where('transaction_code', 'LIKE', "%$key%")
+                    ->whereNull("wallet_bulk_transaction_id")->get();
+
+                $totalAmount = 0;
+                $idBank = [];
+                foreach ($transactions as $transaction){
+                    $totalAmount += $transaction->transaction_amount;
+                    $idBank[] = $transaction->id;
+                }
+                $transaction_id = "WBT".time();
+                if($totalAmount == 0)continue;
+                $wbt = new WalletBulkTransaction();
+                $wbt->transaction_code = $transaction_id;
+                $wbt->amount = $totalAmount;
+                $wbt->payment_status = "Not Paid";
+                $wbt->rrr = $transaction_id;
+                $wbt->description = $key;
+                $wbt->pushed = 'no';
+
+                if($wbt->save()){
+                    // $wbt->generateRRR($reg,count($idBank));
+                    DB::table('transactions')
+                        ->whereIn('id', $idBank)
+                        ->update(['wallet_bulk_transaction_id' => $wbt->id]);
+                }
+            }
+            return null;
+        }catch(\Exception $e){
+            return $e->getMessage();
+        }
+    }
+
+    public function generateRRR($service_type,$tCount)
+    {
+        $regDetails = [
+                "DR"=>"Diploma Reg.","UR"=>"Undergraduate Reg.","LR"=>"LVT Reg.",
+                "UA"=>"Undergraduate Accommodation.",
+                "PR"=>"Postgraduate Reg.",
+                "DR"=>"Diploma Reg.","UR"=>"Undergraduate Reg.","LVT"=>"LVT Reg.",
+                "AR"=>"Advanced Diploma Reg.",
+                "HR"=>"Higher Diploma Reg.","LV"=>"LVT Reg.",
+                "PU"=>"Post UTME Form.","DE"=>"Direct Entry Form",
+                "LR"=>"LVT Registration.","UA"=>"Undergraduate Accommodation.",
+                "MS"=>"Masters Form","DP"=>"Diploma Form",
+                "TR"=>"Transfer Form","ND"=>"National Diploma Form",
+                "PG"=>"Postgraduate Form","IU"=>"Inter-University Transfer",
+            ];
+        $mert = Transaction::MERCHANTID;
+        $concatString = Transaction::MERCHANTID . $service_type . $this->transaction_code . intval($this->amount) . Transaction::APIKEY;
+        $hash = hash('sha512', $concatString);
+        $data = [
+            "serviceTypeId" => $service_type,
+            "amount" => intval($this->amount),
+            "payerName" => $this->transaction_code,
+            "description" => $regDetails[$this->description],
+            "payerEmail" => Transaction::ABUMFB_EMAIL,
+            "payerPhone" => Transaction::ABUMFB_PHONE,
+            "orderId" => $this->transaction_code,
+            "customFields" => [
+                ["name" => "Transaction Count", "value" => $tCount, "type" => "All"],
+                ["name" => "For", "value" => $this->description, "type" => "All"],
+                ["name" => "Transaction Code", "value" => $this->transaction_code, "type" => "All"],
+            ]
+        ];
+        $data_string = json_encode($data);
+        $ch = curl_init("https://login.remita.net/remita/exapp/api/v1/send/api/echannelsvc/merchant/api/paymentinit");
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $data_string);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+            "Authorization: remitaConsumerKey=$mert,remitaConsumerToken=$hash",
+            'Content-Type: application/json',
+            'Content-Length: ' . strlen($data_string)
+        ));
+        $response = curl_exec($ch);
+        $r2 = json_decode($response );
+        curl_close($ch);
+        if(isset($r2->status) && $r2->status=='DUPLICATE_REQUEST' ){
+            $api_key = Transaction::APIKEY;
+            $concatString = $this->transaction_code . $api_key . $mert;
+            $hash = hash('sha512', $concatString);
+            $url = Transaction::CHECKSTATUSURL . '/' . $mert . '/' . $this->transaction_code . '/' . $hash . '/' . 'orderstatus.reg';
+            //  Initiate curl
+            $ch = curl_init();
+            // Disable SSL verification
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+            // Will return the response, if false it print the response
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            // Set the url
+            curl_setopt($ch, CURLOPT_URL, $url);
+            // Execute
+            $result = curl_exec($ch);
+            // Closing
+            curl_close($ch);
+            $response = json_decode($result, true);
+            $this->rrr = $response['RRR'];
+            $this->save();
+            return 1;
+        }
+        $response = substr($response, 7);
+        $response = substr($response, 0, -1);
+
+        return $response = json_decode($response);
+        if ($response->statuscode == "025") {
+            $this->rrr = $response->RRR;
+            $this->save();
+            return 1;
+        } else {
+            $message = "Failed to generate RRR please try again later.";
+        }
+    }
+
+    public function verify()
+    {
+
+        try {
+
+            $hash = hash("sha512",$this->rrr.Transaction::APIKEY.Transaction::MERCHANTID);
+
+            $ch = curl_init("https://login.remita.net/remita/exapp/api/v1/send/api/echannelsvc/".(Transaction::MERCHANTID)."/".$this->rrr."/$hash/status.reg");
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "GET");
+            $response = curl_exec($ch);
+            $response = json_decode($response);
+
+
+            if(isset($response->status)){
+                if($response->status == "01" || $response->status == "00"){
+                    $payment_date = str_replace("AM","",$response->paymentDate);
+                    $payment_date = trim(str_replace("PM","",$payment_date));
+                    $this->amount = $response->amount;
+                    $this->payment_date = $payment_date;
+                    $this->payment_status = "Paid";
+                    $this->pushed = "yes";
+                    $this->save();
+                    return 1;
+                }else if($response->status == "021"){
+                    $this->save();
+                    return 2;
+                }
+            }
+        }catch (\Exception $e){
+            return 0;
+        }
+
+    }
+
+    public static function  pendingTransaction()
+    {
+        $wbts = WalletBulkTransaction::where('payment_status','Not Paid')->get();
+
+        foreach ($wbts as $wbt){
+            // $wbt->verify();
+        }
+    }
+
+    public function children(){
+        return $this->hasMany(Transaction::class,'wallet_bulk_transaction_id');
+    }
+}

@@ -1,0 +1,49 @@
+@inject('Accommodation', 'App\Models\Accommodation')
+    <div class='row'>
+        <div class='col-12 text-left'>
+            <h2 class="text-theme-colored2 font-20">{{strtoupper($block->name)}} HALL OF {{strtoupper($block->hostel->name)}}</h2>
+        </div>
+    </div>
+    <div class='row'>
+        <div class='col-xs-12 col-md-10 text-center'>
+            <table id='blockviewtb' class="table table-hover table-sm table-borderless">
+                <tbody>
+                    <tr>
+                        <td>Block Name:</td>
+                        <td>{{strtoupper($block->name)}}</td>
+                    </tr>
+                    <tr>
+                        <td>Hostel:</td>
+                        <td>{{strtoupper($block->hostel->name)}}</td>
+                    </tr>
+                    <tr>
+                        <td>Student Category:</td>
+                        <td>{{strtoupper($block->studcat)}}</td>
+                    </tr>
+                    <tr>
+                        <td>Gender:</td>
+                        <td>{{strtoupper($block->gender)}}</td>
+                    </tr>
+                    <tr>
+                        <td>Student Type:</td>
+                        <td>{{implode(', ',$Accommodation::getProgNamesFromSpec($block->getStudType()))}}</td>
+                    </tr>
+                    <tr>
+                        <td>Block Fee</td>
+                        <td>&#8358;{{number_format($block->getFee(), 2)}}</td>
+                    </tr>
+                    <tr>
+                        <td>Status</td>
+                        <td>{{($block->status==1)?('Active'):('Inactive')}}</td>
+                    </tr>
+                </tbody>
+            </table>
+
+        </div>
+        <div class='col-xs-12 col-md-1'>
+            <a id="toggleblockstatus" href='#' class='blockaction btn btn-sm btn-default' data-id ='{{$block->id}}'><i class="icon icon-switch3 icon-2x"></i> {{($block->status=='1')?('Set Inactive'):('Set Active')}}</a> <br />
+            <a href='#' class='blockaction modifyblockaction btn btn-sm btn-default' data-id = '{{$block->id}}'><i class="icon icon-edit3 icon-2x"></i> Modify</a>  <br />
+            <a href='{{route('accommodation.admin.room.index', ['bid'=>$block->id])}}' class='blockaction btn btn-sm btn-default'><i class="icon icon-list6 icon-2x"></i> List of Rooms</a>  <br />
+            <a href="#" class="blockaction blocklistaction btn btn-sm btn-default"><i class='icon icon-list6 icon-2x'></i> Back to List</a> <br />
+        </div>
+    </div>

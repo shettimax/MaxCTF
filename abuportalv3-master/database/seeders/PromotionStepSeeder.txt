@@ -1,0 +1,64 @@
+<?php
+
+namespace Database\Seeders;
+
+use Illuminate\Database\Seeder;
+use App\Models\PromotionStep;
+
+class PromotionStepSeeder extends Seeder
+{
+    /**
+     * Run the database seeds.
+     */
+    public function run(): void
+    {
+        $steps = [
+            [
+                'name' => 'HOD Recommendation',
+                'description' => 'Head of Department reviews and recommends staff for promotion',
+                'order' => 1,
+                'is_required' => true,
+                'status' => 'Active'
+            ],
+            [
+                'name' => 'Secretary Review',
+                'description' => 'Department Secretary reviews before Dean (if applicable)',
+                'order' => 2,
+                'is_required' => false,
+                'status' => 'Active'
+            ],
+            [
+                'name' => 'Dean Recommendation',
+                'description' => 'Dean of Faculty reviews and recommends staff for promotion',
+                'order' => 3,
+                'is_required' => true,
+                'status' => 'Active'
+            ],
+            [
+                'name' => 'Complex Chair Recommendation',
+                'description' => 'Complex Chair reviews and recommends staff for promotion',
+                'order' => 4,
+                'is_required' => true,
+                'status' => 'Active'
+            ],
+            [
+                'name' => 'Central APC Review',
+                'description' => 'Central Academic Planning Committee reviews promotion cases',
+                'order' => 5,
+                'is_required' => true,
+                'status' => 'Active'
+            ],
+            [
+                'name' => 'Council Approval',
+                'description' => 'Final approval by University Council',
+                'order' => 6,
+                'is_required' => true,
+                'status' => 'Active'
+            ]
+        ];
+
+        foreach ($steps as $step) {
+            PromotionStep::create($step);
+        }
+    }
+}

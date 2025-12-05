@@ -1,0 +1,331 @@
+@extends("layout.staff.master")
+@section("css")
+    <link rel="stylesheet" href="{{ asset('js/datatables/jquery.dataTables.min.css')}}"/>
+    <style>
+        label {
+            width: 100%;
+            color: #0f1824;
+            text-align: left;
+        }
+    </style>
+@endsection
+@section("pageTitle")
+    Manage Faculties
+@endsection
+@section("content")
+    <section>
+        <div class="main-section">
+            <div class="container">
+                <div class="row justify-content-center">
+                    <div class="col-md-12">
+                        <div class="card">
+                            <div class="card-body">
+                                @if (session('status'))
+                                    <div class="alert alert-success" role="alert">
+                                        {{ session('status') }}
+                                    </div>
+                                @endif
+                                @if (isset($errors))
+                                    <ul>
+                                        @foreach($errors as $error)
+                                            <li>{{$error}}</li>
+                                        @endforeach
+                                    </ul>
+                                @endif
+                                @if(Session::has('flash_message'))
+                                    <div class="alert alert-success">
+                                        {{ Session::get('flash_message') }}
+                                    </div>
+                                @endif
+                                {{--                                <ul class="nav nav-tabs">--}}
+                                {{--                                    <li class="nav-item active"><a class="nav-link" href="{{route('faculty')}}">Manage--}}
+                                {{--                                            Faculties</a></li>--}}
+                                {{--                                    <li class="nav-item"><a class="nav-link" href="{{route('department')}}">Manage--}}
+                                {{--                                            Departments</a></li>--}}
+                                {{--                                    <li class="nav-item"><a class="nav-link" href="{{route('programme')}}">Manage--}}
+                                {{--                                            Programmes</a></li>--}}
+                                {{--                                    <li class="nav-item"><a class="nav-link" href="{{route('course')}}">Manage--}}
+                                {{--                                            Courses</a>--}}
+                                {{--                                    </li>--}}
+                                {{--                                </ul>--}}
+                                {{--                                <h3>Manage Faculties</h3>--}}
+
+                                <div class="mb-70 mr-30 mt-30">
+                                    <!-- Button trigger modal -->
+                                    <button type="button" class="btn btn-primary pull-right add" data-toggle="modal"
+                                            data-target="#myModal">
+                                        Add New
+                                    </button>
+
+                                    <!-- Modal -->
+                                    <div class="modal fade" id="myModal" tabindex="-1" role="dialog"
+                                         aria-labelledby="myModalLabel">
+                                        <div class="modal-dialog" role="document">
+                                            <div class="modal-content">
+                                                <div class="modal-header">
+                                                    <button type="button" class="close" data-dismiss="modal"
+                                                            aria-label="Close"><span aria-hidden="true">&times;</span>
+                                                    </button>
+                                                    <h4 class="modal-title text-left" id="myModalLabel">Add new
+                                                        College/Faculty/Institution/School
+                                                        <div class="double-line-bottom-theme-colored-2"></div>
+                                                    </h4>
+                                                </div>
+                                                @php if(!isset($model))
+                                                      $model = null
+                                                @endphp
+                                                <form class="form" action="{{route('faculty.store')}}"
+                                                      method="POST"
+                                                      style="width: 100%; margin-top: 3vh;">
+                                                    @csrf
+                                                    <div class="modal-body">
+                                                        {{--                                                        @if( isset($model) && $model !=null)--}}
+                                                        <input type="hidden" id="faculty_id" value="0"
+                                                               name="faculty_id"/>
+                                                        {{--                                                        @endif--}}
+                                                        <div class="row">
+                                                            <div class="form-group col-md-6">
+                                                                <label for="faculty">Name:</label>
+                                                                <input type="text" id="faculty"
+                                                                       class="form-control {{ $errors->has('faculty')?'is-invalid':'is-valid' }}"
+                                                                       name="faculty"
+                                                                       value=""
+                                                                       {{--                                                                       value="{{isset($model)?$model->name:""}}"--}}
+                                                                       placeholder="Name" required>
+                                                            </div>
+                                                            <div class="form-group col-md-6">
+                                                                <label for="type">Type:</label>
+                                                                <select id="type"
+                                                                        class="form-control"
+                                                                        name="type" required>
+                                                                                                                                        <option value="">Select...</option>
+                                                                    <option
+                                                                        value="College" {{(isset($model)?$model->type:"") == "College"?"selected":""}}>
+                                                                        College
+                                                                    </option>
+                                                                    <option
+                                                                        value="Faculty" {{(isset($model)?$model->type:"") == "Faculty"?"selected":""}}>
+                                                                        Faculty
+                                                                    </option>
+                                                                    <option
+                                                                        value="Institute" {{(isset($model)?$model->type:"") == "Institute"?"selected":""}}>
+                                                                        Institute
+                                                                    </option>
+                                                                    <option
+                                                                        value="School" {{(isset($model)?$model->type:"") == "School"?"selected":""}}>
+                                                                        School
+                                                                    </option>
+                                                                    <option
+                                                                        value="Others" {{(isset($model)?$model->type:"") == "Others"?"selected":""}}>
+                                                                        Other
+                                                                    </option>
+                                                                </select>
+                                                                <div id="type_error" class="invalid-feedback"></div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="row">
+                                                            <div class="form-group col-md-6">
+                                                                <label for="nature">Nature:</label>
+                                                                <select id="nature" class="form-control"
+                                                                        name="nature" required>
+                                                                    <option value="">Select</option>
+                                                                    <option value="2">Degree Awarding</option>
+                                                                    <option value="1">Non Degree Awarding</option>
+                                                                    <option value="0">Others</option>
+                                                                </select>
+                                                                <div id="nature_error" class="invalid-feedback"></div>
+                                                            </div>
+                                                            <div class="form-group col-md-6">
+                                                                <label for="nature">Campus:</label>
+                                                                <select id="campus" class="form-control"
+                                                                        name="campus" required>
+                                                                    <option value="">Select</option>
+                                                                    <option value="Kongo">Kongo Campus</option>
+                                                                    <option value="Samaru">Samaru Campus</option>
+                                                                </select>
+                                                                <div id="nature_error" class="invalid-feedback"></div>
+                                                            </div>
+                                                            <div class="form-group col-md-6">
+                                                                <label for="nature">Complex:</label>
+                                                                <select id="complex" class="form-control"
+                                                                        name="complex_id" required>
+                                                                    <option value="">Select Complex</option>
+                                                                    @foreach(\App\Models\Complex::all() as $complex)
+                                                                        <option
+                                                                            value="{{$complex->id}}">{{$complex->name}}</option>
+                                                                    @endforeach
+
+                                                                </select>
+                                                                <div id="nature_error" class="invalid-feedback"></div>
+                                                            </div>
+                                                            <div class="form-group col-md-6">
+                                                                <label for="p_number">Dean P.No:</label>
+                                                                <input type="text" class="form-control"
+                                                                       name="p_number" id="p_number"/>
+                                                                <div id="p_number" class="invalid-feedback"></div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <div class="form-group">
+                                                    <button type="button" class="btn btn-flat btn-danger"
+                                                            data-dismiss="modal">
+                                                        Close
+                                                    </button>
+                                                    <button type="submit" id="addbtn"
+                                                            class="btn btn-flat btn-success text-right"><span
+                                                            class="icon icon-save"> Save </span>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mb-30 ml-30 mr-30 mt-30 table-responsive">
+                                <table id="faculties-table" align="center"
+                                       class="table table-bordered table-striped"
+                                       style="width:100%;font-size:16px;font-family: Calibri; margin-top: 2vh; text-align: left; color: #000000">
+                                    <thead>
+                                    <tr>
+                                        <th>S/N</th>
+                                        <th>Name</th>
+                                        <th>Nature</th>
+                                        <th>Dean/Director</th>
+                                        <th>Complex</th>
+                                        <th>Campus</th>
+                                        <th>Action</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    @php $i =1; @endphp
+                                    @foreach(\App\Models\Faculty::select('*')->orderby('name')->get() as $faculty)
+                                        <tr>
+                                            <td>{{$i++}}</td>
+                                            <td>{{$faculty->name}}</td>
+                                            <td>
+                                                @if($faculty->is_other_institute==2)
+                                                    {{"Degree Awarding"}}
+
+                                                @elseif($faculty->is_other_institute==1)
+                                                    {{"Non Degree Awarding"}}
+                                                @else($faculty->is_other_institute==2)
+                                                    {{"Others"}}
+                                                @endif
+                                            </td>
+                                            <td>
+                                               <strong>{{ucfirst($faculty->head_pno) }}</strong> {{$faculty->deanName()}}
+                                            </td>
+                                            @php $fComplex =\App\Models\Complex::find($faculty->complex_id) ;@endphp
+                                            <td>{{$fComplex->name??''}}</td>
+                                            <td>{{$faculty->campus}}</td>
+                                            <td>
+                                                @if($user->canDo('faculty'))
+                                                    <a class="btn btn-primary btn-sm ml-30 edit"
+                                                       href="#" data-toggle="modal"
+                                                       data-target="#myModal" data-id="{{$faculty->id}}"
+                                                       data-name="{{$faculty->name}}"
+                                                       data-complex="{{$faculty->complex_id}}"
+                                                       data-type="{{$faculty->type}}"
+                                                       data-campus="{{$faculty->campus}}"
+                                                       data-p_number="{{$faculty->head_pno}}"
+                                                       data-nature="{{$faculty->is_other_institute}}">Edit <span
+                                                            class="icon icon_pencil-edit"></span> </a>
+                                                @endif
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        </div>
+    </section>
+@endsection
+
+@section("js")
+    <script src="{{asset('js/datatables/jquery.dataTables.min.js')}}"></script>
+    <script>
+        $(document).on('click', '.add', function () {
+            $(".modal-body #campus").val('');
+            $(".modal-body #faculty").val('');
+            $(".modal-body #complex").val('');
+            $(".modal-body #faculty_id").val(0);
+            $(".modal-body #nature").val(-1);
+            $(".modal-body #p_number").val('');
+            $(".modal-body #type").val('');
+        });
+
+        $(document).on('click', '.edit', function () {
+            const id = $(this).data('id'),
+                name = $(this).data('name'),
+                campus = $(this).data('campus'),
+                complex = $(this).data('complex'),
+                nature = $(this).data('nature');
+                type_ = $(this).data('type');
+            p_number = $(this).data('p_number');
+
+            $(".modal-body #faculty").val(name);
+            $(".modal-body #faculty_id").val(id);
+            $(".modal-body #nature").val(nature);
+            $(".modal-body #campus").val(campus);
+            $(".modal-body #complex").val(complex);
+            $(".modal-body #p_number").val(p_number);
+            $(".modal-body #type").val(type_);
+        });
+
+        $('#faculties-table').DataTable({
+            "lengthMenu": [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+            pageLength: 10,
+            dom: "<'row'<'col-sm-12'B>>" +
+                "<'row'<'col-sm-12 col-md-6'l><'col-sm-12 col-md-6'f>>" +
+                "<'row'<'col-sm-12'tr>>" +
+                "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+            buttons: [
+                {
+                    extend: 'excelHtml5',
+                    exportOptions: {
+                        columns: ':visible'
+                    }
+                },
+                {
+                    extend: 'pdfHtml5',
+                    orientation: 'landscape',
+                    pageSize: 'LEGAL',
+                    exportOptions: {
+                        columns: ':visible'
+                    }
+                },
+                {
+                    extend: 'print',
+                    messageTop: 'Candidates Report',
+                    orientation: 'landscape',
+                    pageSize: 'LEGAL'
+                },
+                {
+                    extend: 'colvis',
+                    columns: ':not(.noVis)',
+                    collectionLayout: 'fixed two-column',
+                    postfixButtons: [{
+                        extend: 'colvisGroup',
+                        text: 'Show all',
+                        show: ':hidden'
+                    }]
+                }
+            ],
+            language: {
+                buttons: {
+                    colvis: 'Show/Hide columns'
+                }
+            }
+        });
+    </script>
+@endsection
+

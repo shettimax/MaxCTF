@@ -1,0 +1,201 @@
+<?php
+
+namespace App\Console\Commands;
+
+use App\Services\ExternalFileService;
+use Illuminate\Console\Command;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
+
+class TestExternalFileService extends Command
+{
+    protected $signature = 'external-files:test
+                           {--connection : Test connection only}
+                           {--config : Show configuration}
+                           {--upload : Test file upload}
+                           {--path= : Path for testing (default: test)}';
+
+    protected $description = 'Test external file service functionality';
+
+    protected ExternalFileService $fileService;
+
+    public function __construct(ExternalFileService $fileService)
+    {
+        parent::__construct();
+        $this->fileService = $fileService;
+    }
+
+    public function handle()
+    {
+        $this->info('🚀 Testing External File Service...');
+        $this->newLine();
+
+        // Show configuration if requested
+        if ($this->option('config')) {
+            $this->showConfiguration();
+            return;
+        }
+
+        // Test connection
+        $this->testConnection();
+
+        // Test upload if requested
+        if ($this->option('upload')) {
+            $this->testUpload();
+        }
+
+        $this->newLine();
+        $this->info('✅ External File Service test completed.');
+    }
+
+    protected function showConfiguration()
+    {
+        $this->info('📋 External File Service Configuration:');
+        $this->newLine();
+
+        $config = $this->fileService->getConfig();
+
+        $this->table(
+            ['Setting', 'Value'],
+            [
+                ['API URL', $config['api_url']],
+                ['API Key Set', $config['api_key_set'] ? '✅ Yes' : '❌ No'],
+                ['API Key Length', $config['api_key_length']],
+                ['Timeout', $config['timeout'] . 's'],
+                ['Retry Attempts', $config['retry_attempts']],
+                ['Is Configured', $config['is_configured'] ? '✅ Yes' : '❌ No'],
+            ]
+        );
+
+        $this->newLine();
+        $this->info('📁 Default Paths:');
+        $paths = $this->fileService->getDefaultPaths();
+        foreach ($paths as $key => $path) {
+            $this->line("  {$key}: {$path}");
+        }
+
+        $this->newLine();
+        $this->info('📏 File Limits (KB):');
+        $limits = $this->fileService->getFileLimits();
+        foreach ($limits as $key => $limit) {
+            $this->line("  {$key}: {$limit}KB");
+        }
+
+        $this->newLine();
+        $this->info('📄 Allowed Types:');
+        $types = $this->fileService->getAllowedTypes();
+        foreach ($types as $key => $typeList) {
+            $this->line("  {$key}: " . implode(', ', $typeList));
+        }
+    }
+
+    protected function testConnection()
+    {
+        $this->info('🔗 Testing connection to external file server...');
+
+        $result = $this->fileService->testConnection();
+
+        if ($result['success']) {
+            $this->info('✅ Connection successful!');
+
+            if (isset($result['server_info'])) {
+                $info = $result['server_info'];
+                $this->line("   Server: " . ($info['server'] ?? 'Unknown'));
+                $this->line("   Version: " . ($info['version'] ?? 'Unknown'));
+                $this->line("   Status: " . ($info['status'] ?? 'Unknown'));
+            }
+
+            if (isset($result['response_time'])) {
+                $this->line("   Response Time: " . round($result['response_time'] * 1000) . 'ms');
+            }
+        } else {
+            $this->error('❌ Connection failed!');
+            $this->error('   Error: ' . $result['error']);
+
+            if (isset($result['response'])) {
+                $this->warn('   Response: ' . substr($result['response'], 0, 200));
+            }
+        }
+
+        $this->newLine();
+    }
+
+    protected function testUpload()
+    {
+        $this->info('📤 Testing file upload...');
+
+        // Create a test file
+        $testContent = "Test file content - " . now()->toDateTimeString();
+        $testPath = storage_path('app/test-upload.txt');
+        file_put_contents($testPath, $testContent);
+
+        try {
+            // Create UploadedFile instance
+            $uploadedFile = new UploadedFile(
+                $testPath,
+                'test-upload.txt',
+                'text/plain',
+                null,
+                true
+            );
+
+            $path = $this->option('path') ?? 'test';
+
+            // Test upload
+            $result = $this->fileService->upload($uploadedFile, $path, [
+                'test' => true,
+                'timestamp' => now()->toDateTimeString()
+            ]);
+
+            if ($result['success']) {
+                $this->info('✅ Upload successful!');
+                $this->line("   External ID: " . $result['external_id']);
+                $this->line("   URL: " . $result['url']);
+                $this->line("   Path: " . $result['path']);
+                $this->line("   Size: " . $result['size'] . ' bytes');
+
+                // Test file existence
+                $this->newLine();
+                $this->info('🔍 Testing file existence...');
+
+                if ($this->fileService->exists($result['path'])) {
+                    $this->info('✅ File exists on external server');
+
+                    // Get metadata
+                    $metadata = $this->fileService->getMetadata($result['path']);
+                    if ($metadata) {
+                        $this->line("   Metadata retrieved successfully");
+                        $this->line("   MIME Type: " . ($metadata['mime_type'] ?? 'Unknown'));
+                        $this->line("   Created: " . ($metadata['created_at'] ?? 'Unknown'));
+                    }
+
+                    // Test getting URL
+                    $url = $this->fileService->getUrl($result['path']);
+                    if ($url) {
+                        $this->line("   URL retrieved: " . $url);
+                    }
+
+                } else {
+                    $this->warn('⚠️  File does not exist on external server');
+                }
+
+            } else {
+                $this->error('❌ Upload failed!');
+                $this->error('   Error: ' . $result['error']);
+                if (isset($result['details'])) {
+                    $this->warn('   Details: ' . $result['details']);
+                }
+            }
+
+        } catch (\Exception $e) {
+            $this->error('❌ Upload test failed with exception: ' . $e->getMessage());
+        } finally {
+            // Clean up test file
+            if (file_exists($testPath)) {
+                unlink($testPath);
+            }
+        }
+
+        $this->newLine();
+    }
+}

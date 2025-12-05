@@ -1,0 +1,61 @@
+<?php
+
+namespace App\Http\Controllers\Staff;
+
+use App\Http\Controllers\Controller;
+use App\Models\Employee;
+use App\Models\EmployeeExternalSupervision;
+use App\Models\Student;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+
+
+class EmployeeExternalSupervisionController extends Controller
+{
+    public function __construct()
+    {
+        return $this->middleware(['auth:staff']);
+    }
+
+    public function index(){
+        try{
+           $employee = Employee::find(Auth::user()->employee_id);
+            return view('pages.staff.profile.extsupervisor', compact('employee'));
+        }catch(\Exception $e){
+            return redirect()->back()->with('error', $e->getMessage());
+        }
+    }
+
+    public function storeExtSupervisor(Request $request){
+        try{
+//            $this->validate($request, [
+//                'matricnumber' => 'required'
+//            ]);
+//            $student = Student::where('matric_number', $request->matricnumber)->first();
+
+            $supervision = EmployeeExternalSupervision::find($request->supervision_id);
+            if (!$supervision)
+                $supervision = new EmployeeExternalSupervision();
+            $supervision->employee_id = $request->employee_id;
+            $supervision->candidate_id = $request->matricnumber;
+            $supervision->dissertation_title = $request->title;
+            $supervision->supervisor =$request->supervisor;
+            $supervision->category = $request->category;
+            $supervision->faculty = $request->faculty;
+            $supervision->department = $request->department;
+            $supervision->save();
+            return redirect()->back()->with('success', 'Done!');
+        }catch(\Exception $e){
+            return redirect()->back()->with('error',$e->getMessage());
+        }
+    }
+
+    public function deleteExtSupervisor(EmployeeExternalSupervision $extSupervision){
+        try{
+            EmployeeExternalSupervision::destroy($extSupervision->id);
+            return redirect()->back()->with('success', 'Done!');
+        }catch(\Exception $e){
+            return redirect()->back()->with('error', $e->getMessage());
+        }
+    }
+}

@@ -1,0 +1,559 @@
+@extends('layout.staff.master')
+
+@section('css')
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <link rel="stylesheet" href="{{ asset('DataTables/datatables.min.css') }}">
+    <style>
+        .row {
+            margin-left: unset;
+            margin-right: unset;
+        }
+        .loader{
+            display:none;
+        }
+        #records {
+            overflow-x: auto;
+            border-color: #cccccc;
+            border-width: 1px;
+            border-radius: 5px;
+            min-height: 50px;
+            padding: 10px;
+        }
+
+        .breadcrumb {
+            margin-bottom: unset;
+        }
+
+        .heading-line-bottom {
+            margin: unset;
+        }
+
+        .table-responsive {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            width: 100%;
+        }
+
+        .table {
+            table-layout: auto;
+            width: 100%;
+            max-width: 100%;
+            white-space: nowrap;
+        }
+
+        thead th, tbody td {
+            white-space: normal;
+        }
+
+        .verification-status {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .status-pending {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+
+        .status-approved {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .status-rejected {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+
+        .verification-actions {
+            display: flex;
+            gap: 5px;
+        }
+
+        .verification-actions .btn {
+            padding: 2px 8px;
+            font-size: 11px;
+        }
+    </style>
+@endsection
+
+@section('content')
+    <section class="pt-10 pl-5">
+        <div class="section-content">
+            <div class="row mt-20">
+                <form action="" id="verificationform">
+                    @csrf
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <label for="complex">Complex:</label>
+                            <select id="complex" name="complex" class="form-control">
+                                <option value="">Select Complex</option>
+                                <option value="%">Select All</option>
+                                @foreach($complexes as $complex)
+                                    <option value="{{ $complex->id }}">{{ $complex->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label for="faculty">Faculty:</label>
+                            <select id="faculty" name="faculty" class="form-control">
+                                <option value="">Select Faculty</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label for="department">Department:</label>
+                            <select id="department" name="department" class="form-control">
+                                <option value="">Select Department</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label for="year">Year:</label>
+                            <select id="year" name="year" class="form-control">
+                                @for ($year = 2023; $year <= date('Y'); $year++)
+                                    <option value="{{ $year }}" {{ $year == date('Y') ? 'selected' : '' }}>{{ $year }}</option>
+                                @endfor
+                            </select>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label for="verification_status">Verification Status:</label>
+                            <select id="verification_status" name="verification_status" class="form-control">
+                                <option value="">All Status</option>
+                                <option value="Pending">Pending</option>
+                                <option value="Approved">Approved</option>
+                                <option value="Rejected">Rejected</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label>&nbsp;</label>
+                            <button type="button" id="loadVerificationData" class="btn btn-primary form-control">
+                                <i class="fa fa-search"></i> Load Data
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Verification Statistics -->
+            <div class="row mt-20" id="verificationStats" style="display: none;">
+                <div class="col-md-12">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <h4>Verification Statistics</h4>
+                        </div>
+                        <div class="panel-body">
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <div class="info-box">
+                                        <span class="info-box-icon bg-blue"><i class="fa fa-users"></i></span>
+                                        <div class="info-box-content">
+                                            <span class="info-box-text">Total</span>
+                                            <span class="info-box-number" id="totalCount">0</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="info-box">
+                                        <span class="info-box-icon bg-yellow"><i class="fa fa-clock-o"></i></span>
+                                        <div class="info-box-content">
+                                            <span class="info-box-text">Pending</span>
+                                            <span class="info-box-number" id="pendingCount">0</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="info-box">
+                                        <span class="info-box-icon bg-green"><i class="fa fa-check"></i></span>
+                                        <div class="info-box-content">
+                                            <span class="info-box-text">Approved</span>
+                                            <span class="info-box-number" id="approvedCount">0</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="info-box">
+                                        <span class="info-box-icon bg-red"><i class="fa fa-times"></i></span>
+                                        <div class="info-box-content">
+                                            <span class="info-box-text">Rejected</span>
+                                            <span class="info-box-number" id="rejectedCount">0</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Verification Actions -->
+            <div class="row mt-20" id="verificationActions" style="display: none;">
+                <div class="col-md-12">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <h4>Bulk Actions</h4>
+                        </div>
+                        <div class="panel-body">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <button type="button" id="bulkApprove" class="btn btn-success">
+                                        <i class="fa fa-check"></i> Bulk Approve Selected
+                                    </button>
+                                </div>
+                                <div class="col-md-4">
+                                    <button type="button" id="bulkReject" class="btn btn-danger">
+                                        <i class="fa fa-times"></i> Bulk Reject Selected
+                                    </button>
+                                </div>
+                                <div class="col-md-4">
+                                    <button type="button" id="bulkReset" class="btn btn-warning">
+                                        <i class="fa fa-refresh"></i> Reset Selected to Pending
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Success/Error Message Area -->
+            <div class="row mt-20" id="messageArea" style="display: none;">
+                <div class="col-md-12">
+                    <div id="pageMessage" class="alert alert-dismissible" role="alert">
+                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                        <span id="messageText"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Data Table -->
+            <div class="row mt-20">
+                <div class="col-md-12">
+                    <div id="records">
+                        <div class="text-center">
+                            <p class="text-muted">Select filters and click "Load Data" to view promotion recommendations for verification.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Verification Modal -->
+    <div class="modal fade" id="verificationModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">Verify Promotion Recommendation</h4>
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <form id="verificationForm">
+                        @csrf
+                        <input type="hidden" id="recommendationId" name="recommendation_id">
+
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                    <label>Staff Information:</label>
+                                    <div id="staffInfo" class="well well-sm"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="verificationStatus">Verification Status:</label>
+                                    <select id="verificationStatus" name="verification_status" class="form-control" required>
+                                        <option value="">Select Status</option>
+                                        <option value="Approved">Approve</option>
+                                        <option value="Rejected">Reject</option>
+                                        <option value="Pending">Reset to Pending</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                    <label for="verificationRemark">Verification Remark:</label>
+                                    <textarea id="verificationRemark" name="verification_remark" class="form-control" rows="4" placeholder="Enter verification remarks..."></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="button" id="saveVerification" class="btn btn-primary">Save Verification</button>
+                </div>
+            </div>
+        </div>
+    </div>
+@endsection
+
+@section('js')
+    <script src="{{ asset('DataTables/datatables.min.js') }}"></script>
+    <script>
+        $(document).ready(function() {
+            // Setup CSRF token for all AJAX requests
+            $.ajaxSetup({
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                }
+            });
+
+            // Load all faculties initially
+            loadAllFaculties();
+
+            // Load verification data
+            $('#loadVerificationData').on('click', function() {
+                loadVerificationData();
+            });
+
+            // Function to load all faculties
+            function loadAllFaculties() {
+                console.log('Loading all faculties...');
+                $.get('{{ route("promotion.recommendations.faculties") }}', {})
+                    .done(function(response) {
+                        console.log('All faculties response:', response);
+                        if (response.success) {
+                            $.each(response.faculties, function(index, faculty) {
+                                $('#faculty').append('<option value="' + faculty.id + '">' + faculty.name + '</option>');
+                            });
+                            console.log('Added', response.faculties.length, 'faculties to dropdown');
+                        } else {
+                            console.error('Failed to load all faculties:', response.message);
+                        }
+                    })
+                    .fail(function(xhr, status, error) {
+                        console.error('AJAX error loading all faculties:', error);
+                        console.error('Response:', xhr.responseText);
+                    });
+            }
+
+            // Load verification statistics
+            function loadVerificationStats() {
+                var formData = $('#verificationform').serialize();
+                $.get('{{ route("promotion.verification.stats") }}', formData)
+                    .done(function(response) {
+                        if (response.success) {
+                            $('#totalCount').text(response.stats.total || 0);
+                            $('#pendingCount').text(response.stats.pending || 0);
+                            $('#approvedCount').text(response.stats.approved || 0);
+                            $('#rejectedCount').text(response.stats.rejected || 0);
+                            $('#verificationStats').show();
+                        }
+                    });
+            }
+
+            // Load verification data
+            function loadVerificationData() {
+                var formData = $('#verificationform').serialize();
+                $('#records').html('<div class="text-center"><i class="fa fa-spinner fa-spin"></i> Loading...</div>');
+
+                $.get('{{ route("promotion.verification.load.data") }}', formData)
+                    .done(function(response) {
+                        $('#records').html(response);
+                        loadVerificationStats();
+                        $('#verificationActions').show();
+                    })
+                    .fail(function() {
+                        $('#records').html('<div class="alert alert-danger">Error loading data. Please try again.</div>');
+                    });
+            }
+
+            // Individual verification
+            $(document).on('click', '.verify-btn', function() {
+                var recommendationId = $(this).data('id');
+                var staffInfo = $(this).data('staff-info');
+
+                $('#recommendationId').val(recommendationId);
+
+                // Convert plain text staff info to HTML
+                var formattedStaffInfo = staffInfo.replace(/\n/g, '<br>');
+                $('#staffInfo').html(formattedStaffInfo);
+
+                $('#verificationStatus').val('');
+                $('#verificationRemark').val('');
+
+                $('#verificationModal').modal('show');
+            });
+
+            // Save verification
+            $('#saveVerification').on('click', function() {
+                var formData = $('#verificationForm').serialize();
+
+                console.log('Submitting verification with data:', formData);
+
+                $.post('{{ route("promotion.verification.verify") }}', formData)
+                    .done(function(response) {
+                        console.log('Verification response:', response);
+                        console.log('Response success:', response.success);
+                        console.log('Response message:', response.message);
+
+                        if (response.success) {
+                            console.log('Verification successful, showing success message');
+                            $('#verificationModal').modal('hide');
+                            loadVerificationData();
+                            showAlert('success', response.message || 'Verification completed successfully!');
+                        } else {
+                            console.log('Verification failed, showing error message');
+                            showAlert('error', response.message || 'Verification failed');
+                        }
+                    })
+                    .fail(function(xhr, status, error) {
+                        console.error('Verification failed:', error);
+                        console.error('Response:', xhr.responseText);
+                        showAlert('error', 'Error saving verification. Please try again.');
+                    });
+            });
+
+            // Bulk actions
+            $('#bulkApprove').on('click', function() {
+                bulkAction('Approved');
+            });
+
+            $('#bulkReject').on('click', function() {
+                bulkAction('Rejected');
+            });
+
+            $('#bulkReset').on('click', function() {
+                bulkAction('Pending');
+            });
+
+            function bulkAction(status) {
+                var selectedIds = [];
+                $('input[name="staff_ids[]"]:checked').each(function() {
+                    selectedIds.push($(this).val());
+                });
+
+                if (selectedIds.length === 0) {
+                    showAlert('warning', 'Please select at least one recommendation.');
+                    return;
+                }
+
+                var remark = prompt('Enter verification remark (optional):');
+                if (remark === null) return; // User cancelled
+
+                var formData = {
+                    staff_ids: selectedIds,
+                    verification_status: status,
+                    verification_remark: remark,
+                    _token: $('meta[name="csrf-token"]').attr('content')
+                };
+
+                $.post('{{ route("promotion.verification.bulk") }}', formData)
+                    .done(function(response) {
+                        if (response.success) {
+                            loadVerificationData();
+                            showAlert('success', response.message);
+                        } else {
+                            showAlert('error', response.message);
+                        }
+                    })
+                    .fail(function() {
+                        showAlert('error', 'Error performing bulk action. Please try again.');
+                    });
+            }
+
+            // Faculty and Department dropdowns
+            $('#complex').on('change', function() {
+                var complexId = $(this).val();
+                console.log('Complex changed to:', complexId);
+                $('#faculty').html('<option value="">Select Faculty</option>');
+                $('#department').html('<option value="">Select Department</option>');
+
+                if (complexId && complexId !== '%') {
+                    console.log('Making request to:', '{{ route("promotion.recommendations.faculties") }}');
+                    $.get('{{ route("promotion.recommendations.faculties") }}', {complex: complexId})
+                        .done(function(response) {
+                            console.log('Faculties response:', response);
+                            if (response.success) {
+                                $.each(response.faculties, function(index, faculty) {
+                                    $('#faculty').append('<option value="' + faculty.id + '">' + faculty.name + '</option>');
+                                });
+                                console.log('Added', response.faculties.length, 'faculties to dropdown');
+                            } else {
+                                console.error('Failed to load faculties:', response.message);
+                            }
+                        })
+                        .fail(function(xhr, status, error) {
+                            console.error('AJAX error loading faculties:', error);
+                            console.error('Response:', xhr.responseText);
+                        });
+                } else if (complexId === '%' || complexId === '') {
+                    // Load all faculties if "Select All" or empty is selected
+                    loadAllFaculties();
+                }
+            });
+
+            $('#faculty').on('change', function() {
+                var facultyId = $(this).val();
+                console.log('Faculty changed to:', facultyId);
+                $('#department').html('<option value="">Select Department</option>');
+
+                if (facultyId) {
+                    console.log('Making request to:', '{{ route("promotion.recommendations.departments") }}');
+                    $.get('{{ route("promotion.recommendations.departments") }}', {faculty: facultyId})
+                        .done(function(response) {
+                            console.log('Departments response:', response);
+                            if (response.success) {
+                                $.each(response.departments, function(index, department) {
+                                    $('#department').append('<option value="' + department.id + '">' + department.name + '</option>');
+                                });
+                                console.log('Added', response.departments.length, 'departments to dropdown');
+                            } else {
+                                console.error('Failed to load departments:', response.message);
+                            }
+                        })
+                        .fail(function(xhr, status, error) {
+                            console.error('AJAX error loading departments:', error);
+                            console.error('Response:', xhr.responseText);
+                        });
+                }
+            });
+
+            // Show alert function
+            function showAlert(type, message) {
+                // Remove any existing alerts
+                $('.verification-alert').remove();
+
+                var alertClass = type === 'success' ? 'alert-success' :
+                                type === 'error' ? 'alert-danger' : 'alert-warning';
+
+                // Show in-page message
+                $('#pageMessage').removeClass('alert-success alert-danger alert-warning').addClass(alertClass);
+                $('#messageText').html('<strong>' + (type === 'success' ? 'Success!' : type === 'error' ? 'Error!' : 'Warning!') + '</strong> ' + message);
+                $('#messageArea').show();
+
+                // Also show floating alert
+                var alertHtml = '<div class="alert ' + alertClass + ' alert-dismissible verification-alert" role="alert" style="position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 300px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">' +
+                    '<button type="button" class="close" data-dismiss="alert" aria-label="Close">' +
+                    '<span aria-hidden="true">&times;</span></button>' +
+                    '<strong>' + (type === 'success' ? 'Success!' : type === 'error' ? 'Error!' : 'Warning!') + '</strong> ' + message + '</div>';
+
+                $('body').append(alertHtml);
+
+                // Auto-hide floating alert after 5 seconds
+                setTimeout(function() {
+                    $('.verification-alert').fadeOut(500, function() {
+                        $(this).remove();
+                    });
+                }, 5000);
+
+                // Auto-hide in-page message after 8 seconds
+                setTimeout(function() {
+                    $('#messageArea').fadeOut(500);
+                }, 8000);
+
+                // Also log to console for debugging
+                console.log('Alert shown:', type, message);
+            }
+        });
+    </script>
+@endsection

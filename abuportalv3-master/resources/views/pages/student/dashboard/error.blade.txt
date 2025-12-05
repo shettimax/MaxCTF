@@ -1,0 +1,18 @@
+@extends("layout.student.master")
+
+@section("content")
+    <div class="main-section">
+        <!-- Page Section -->
+        <div  class="page-section"   style="margin-top: -20px;margin-bottom: 0px;border-top: 0px #e0e0e0 solid;border-bottom: 0px #e0e0e0 solid;" >
+            <!-- Container Start -->
+            <div  class="container">
+                <div class="alert alert-warning text-center">
+                    <p>
+                        Oops!! To view this page you should have at least paid {{round($milestone,2)}}% (<strong>&#8358;{{ number_format(round(($milestone/100)*$total,2),"2",".",",")  }}</strong>) of your Fees (<strong>&#8358;{{number_format($total,"2",".",",")}}</strong>)
+                        for {{$session}}/{{$session+1}} Session <br>You have currently paid only {{ round($achievedpercentage,2) }}% (<strong>&#8358;{{ number_format(round($paid,2) ,"2",".",",")}}</strong>).
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+@endsection

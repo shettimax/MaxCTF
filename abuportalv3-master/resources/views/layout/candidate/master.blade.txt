@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<head>
+    <title>Ahmadu Bello University:Portal</title>
+    @include("commons.staff.head")
+    <style>
+        .modal-content{
+            border-top:5px solid #43B14B;
+            border-bottom:5px solid #43B14B;
+            border-radius:0;
+        }
+
+        .modal-body{
+            max-height: 450px;
+            overflow-y: scroll;
+        }
+        .modal-header{
+            padding-left:80px;
+            z-index: 100;
+        }
+        .modal-footer{
+            z-index: 100;
+        }
+        .modal-header:after{
+            content: "";
+            /*display: block;*/
+            width: 100px;
+            height: 100px;
+            position: absolute;
+            top: 0;
+            left: 0;
+            background-image: url("{{ asset('images/logo64.png') }}");
+            background-size: 55px 50px;
+            background-position: 10px 10px;
+            background-repeat: no-repeat;
+            /*opacity: 0.5;  */
+            z-index: auto;
+        }
+    </style>
+    @yield("css")
+</head>
+<body class="boxed-layout pt-40 pb-40 pt-sm-0" style="background: #999 url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPScyOCcgaGVpZ2h0PSc0OScgdmlld0JveD0nMCAwIDI4IDQ5Jz48ZyBmaWxsLXJ1bGU9J2V2ZW5vZGQnPjxnIGlkPSdoZXhhZ29ucycgZmlsbD0nI2ZmZmZmZicgZmlsbC1vcGFjaXR5PScwLjEwJyBmaWxsLXJ1bGU9J25vbnplcm8nPjxwYXRoIGQ9J00xMy45OSA5LjI1bDEzIDcuNXYxNWwtMTMgNy41TDEgMzEuNzV2LTE1bDEyLjk5LTcuNXpNMyAxNy45djEyLjdsMTAuOTkgNi4zNCAxMS02LjM1VjE3LjlsLTExLTYuMzRMMyAxNy45ek0wIDE1bDEyLjk4LTcuNVYwaC0ydjYuMzVMMCAxMi42OXYyLjN6bTAgMTguNUwxMi45OCA0MXY4aC0ydi02Ljg1TDAgMzUuODF2LTIuM3pNMTUgMHY3LjVMMjcuOTkgMTVIMjh2LTIuMzFoLS4wMUwxNyA2LjM1VjBoLTJ6bTAgNDl2LThsMTIuOTktNy41SDI4djIuMzFoLS4wMUwxNyA0Mi4xNVY0OWgtMnonLz48L2c+PC9nPjwvc3ZnPg==)">
+
+<div id="wrapper" class="clearfix">
+    <!-- preloader -->
+{{--    <div id="preloader">--}}
+{{--        <div id="spinner">--}}
+{{--            <img alt="" src="/images/preloaders/5.gif">--}}
+{{--        </div>--}}
+{{--        <div id="disable-preloader" class="btn btn-default btn-sm">Disable Preloader</div>--}}
+{{--    </div>--}}
+
+    <!-- Header -->
+@include("commons.staff.header")
+<!-- Start main-content -->
+    <div class="main-content">
+        <!-- Section: Pricing -->
+        <section class="inner-header divider layer-overlay" style="box-shadow: inset;width: 99%;margin:0 auto;">
+            <div class="container" style="padding: 2px 0;">
+            </div>
+        </section>
+        <section>
+            <div class="container" style="padding:0;">
+                <div class="header-nav">
+                    <div class="header-nav-wrapper navbar-scrolltofixed bg-white">
+                        <div class="container" style="border-bottom: 2px solid #43B14B;">
+                            <nav id="menuzord" class="menuzord default menuzord-responsive">
+                                @include("commons.candidate.menu")
+                            </nav>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <section class="inner-header divider layer-overlay" style="box-shadow: inset;width: 99%;margin:0 auto;height: 4px;">
+            <div class="container"  style="height: 2px;">
+            </div>
+        </section>
+        @yield("content")
+
+    </div>
+    <!-- Footer -->
+    @include("commons.staff.footer")
+</div>
+<!-- end wrapper -->
+
+
+@include("commons.staff.scripts")
+@yield("js")
+</body>
+</html>

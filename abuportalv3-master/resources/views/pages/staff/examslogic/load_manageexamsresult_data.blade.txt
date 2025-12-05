@@ -1,0 +1,45 @@
+<div id="load" style="position: relative;" class="table-responsive">
+<button style="float: right;" type="button" class="btn btn-primary selectedrecords">
+    <span class="ti-eye">&nbsp;Save Selected</span>
+</button>
+<br/><br/>
+<table id="reporttb" class="table table-bordered table-striped table-responsive nowrap">
+    <thead class="thead-light">
+    <tr class="text-dark text-uppercase">
+        <th class="no-sort">
+            S/N
+        </th>
+        <th>Matric Number</th>
+        <td>Surname</td>
+        <td>Other names</td>
+        <th>Department</th>
+        <th>Programme</th>
+        <th>View</th>
+         <th>Check all&nbsp;&nbsp;<input name="check_all" class="check_all" type="checkbox"></th>
+    </tr>
+    </thead>
+    <tbody>
+    @foreach ($students as $stud)
+        @php
+        $othernames = isset($stud->other_names)?" ".$stud->other_names:"";
+        $othernames = $stud->firstname . $othernames;
+        @endphp
+        <tr>
+            <td>{{$loop->index+1}}</td>
+            <td>{{ $stud->matric_number}}</td>
+            <td>{{ $stud->surname }}</td>
+            <td>{{ $othernames }}</td>
+            <td>{{ $stud->department}}</td>
+            <td>{{ $stud->programme}} </td>
+            <td><a href="{{ route('staff.student.view.examsresult',[$stud->id,$session, $semester])}}" target="_blank"><span class="fa fa-eye"></span></a></td>
+             <td class="text-center">
+                <input value="{{$stud->id}}" name="studentid[]" class="selectedforprint" type="checkbox" {{$stud->result_status==1?'checked':''}}>
+            </td>
+         </tr>
+    @endforeach
+    </tbody>
+</table>
+</div>
+<button style="float: right;" type="button" class="btn btn-primary selectedrecords" >
+    <span class="ti-eye">&nbsp;Save Selected</span>
+</button>

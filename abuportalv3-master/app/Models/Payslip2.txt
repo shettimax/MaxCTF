@@ -1,0 +1,33 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class Payslip2 extends Model
+{
+    protected $table = 'payslips2';
+    protected $fillable =[
+        'month',
+         'year',
+          'personnelno',
+           'name',
+            'grade',
+             'designation',
+              'faculty',
+               'department',
+               'bank',
+                'accountno',
+                 'tin', 
+                 'nhfno',
+                  'earnings',
+                   'deductions',
+                    'netpay', 
+                    'totalamountpayable',
+                     'loansrepaymenthistory',
+                      'balanceonloans'
+               
+    
+   ];
+
+}

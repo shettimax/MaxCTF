@@ -1,0 +1,61 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Resource;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Session;
+
+class ResourceController extends Controller
+{
+    public function __construct()
+    {
+        $this->middleware('auth:staff');
+
+    }
+
+    public function index()
+    {
+        $resources=Resource::all();
+        return view("pages.staff.settings.resources", compact("resources"));
+
+}
+
+    public function save(Request $request)
+    {
+        try {
+
+            $resource_name = $request->resource;
+            if (!$request->has('resourceid')) {
+                $db = new Resource();
+                $db->resource = $resource_name;
+                $db->save();
+                Session::flash('status', 'Record successfully saved!');
+                Session::flash('alert-class', 'alert-info');
+            }
+            if ($request->has('resourceid')) {
+                $resourceid = $request->resourceid;
+                Resource::where(['id' => $resourceid])->update(['resource' => $resource_name]);
+                Session::flash('status', 'Record successfully updated!');
+                Session::flash('alert-class', 'alert-info');
+            }
+
+            return redirect()->route('resourceitem');
+        } catch (\Exception $e) {
+            $message = $e;
+            return view("pages.errors.failed", compact('message'));
+        }
+    }
+
+    public function edit($id)
+    {
+        $resource = Resource::find($id);
+        $resources = $this->fetchItems();
+        return view('pages.staff.settings.resources', compact('resource','resources'));
+    }
+
+    private function fetchItems()
+    {
+        return Resource::all();
+    }
+}

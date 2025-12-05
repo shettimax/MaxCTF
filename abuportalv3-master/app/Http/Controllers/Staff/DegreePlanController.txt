@@ -1,0 +1,96 @@
+<?php
+
+namespace App\Http\Controllers\Staff;
+
+use App\Models\DegreePlan;
+use App\Http\Controllers\Controller;
+use App\Models\Level;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+
+class DegreePlanController extends Controller
+{
+    public function __construct()
+    {
+        $this->middleware('auth:staff');
+    }
+
+    public function index()
+    {
+        $model = null;
+        if (!$this->access(Auth::user(), "dashboard"))
+            return view("pages.errors.nopermission");
+
+        return view('pages.staff.settings.managedegreeplan', compact('model'));
+    }
+
+    public function show()
+    {
+        $programme_id = request('programme_id');    //  929;
+
+//        return $programme_id;
+
+        $levels = Level::select(['name', 'short_name'])->get();
+        $plans = DegreePlan::where('programme_id', '=', $programme_id)->orderby('plansession', 'DESC')->orderby('planname', 'ASC')->get();
+
+//        foreach ($plans as $plan) {
+//            $plan->levels = $levels;
+//        }
+
+        return ['plans' => $plans, 'levels' => $levels];
+    }
+
+    public function store(Request $request)
+    {
+        try {
+            if (!$this->access(Auth::user(), 'dashboard'))
+                return view("pages.errors.nopermission");
+
+            $rules = [
+                'level' => 'required|integer',
+                'programme' => 'required|integer',
+                'planname' => 'required|unique:degree_plans,planname',
+                'plansession' => 'required',
+                'description' => 'required',
+            ];
+
+            if ($request->planid > 0)
+                $rules["planname"] = 'required';
+
+            $validator = $request->validate($rules);
+
+
+            if (!$validator) {
+                return redirect()->route('degreeplan')->withInput()->withErrors();
+            } else {
+                $db = new DegreePlan();
+                if ($request->planid > 0)
+                    $db = DegreePlan::find($request->planid);
+                $db->level_id = $request->level;
+                $db->planname = $request->planname;
+                $db->plansession = $request->plansession;
+                $db->plandescription = $request->description;
+                $db->programme_id = $request->programme;
+                $db->save();
+                if ($request->planid > 0)
+                    $request->session()->flash('flash_message', 'Course has been updated');
+                else
+                    $request->session()->flash('flash_message', 'Course has been added');
+                return redirect()->back()->withInput($request->all());
+            }
+        } catch (\Exception $e) {
+//            return $e->getMessage();
+            return view("pages.staff.error.technical");
+        }
+    }
+
+    public function edit($plan_id)
+    {
+        $model = DegreePlan::find($plan_id);
+
+        if (!$this->access(Auth::user(), "dashboard"))
+            return view("pages.errors.nopermission");
+
+        return view('pages.staff.settings.managedegreeplan', compact('model'));
+    }
+}

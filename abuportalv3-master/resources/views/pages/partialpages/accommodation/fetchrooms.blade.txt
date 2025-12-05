@@ -1,0 +1,85 @@
+<div class='text-right'><label><input type='checkbox' id='showonlyreserved' /> <strong>Show only reserved rooms</strong></label></div>
+@foreach($hostels as $hostel)
+
+<div class="roomdiv">
+    <div class="row">
+        <div class="col-12">
+            <h3>Hostel: {{$hostel->name}}</h3>
+            <hr />
+            @if(isset($blck))
+            <h4 class='blocksection'>Block: {{$blck->name}}</h4>
+            <hr class='blockhr' />
+            <div class="row">
+                @forelse($blck->getReservableRoom($accommodation->session, $isadmin,$student->isNew()?'new':'returning') as $room)
+                <div class="col-12 col-sm-6 col-lg-4 col-xl-3 {{($room->reserved=='0')?('openroom'):('')}}">
+                    <div class="room" >
+                        <div class="roomtitle">
+                            <span class="blkname">{{$blck->name}}</span> Room: <span class="rmno">{{$room->room_no}}</span>
+                            <div class='roominfo'><strong>Bed Space: </strong> {{$room->bed_space}} ({{$room->bed_space - $room->occupied}} Available)</div>
+                        </div>
+                        <div class="roomdetail">
+                            <div class="bedspacewrapper">
+                                @for($i=0; $i<$room->bed_space; $i++)
+                                @if($i< $room->occupied)
+                                <img title='occupied' src='{{asset('img/occupiedbed.png')}}' class='bedspace bedspaceoccupied' />
+                                @else
+                                <a title='Click to reserve this bedspace' href='javascript:void(0);' data-id='{{$room->id}}' data-rmno='{{$room->room_no}}' data-blk='{{$blck->name}}' data-hostel='{{$hostel->name}}' class='reservehere'><img src='{{asset('img/freebed.png')}}' class='bedspace bedspacefree' /></a>
+                                @endif
+                                @endfor
+                            </div>
+                        </div>
+
+                        <div class="roomreserved" @if($room->reserved == '0' || !$isadmin) style='visibility:hidden' @endif >
+                            SAD
+                        </div>
+
+                    </div>
+                </div>
+                @empty
+                <div class="alert alert-info" role="alert">No rooms in Block:{{$block->name}} match your criteria</div>
+                @endforelse
+            </div>
+            @else
+
+            @forelse($hostel->getReservableBlock($student) as $block)
+            <h4 class='blocksection'>Block: {{$block->name}}</h4>
+            <hr class='blockhr'/>
+            <div class="row">
+                @forelse($block->getReservableRoom($accommodation->session, $isadmin,$student->isNew()?'new':'returning') as $room)
+                <div class="col-12 col-sm-6 col-lg-4 col-xl-3 {{($room->reserved=='0')?('openroom'):('')}}">
+                    <div class="room" >
+                        <div class="roomtitle">
+                            <span class="blkname">{{$block->name}}</span> Room: <span class="rmno">{{$room->room_no}}</span>
+                            <div class='roominfo'><strong>Bed Space: </strong> {{$room->bed_space}} ( {{$room->bed_space - $room->occupied}} Available)</div>
+                        </div>
+                        <div class="roomdetail">
+                            <div class="bedspacewrapper">
+                                @for($i=0; $i<$room->bed_space; $i++)
+                                @if($i< $room->occupied)
+                                <img title='occupied' src='{{asset('img/occupiedbed.png')}}' class='bedspace bedspaceoccupied' />
+                                @else
+                                <a title='Click to reserve this bedspace' href='javascript:void(0);' data-id='{{$room->id}}' data-rmno='{{$room->room_no}}' data-blk='{{$block->name}}' data-hostel='{{$hostel->name}}' class='reservehere'><img src='{{asset('img/freebed.png')}}' class='bedspace bedspacefree' /></a>
+                                @endif
+                                @endfor
+                            </div>
+                        </div>
+
+                        <div class="roomreserved" @if($room->reserved == '0' || !$isadmin) style='visibility:hidden' @endif >
+                            SAD
+                        </div>
+
+                    </div>
+                </div>
+                @empty
+                <div class="alert alert-info" role="alert">No rooms in Block:{{$block->name}} match your criteria</div>
+                @endforelse
+            </div>
+            <div class='text-right'><a href='#' class='btn btn-outline-primary top'>Top</a></div>
+            @empty
+            <div class="alert alert-info" role="alert">No rooms in Hostel:{{$hostel->name}} match your search criteria</div>
+            @endforelse
+            @endif
+        </div>
+    </div>
+</div>
+@endforeach

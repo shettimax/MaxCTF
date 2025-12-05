@@ -1,0 +1,32 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class FeeItem extends Model
+{
+    //
+    public static $rules = [
+        "itemname"=>"required|string|min:2",
+        "code"=>"required|string|min:3|max:3",
+    ];
+
+    protected $fillable = ['item_name', 'code', 'account_code'];
+
+    public function FeeItem(){
+        return $this->belongsTo('App\Models\PaymentForWhat','feeid');
+    }
+    public function getFeeItem($id){
+        return $this->find($id);
+    }
+    public function paymentForWhats()
+    {
+        return $this->hasMany(PaymentForWhat::class);
+    }
+
+    public function paymentLogs()
+    {
+        return $this->hasMany(PaymentLog::class);
+    }
+}

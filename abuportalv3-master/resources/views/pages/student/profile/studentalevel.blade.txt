@@ -1,0 +1,157 @@
+@extends('layout.student.master')
+@section('content')
+    <section class="">
+
+        <div class="main-section">
+            <div class="container">
+                <div class="col-md-12 cs-tabs box">
+                    <div id="cs-tab">
+                        <ul class="nav nav-tabs">
+                            <li class="active in"><a aria-expanded="true" href="#tababout-university9432" data-toggle="tab">A-Level Result</a></li>
+                            <li class=""><a href = "{{route('alevel.create')}}" >Add A Level</a></li>
+                        </ul>
+                        <div class="tab-content">
+
+
+                            @if ($message = Session::get('success'))
+                                <div class="custom-alerts alert alert-success fade in">
+                                    <button type="button" class="close" data-dismiss="alert" aria-hidden="true"></button>
+                                    {!! $message !!}
+                                </div>
+                                <?php Session::forget('success');?>
+                            @endif
+                            <table class="table table-bordered">
+                                @if(count($alevels) > 0)
+                                    <tr>
+                                        <th scope="col">S/N</th>
+                                        <th scope="col">Institution Name</th>
+                                        <th scope="col">Year</th>
+                                        <th scope="col">Qualification</th>
+                                        <th scope="col">Class</th>
+                                        <th>Course</th>
+                                        <th>CGPA</th>
+                                        <th scope="col">Action</th>
+                                    </tr>
+                                @endif
+                                @forelse($alevels as $alevel)
+                                    <tr>
+                                        <th>{{ $loop->index + 1 }}</th>
+                                        <td>{{ $alevel->institutionname }}</td>
+                                        <td>{{$alevel->fromyear }} - {{$alevel->toyear }}</td>
+                                        <td>{{$alevel->qualification }}</td>
+                                        <td>{{$alevel->grade }}</td>
+                                        <td>{{$alevel->course }}</td>
+                                        <td>{{$alevel->cgpa }}</td>
+                                        <td>
+                                            <a href="{{route('studentalevel.edit', [$alevel->id])}}" >Edit</a>
+                                            |
+                                            <a class="remove-record"  href="javascript:void()" data-id="{{$alevel->id}}" data-toggle="modal" data-target="#confirm-delete-modal" >Delete</a>
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <div>
+                                        No record found.
+                                    </div>
+                                @endforelse
+                            </table>
+                            <div class="row">
+                                @foreach(\App\Models\Student::$menu as $key=>$value)
+                                    @php
+                                        $previous = isset($current)?$current:[];
+                                        $current = ["title"=>$key,"link"=>$value];
+
+                                    @endphp
+                                    @if( Route::current()->getName() == $current['link'])
+                                        <div class="col-md-12">
+                                            <div class="col-md-3">
+                                                @if( !empty($previous) )
+                                                    <a href="{{ route($previous["link"]) }}" class="btn btn-success">
+                                                        <i class="icon-previous2"></i>
+                                                        Previous
+                                                    </a>
+                                                @endif
+                                            </div>
+                                            <div class="col-md-6 text-center"  id = "submit-btn-div">
+                                                <a href="{{route('alevel.create')}}" class="btn btn-success">Add New</a>
+                                            </div>
+                                            {{--["title"=>$key,"link"=>$value];--}}
+                                            <div class="col-md-3">
+                                                @php $cur = []; @endphp
+                                                @foreach(\App\Models\Student::$menu as $k=>$v)
+                                                    @php
+                                                        $prev = $cur;
+                                                        $cur = ["title"=>$k,"link"=>$v];
+                                                    @endphp
+                                                    @if(isset($prev['title']) && $prev['title'] == $current['title'] )
+                                                        <a href="{{ route($cur["link"]) }}" class="btn btn-success">
+                                                            Continue
+                                                            <i class="icon-next3"></i>
+                                                        </a>
+                                                    @endif
+                                                @endforeach
+
+                                            </div>
+                                        </div>
+                                    @endif
+                                @endforeach
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Modal -->
+        <div class="modal fade" id="confirm-delete-modal" role="dialog">
+            <div class="modal-dialog">
+                <!-- Modal content-->
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal">&times;</button>
+                        <h4 class="modal-title">Delete A-Level Result</h4>
+                    </div>
+                    <div class="modal-body">
+                        <h4>Are you sure you want delete this result?</h4>
+                        <input type="hidden" id = "studentalevelid" value = "">
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-default waves-effect" data-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-danger waves-effect waves-light" id = "delete">Delete</button>
+
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+<meta name="_token" content="{!! csrf_token() !!}" />
+<script type="text/javascript">
+    $(document).ready(function(){
+        // For A Delete Record Popup
+        $('.remove-record').click(function() {
+            var id = $(this).attr('data-id');
+            $("#studentalevelid").val(id);
+        });
+
+        $('#delete').click(function() {
+            //************************Needed to perform ajax request*********************/
+            $.ajaxSetup({headers: {'X-CSRF-TOKEN': $('meta[name="_token"]').attr('content')}});
+            //****************************************************************************/
+            $.ajax({type: 'POST',
+                url: 'studentalevel/delete/'+$("#studentalevelid").val(),
+                url: 'studentalevel/delete/'+$("#studentalevelid").val(),
+                success: function(data){
+                    window.location.reload();
+                }
+            });
+        });
+
+        $('.remove-data-from-delete-form').click(function() {
+            $('body').find('.remove-record-model').find( "input" ).remove();
+        });
+        $('.modal').click(function() {
+            // $('body').find('.remove-record-model').find( "input" ).remove();
+        });
+    });
+</script>
+@endsection
+

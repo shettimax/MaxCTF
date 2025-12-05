@@ -1,0 +1,151 @@
+@extends('layout.candidate.master')
+@section('content')
+    <?php $user = \Auth::user();
+    $biodata = $user->biodata();
+    $candidate =$user->id;
+    ?>
+    <section class="">
+        <div class="container pt-30 pb-30 pl-30 pr-30">
+            <div class="row">
+                <div class="col-md-10 pull-right flip sm-pull-none">
+                    <div class="blog-posts">
+                        <div class="col-md-12">
+                            <h3 class="widget-title" style="margin-bottom: 0">
+                                Picture Upload
+                            </h3>
+                            <div class="mt-30"></div>
+
+                            @if ($message = Session::get('success'))
+                                <div class="alert alert-success" role="alert">
+                                    <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span
+                                            aria-hidden="true">&times;</span></button>
+                                    {{ $message }}
+                                </div>
+                            @endif
+                            @if ($message = Session::get('error'))
+                                <div class="alert alert-danger" role="alert">
+                                    <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span
+                                            aria-hidden="true">&times;</span></button>
+                                    {{ $message }}
+                                </div>
+                            @endif
+                            <section class="bg-white-f7 pr-30 pl-30 pt-30 pb-30">
+                                <div class="col-md-2 mb3"></div>
+                                <div class="col-md-4 mb3">
+                                    <img src="{{ route('candidate.photoupload',[time()]) }}"
+                                         class="rounded float-left" alt="..." width="180" height="213">
+                                </div>
+                                <div class="col-md-4 mb3">
+                                    @if($allowUpload==1)
+                                    <form action="{{URL::route('photoupload.uploadPicture')}}" method="POST"
+                                          enctype="multipart/form-data" id="photoUploadForm">
+                                        <div class="form-group">
+                                            <label>Select image to upload: </label>
+                                            <div class="col-md-6">
+                                                <input type="file" name="file" id="file" class="form-control-file" accept="image/*" required/>
+                                                <input type="hidden" value="{{csrf_token()}}" name="_token"/>
+                                                <small class="form-text text-muted">
+                                                    Supported formats: JPG, JPEG, PNG. Max size: 2MB
+                                                </small>
+                                                <div id="fileInfo" class="mt-2" style="display: none;">
+                                                    <div class="alert alert-info">
+                                                        <strong>Selected file:</strong> <span id="fileName"></span><br>
+                                                        <strong>Size:</strong> <span id="fileSize"></span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <input type="submit" value="Upload" name="submit" class="btn btn-success" id="uploadBtn"/>
+                                        <div id="uploadProgress" class="mt-2" style="display: none;">
+                                            <div class="progress">
+                                                <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
+                                            </div>
+                                            <small class="text-muted">Uploading...</small>
+                                        </div>
+                                    </form>
+                                    @else
+                                        <div class="alert alert-success">
+                                            <strong>Photo already uploaded!</strong><br>
+                                            <small>Your photo is already in the system.</small>
+                                        </div>
+                                    @endif
+                                </div>
+                            </section>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    @endsection
+
+    @section('js')
+    <script>
+        $(document).ready(function() {
+            // Handle file selection
+            $('#file').on('change', function() {
+                const file = this.files[0];
+                if (file) {
+                    // Validate file size (2MB = 2 * 1024 * 1024 bytes)
+                    const maxSize = 2 * 1024 * 1024;
+                    if (file.size > maxSize) {
+                        alert('File size must be less than 2MB');
+                        this.value = '';
+                        return;
+                    }
+
+                    // Validate file type
+                    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+                    if (!allowedTypes.includes(file.type)) {
+                        alert('Please select a valid image file (JPG, JPEG, or PNG)');
+                        this.value = '';
+                        return;
+                    }
+
+                    // Show file info
+                    $('#fileName').text(file.name);
+                    $('#fileSize').text(formatFileSize(file.size));
+                    $('#fileInfo').show();
+                    $('#uploadBtn').prop('disabled', false);
+                } else {
+                    $('#fileInfo').hide();
+                    $('#uploadBtn').prop('disabled', true);
+                }
+            });
+
+            // Handle form submission
+            $('#photoUploadForm').on('submit', function(e) {
+                const file = $('#file')[0].files[0];
+                if (!file) {
+                    alert('Please select a file to upload');
+                    e.preventDefault();
+                    return;
+                }
+
+                // Show progress
+                $('#uploadProgress').show();
+                $('#uploadBtn').prop('disabled', true);
+
+                // Simulate progress (since we can't track real progress with regular form submission)
+                let progress = 0;
+                const progressInterval = setInterval(function() {
+                    progress += 10;
+                    $('.progress-bar').css('width', progress + '%');
+                    if (progress >= 90) {
+                        clearInterval(progressInterval);
+                    }
+                }, 200);
+            });
+
+            // Function to format file size
+            function formatFileSize(bytes) {
+                if (bytes === 0) return '0 Bytes';
+                const k = 1024;
+                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            }
+        });
+    </script>
+    @endsection

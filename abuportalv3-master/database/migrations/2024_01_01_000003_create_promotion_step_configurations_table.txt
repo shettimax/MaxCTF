@@ -1,0 +1,40 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create('promotion_step_configurations', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('promotion_exercise_id')->constrained('promotion_exercises')->onDelete('cascade');
+            $table->foreignId('step_id')->constrained('promotion_steps')->onDelete('cascade');
+            $table->foreignId('complex_id')->nullable()->constrained('complexes')->onDelete('set null');
+            $table->foreignId('faculty_id')->nullable()->constrained('faculties')->onDelete('set null');
+            $table->foreignId('department_id')->nullable()->constrained('departments')->onDelete('set null');
+            $table->enum('approver_type', ['Department', 'Faculty', 'Complex', 'University']);
+            $table->string('approver_role');
+            $table->foreignId('approver_user_id')->nullable()->constrained('users')->onDelete('set null');
+            $table->integer('order');
+            $table->enum('status', ['Active', 'Inactive'])->default('Active');
+            $table->timestamps();
+
+            $table->index(['promotion_exercise_id', 'step_id']);
+            $table->index(['complex_id', 'faculty_id', 'department_id']);
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('promotion_step_configurations');
+    }
+};

@@ -1,0 +1,250 @@
+@extends("layout.candidate.master")
+@section('css')
+    <style>
+        .parent {
+            height: 100px;
+            position: relative;
+        }
+
+        .center {
+            margin: 0;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            -ms-transform: translate(-50%, -50%);
+            transform: translate(-50%, -50%);
+        }
+    </style>
+@endsection
+@section('content')
+    @php $candidate = auth()->user(); @endphp
+    <section class="bg-white-f7 pr-40 pl-40 pt-40 pb-40" style="border-left:2px solid #43B14B;">
+        @if(!$candidate->screenedQualified())
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="panel panel-default">
+                        <div class="panel-body">
+                            @if(Session::has('success'))
+                                <div class="alert alert-success">
+                                    {{ Session::get('success') }}
+                                </div>
+                            @endif
+
+                            @if(Session::has('error'))
+                                <div class="alert alert-danger">
+                                    {{ Session::get('error') }}
+                                </div>
+                            @endif
+
+                            <div>
+                                <!-- Button trigger modal -->
+                                <button type="button" class="btn btn-default pull-right add" data-toggle="modal"
+                                        data-target="#myModal">
+                                    Add Document
+                                </button>
+                                <!-- Modal -->
+                                <div class="modal fade" id="myModal" tabindex="-1" role="dialog"
+                                     aria-labelledby="myModalLabel">
+                                    <div class="modal-dialog" role="document">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <button type="button" class="close" data-dismiss="modal"
+                                                        aria-label="Close"><span aria-hidden="true">&times;</span>
+                                                </button>
+                                                <h4 class="modal-title text-left" id="myModalLabel">Add Document
+                                                    <div class="double-line-bottom-theme-colored-2"></div>
+                                                </h4>
+                                            </div>
+                                            @php if(!isset($model)) $model = null @endphp
+                                            <form class="form" action="{{ route('candidate.docs.upload') }}"
+                                                  method="POST"
+                                                  style="width: 100%; margin-top: 3vh;"
+                                                  enctype="multipart/form-data">
+                                                @csrf
+                                                <div class="modal-body">
+                                                    <div class="row">
+                                                        <div class="form-group col-md-6">
+                                                            <label for="degree">Document Type:</label>
+                                                            <select
+                                                                class="form-control {{ $errors->has('type')?'is-invalid':'is-valid' }}"
+                                                                name="type" id="type" required>
+                                                                <option value="">Select Type</option>
+                                                                @php $types = \App\Models\DocumentType::all(); @endphp
+                                                                @foreach($types as $type)
+                                                                    @if(!$candidate->uploadedThis($type->name))
+                                                                        <option
+                                                                            value="{{ $type->name }}">{{ $type->name }}</option>
+                                                                    @endif
+                                                                @endforeach
+                                                            </select>
+                                                            <div id="qual_error" class="text text-danger">
+                                                            </div>
+                                                        </div>
+                                                        <div class="form-group col-md-6">
+                                                            <label>Document to upload: </label>
+                                                            <input type="file" name="file" id="file"
+                                                                   class="form-control"/>
+                                                            <input type="hidden" value="{{ csrf_token() }}"
+                                                                   name="_token"/>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <div class="form-group">
+                                                        <button type="button" class="btn btn-danger"
+                                                                data-dismiss="modal">
+                                                            Close
+                                                        </button>
+                                                        <button type="submit" name="add" id="addbtn"
+                                                                class="btn btn-success"><span
+                                                                class="icon icon_floppy"></span> &nbsp;Save
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        @endif
+
+        <div class="row mr-3">
+            @if($documents)
+            @forelse ($documents as $document)
+                <div class="col-md-3">
+                    <div class="card">
+                        @if(isset($document['external_url']) && $document['external_url'])
+                            <!-- External file - check if it's an image or PDF -->
+                            @if(in_array(strtolower(pathinfo($document['document'], PATHINFO_EXTENSION)), ['jpg', 'jpeg', 'png']))
+                                <div class="ratio ratio-4x3">
+                                    <img src="https://static.abu.edu.ng/uploads/{{ $document['document'] }}" class="card-img-top"
+                                         alt="{{ $document['type'] }}" style="object-fit: cover;">
+                                </div>
+                            @else
+                                <!-- PDF or other document -->
+                                <div class="card-body text-center" style="min-height: 150px; display: flex; align-items: center; justify-content: center;">
+                                    <div>
+                                        <i class="fa fa-file-pdf-o fa-3x text-danger"></i>
+                                        <p class="mt-2">{{ strtoupper(pathinfo($document['document'], PATHINFO_EXTENSION)) }} Document</p>
+                                    </div>
+                                </div>
+                            @endif
+                        @elseif(Str::startsWith($document['document'], 'candidatedocs/'))
+                            <!-- Legacy local file -->
+                            <div class="ratio ratio-4x3">
+                                <img src="{{ asset('storage/' . $document['document']) }}" class="card-img-top"
+                                     alt="{{ $document['type'] }}">
+                            </div>
+                        @else
+                            <!-- Fallback -->
+                            <div class="card-body text-center" style="min-height: 150px; display: flex; align-items: center; justify-content: center;">
+                                <div>
+                                    <i class="fa fa-file fa-3x text-muted"></i>
+                                    <p class="mt-2">Document</p>
+                                </div>
+                            </div>
+                        @endif
+
+                        <div class="card-body">
+                            <h5 class="card-title">{{ ucfirst($document['type']) }}</h5>
+                            @if(isset($document['external_url']) && $document['external_url'])
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <a href="{{ $document['external_url'] }}" target="_blank" class="btn btn-primary btn-sm">
+                                        <i class="fa fa-eye"></i> View
+                                    </a>
+                                    @if(!$candidate->screenedQualified())
+                                        <button type="button" class="btn btn-danger btn-sm"
+                                                onclick="deleteDocument('{{ $document['document'] }}', '{{ $document['type'] }}')">
+                                            <i class="fa fa-trash"></i> Delete
+                                        </button>
+                                    @endif
+                                </div>
+                            @endif
+                            @if(isset($document['uploaded_at']))
+                                <small class="text-muted d-block mt-1">
+                                    Uploaded: {{ \Carbon\Carbon::parse($document['uploaded_at'])->format('M d, Y') }}
+                                </small>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+            @empty
+                <div class="parent">
+                    <div class="center">
+                        <p>No document uploaded yet.</p>
+                    </div>
+                </div>
+            @endforelse
+            @endif
+        </div>
+    </section>
+    <style>
+        ul > li {
+            margin: 4px 0;
+        }
+    </style>
+@endsection
+
+@section('js')
+    <script src="{{ asset('assets/js/swal.js') }}"></script>
+    <script>
+        $(function () {
+            $('#type').select()
+            $("#payNotEnabled").on("click", function () {
+                Swal.fire({
+                    icon: 'error',  // 'error' instead of 'false'
+                    title: 'Attention',
+                    text: 'Please Update Biodata,Contact and Olevel to pay!'
+                });
+            });
+        })
+
+        function deleteDocument(documentPath, documentType) {
+            Swal.fire({
+                title: 'Are you sure?',
+                text: `You are about to delete the ${documentType} document. This action cannot be undone!`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Yes, delete it!',
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Create a form and submit it
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = '{{ route("candidate.docs.delete") }}';
+
+                    // Add CSRF token
+                    const csrfToken = document.createElement('input');
+                    csrfToken.type = 'hidden';
+                    csrfToken.name = '_token';
+                    csrfToken.value = '{{ csrf_token() }}';
+                    form.appendChild(csrfToken);
+
+                    // Add document path
+                    const docPath = document.createElement('input');
+                    docPath.type = 'hidden';
+                    docPath.name = 'document_path';
+                    docPath.value = documentPath;
+                    form.appendChild(docPath);
+
+                    // Add document type
+                    const docType = document.createElement('input');
+                    docType.type = 'hidden';
+                    docType.name = 'type';
+                    docType.value = documentType;
+                    form.appendChild(docType);
+
+                    document.body.appendChild(form);
+                    form.submit();
+                }
+            });
+        }
+    </script>
+@endsection

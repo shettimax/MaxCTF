@@ -1,0 +1,142 @@
+<form action="{{route('staff.update')}}" method="post" id="EditFrm" >
+    @csrf
+    <input type="hidden" name="employee_id" value="{{ $employee->id }}" />
+    <div class="row">
+        <div class="col-sm-6">
+            <span><i>Personnel No.:</i></span>
+            <input name="personnel_no" type="text" class="form-control" value="{{ $employee->personnel_no }}" />
+        </div>
+
+        <div class="col-sm-6">
+            <span><i>Title:</i></span>
+            <select name="title" id="title" class="form-control">
+                <option value="{{$employee->title}}">{{ $employee->title }}</option>
+                <option value="mr">Mr.</option>
+                <option value="mrs">Mrs</option>
+                <option value="miss">Miss</option>
+                <option value="dr">Dr.</option>
+                <option value="prof">Prof.</option>
+            </select>
+        </div>
+
+        <div class="col-sm-6">
+            <span><i>Surname:</i></span>
+            <input type="text" name="surname" value="{{ $employee->surname }}" class="form-control" id="name" placeholder="Surname">
+        </div>
+
+        <div class="col-sm-6">
+            <span><i>Firstname:</i></span>
+            <input type="text" name="firstname" value="{{ $employee->firstname }}" class="form-control" id="name" placeholder="Firstname">
+        </div>
+
+        <div class="col-sm-6">
+            <span><i>Othernames:</i></span>
+            <input type="text" name="othernames" value="{{ $employee->othernames }}" class="form-control" id="name" placeholder="Othernames">
+        </div>
+
+        <div class="col-sm-6">
+            <span><i>Marital Status:</i></span>
+            <select name="marital_status" id="marital_status" class="form-control">
+                <option value="{{$employee->marital_status}}">{{ $employee->marital_status }}</option>
+                <option>Married</option>
+                <option>Single</option>
+                <option>Divorced</option>
+                <option>Widow</option>
+                <option>Separated</option>
+            </select>
+        </div>
+
+        <div class="col-sm-6">
+            <span><i>Date of Birth:</i></span>
+            <input name="date_of_birth" type="date" class="form-control" value="{{ $employee->date_of_birth }}">
+        </div>
+
+        <div class="col-sm-6">
+            <span><i>Place of Birth:</i></span>
+            <input name="place_of_birth" type="text" class="form-control" value="{{ $employee->place_of_birth }}">
+        </div>
+
+        <div class="col-sm-6">
+            <span><i>Gender:</i></span>
+            <select name="gender" id="gender" class="form-control">
+                <option value="{{$employee->gender}}">{{ $employee->gender }}</option>
+                <option>Male</option>
+                <option>Female</option>
+            </select>
+        </div>
+
+        <div class="col-sm-6">
+            <span><i>Type:</i></span>
+            <input name="type" type="text" class="form-control" value="{{ $employee->type }}">
+        </div>
+
+        <div class="col-sm-12">
+            <span><i>Permanent Address:</i></span>
+            <input name="permanent_address" type="text" class="form-control" value="{{ $employee->permanent_address }}">
+        </div>
+
+
+        <div class="col-sm-6">
+            <span><i>IPPIS No.:</i></span>
+            <input name="ippis_no" type="text" class="form-control" value="{{ $employee->ippis_no }}">
+        </div>
+
+        <div class="col-sm-6">
+            <span><i>NIN:</i></span>
+            <input name="nin" type="text" class="form-control" value="{{ $employee->nin }}">
+        </div>
+        <div class="col-sm-6">
+            <span><i>NHF:</i></span>
+            <input name="nhf" type="text" class="form-control" value="{{ $employee->nhf }}">
+        </div>
+        <div class="col-sm-6">
+            <span><i>TIN:</i></span>
+            <input name="tin" type="text" class="form-control" value="{{ $employee->tin }}">
+        </div>
+        <div class="col-sm-12">
+            <span><i>Department:</i></span>
+            <select name="department" type="text" class="form-control">
+                <option value="{{ isset($employee->department->id)?$employee->department->id:0 }}">{{ isset($employee->department->name)?$employee->department->name:'' }}</option>
+                @foreach(App\Models\Department::orderBy('name', 'ASC')->get() as $department)
+                    <option value="{{ $department->id }}">{{ $department->name }}</option>
+                @endforeach
+            </select>
+        </div>
+        <div class="col-sm-12">
+            <span><i>Date of First Appointment:</i></span>
+            <input name="date_of_first_appointment" type="date" class="form-control" value="{{ $employee->date_of_first_appointment }}">
+        </div>
+        <div class="col-sm-12">
+            <span><i>Date of Last Promotion:</i></span>
+            <input name="date_of_last_promotion" type="date" class="form-control" value="{{ isset($employee->date_of_last_promotion) ? $employee->date_of_last_promotion : 'Nil' }}">
+        </div>
+        <div class="col-sm-12">
+            <span><i>Date of Confirmation:</i></span>
+            <input name="date_of_confirmation" type="date" class="form-control" value="{{ isset($employee->date_of_confirmation) ? $employee->date_of_confirmation : 'Nil' }}">
+        </div>
+
+        <div class="col-sm-6">
+            <span><i>Present Rank</i></span>
+            <select name="rank" class="form-control">
+                <option value="{{ $employee->rank_id }}">{{ isset($employee->rank->name) }}</option>
+                @foreach(App\Models\Rank::orderBy('name', 'ASC')->get() as $rank)
+                    <option value="{{ $rank->id }}">{{ $rank->name }}</option>
+                @endforeach
+            </select>
+        </div>
+        <div class="col-sm-6">
+            <span><i>Cadre</i></span>
+            <select name="cadre" class="form-control">
+                <option value="{{ isset($employee->cadre_id) }}">{{ isset($employee->cadre->name)?$employee->cadre->name:'' }}</option>
+                @foreach(App\Models\Cadre::orderBy('name', 'ASC')->get() as $cadre)
+                    <option value="{{ $cadre->id }}">{{ $cadre->name }}</option>
+                @endforeach
+            </select>
+        </div>
+    </div>
+
+    <div class="modal-footer">
+        <button type="button" class="btn btn-default btn-flat" data-dismiss="modal">Cancel</button>
+        <button type="submit" class="btn btn-success btn-theme-color btn-flat">Update Record</button>
+    </div>
+</form>

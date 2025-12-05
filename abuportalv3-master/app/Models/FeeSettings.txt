@@ -1,0 +1,23 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class FeeSettings extends Model
+{
+    //
+    protected $fillable = array('payment_for_what_id', 'amount', 'effective_session');
+    public static $rules = [
+        "paymentforwhatid"=>"required|exists:payment_for_whats,id",
+        "amount"=>"required",
+        "effectivedate"=>"required|exists:fee_settings, effective_session"
+    ];
+    public function getFeeSettingByPayForWhat($payforid){
+        return $this->where('payment_for_what_id','=',$payforid);
+    }
+    public function paymentFor(){
+        return $this->belongsTo(PaymentForWhat::class,'payment_for_what_id');
+    }
+
+}

@@ -1,0 +1,14 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class DegreePlan extends Model
+{
+    //
+
+    public function getprogramme(){
+        return $this->belongsTo(Programme::class);
+    }
+}

@@ -1,0 +1,125 @@
+@extends('layout.staff.master')
+
+@section('title', 'Edit Promotion Step')
+
+@section('content')
+<section>
+<div class="promotion-step-edit-wrapper">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-12">
+                <div class="page-title-box">
+                    <div class="page-title-right">
+                        <ol class="breadcrumb m-0">
+                            <li class="breadcrumb-item"><a href="{{ route('staff.dashboard') }}">Dashboard</a></li>
+                            <li class="breadcrumb-item"><a href="{{ route('promotion') }}">Promotion</a></li>
+                            <li class="breadcrumb-item"><a href="{{ route('promotion.configuration.index') }}">Configuration</a></li>
+                            <li class="breadcrumb-item"><a href="{{ route('promotion.configuration.steps') }}">Steps</a></li>
+                            <li class="breadcrumb-item active">Edit</li>
+                        </ol>
+                    </div>
+                    <h4 class="page-title">Edit Promotion Step</h4>
+                </div>
+            </div>
+        </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="header-title">Edit: {{ $step->name }}</h4>
+                </div>
+                <div class="card-body">
+                    <form action="{{ route('promotion.configuration.steps.update', $step) }}" method="POST">
+                        @csrf
+                        @method('PUT')
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="order" class="form-label">Order <span class="text-danger">*</span></label>
+                                    <input type="number" class="form-control @error('order') is-invalid @enderror"
+                                           id="order" name="order" value="{{ old('order', $step->order) }}"
+                                           min="1" max="20" placeholder="e.g., 1, 2, 3..." required>
+                                    <small class="form-text text-muted">The sequence order of this step in the workflow</small>
+                                    @error('order')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="status" class="form-label">Status <span class="text-danger">*</span></label>
+                                    <select class="form-select @error('status') is-invalid @enderror" id="status" name="status" required>
+                                        <option value="">Select Status</option>
+                                        <option value="Active" {{ old('status', $step->status) == 'Active' ? 'selected' : '' }}>Active</option>
+                                        <option value="Inactive" {{ old('status', $step->status) == 'Inactive' ? 'selected' : '' }}>Inactive</option>
+                                    </select>
+                                    @error('status')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Step Name <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control @error('name') is-invalid @enderror"
+                                   id="name" name="name" value="{{ old('name', $step->name) }}"
+                                   placeholder="e.g., HOD Recommendation, Dean Review, APC Approval" required>
+                            @error('name')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea class="form-control @error('description') is-invalid @enderror"
+                                      id="description" name="description" rows="3"
+                                      placeholder="Brief description of what this step involves and who is responsible">{{ old('description', $step->description) }}</textarea>
+                            @error('description')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input @error('is_required') is-invalid @enderror"
+                                       type="checkbox" id="is_required" name="is_required" value="1"
+                                       {{ old('is_required', $step->is_required) ? 'checked' : '' }}>
+                                <label class="form-check-label" for="is_required">
+                                    This step is required for promotion completion
+                                </label>
+                                @error('is_required')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2">
+                            <a href="{{ route('promotion.configuration.steps') }}" class="btn btn-secondary">
+                                <i class="mdi mdi-arrow-left"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="mdi mdi-content-save"></i> Update Step
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        </div>
+        </div>
+    </div>
+</div>
+</section>
+@endsection
+
+@section('js')
+<script>
+$(document).ready(function() {
+    // Additional validation or functionality can be added here
+});
+</script>
+@endsection

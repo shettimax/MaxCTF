@@ -1,0 +1,276 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Employee;
+use Illuminate\Http\Request;
+use App\Models\Course;
+use App\Models\Faculty;
+use App\Models\Department;
+use App\Models\ProgrammeType;
+use App\Models\Programme;
+use App\Models\Student;
+use App\Models\SessionReg;
+use Illuminate\Support\Facades\DB;
+
+class GeneralStatisticsController extends Controller
+{
+    public function __construct()
+    {
+        return $this->middleware(['auth:staff']);
+    }
+    // Function to get general statistics
+    public function index()
+    {
+        $faculties = Faculty::count();
+        $departments = Department::count();
+        $programmeTypes = ProgrammeType::count();
+        $programmes = Programme::count();
+
+        // Students per entry session categorized by programme types
+        $studentsBySessionAndProgrammeType = SessionReg::select(DB::raw('
+        students.entry_session,
+        session_regs.programme_id,
+        programme_types.prog_type_name,
+        programmes.name as programme_name,
+        students.mode_of_entry,
+        COUNT(*) as total
+    '))
+            ->join('students', 'session_regs.student_id', '=', 'students.id')
+            ->join('programmes', 'session_regs.programme_id', '=', 'programmes.id')
+            ->join('programme_types', 'programmes.programme_type_id', '=', 'programme_types.id')
+            ->groupBy('students.entry_session', 'session_regs.programme_id', 'students.mode_of_entry')
+            ->get();
+        $formattedData = [];
+
+        foreach ($studentsBySessionAndProgrammeType as $data) {
+            $formattedData[] = strtoupper(substr($data->prog_type_name, 0, 2)) . " " . number_format($data->total);
+        }
+
+        // Number of active students per session
+        $activeStudentsBySession = SessionReg::select(DB::raw('session, COUNT(*) as total'))
+            ->where('status', 'Active')
+            ->groupBy('session')
+            ->get();
+
+        return view('pages.staff.reports.generalstatistics.index', compact('faculties', 'departments', 'programmeTypes', 'programmes', 'studentsBySessionAndProgrammeType', 'activeStudentsBySession','formattedData'));
+    }
+
+    // Function to get department-specific statistics
+    public function departmentStatistics($departmentId)
+    {
+        $courses = Course::where('department_id', $departmentId)->count();
+        $employees = Employee::where('department_id', $departmentId)->count();
+        $studentsByProgrammeType = Student::select(DB::raw('programme_id, COUNT(*) as total'))
+            ->whereHas('programme', function ($query) use ($departmentId) {
+                $query->where('department_id', $departmentId);
+            })
+            ->groupBy('programme_id')
+            ->get();
+        $programmes = Programme::where('department_id', $departmentId)->count();
+
+        return view('pages.staff.reports.generalstatistics.department', compact('courses', 'employees', 'studentsByProgrammeType', 'programmes'));
+    }
+
+    public function indexbyAdmission()
+    {
+        return view('pages.staff.reports.generalstatistics.byadmission');
+    }
+
+    public function testConnection()
+    {
+        try {
+            // Test basic database connection
+            $test = DB::select('SELECT 1 as test');
+            \Log::info('Test connection successful');
+            
+            // Test basic table access
+            $programmes = DB::table('programmes')->count();
+            \Log::info("Programmes count: {$programmes}");
+            
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Database connection and basic queries working',
+                'programmes_count' => $programmes
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Test connection failed: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function generate(Request $request)
+    {
+        try {
+            // Set longer execution time for this operation
+            set_time_limit(300); // 5 minutes
+            
+            // Ensure database connection is fresh
+            DB::reconnect();
+            
+            \Log::info('General Statistics by Admission Request Started', [
+                'url' => $request->fullUrl(),
+                'method' => $request->method(),
+                'all_params' => $request->all()
+            ]);
+
+        $request->validate([
+            'session' => 'required|string',
+                'programme_type_ids' => 'required|string',
+        ]);
+
+        $session = $request->input('session');
+            $programmeTypeIdsString = $request->input('programme_type_ids');
+            
+            // Convert comma-separated string to array
+            $programmeTypeIds = array_map('trim', explode(',', $programmeTypeIdsString));
+            $programmeTypeIds = array_filter($programmeTypeIds, function($id) {
+                return is_numeric($id) && $id > 0;
+            });
+            
+            if (empty($programmeTypeIds)) {
+                return redirect()->back()->with('error', 'Please provide valid programme type IDs.');
+            }
+            
+            // Validate session format
+            if (!preg_match('/^\d{4}$/', $session)) {
+                return redirect()->back()->with('error', 'Please provide a valid session (e.g., 2024).');
+            }
+
+            \Log::info('General Statistics Parameters', [
+                'session' => $session,
+                'programme_type_ids' => $programmeTypeIds
+            ]);
+
+            // Test database connection first
+            try {
+                DB::connection()->getPdo();
+                \Log::info('Database connection successful');
+            } catch (\Exception $e) {
+                \Log::error('Database connection failed: ' . $e->getMessage());
+                return redirect()->back()->with('error', 'Database connection failed. Please try again.');
+            }
+
+            // Use a much simpler approach to avoid complex joins
+            $programmeTypeIdsString = implode(',', array_map('intval', $programmeTypeIds));
+            \Log::info('Querying programmes with IDs: ' . $programmeTypeIdsString);
+            
+            $programmes = DB::select("
+                SELECT 
+                    p.id as programme_id,
+                    p.name as programme_name,
+                    d.name as department_name,
+                    f.name as faculty_name,
+                    pt.prog_type_name
+                FROM programmes p
+                INNER JOIN departments d ON p.department_id = d.id
+                INNER JOIN faculties f ON d.faculty_id = f.id
+                INNER JOIN programme_types pt ON p.programme_type_id = pt.id
+                WHERE p.programme_type_id IN (" . $programmeTypeIdsString . ")
+                ORDER BY f.name, d.name, p.name
+                LIMIT 50
+            ");
+
+            \Log::info('Programmes found', ['count' => count($programmes)]);
+
+            $report = collect();
+            $processed = 0;
+
+            foreach ($programmes as $programme) {
+                $processed++;
+                \Log::info("Processing programme {$processed}/{$programmes->count()}: {$programme->programme_name}");
+                
+                // Reconnect to database every 10 programmes to prevent timeout
+                if ($processed % 10 === 0) {
+                    DB::reconnect();
+                }
+                
+                // Get all data in one optimized query with error handling
+                try {
+                    $data = DB::select("
+                        SELECT 
+                            COALESCE(COUNT(DISTINCT cf.id), 0) as applied,
+                            COALESCE(SUM(CASE WHEN cf.admission_status = 'admitted' THEN 1 ELSE 0 END), 0) as admitted,
+                            COALESCE(SUM(CASE WHEN cf.screening_status != 'Not Screened' THEN 1 ELSE 0 END), 0) as screened,
+                            COALESCE(COUNT(DISTINCT CASE WHEN st.id IS NOT NULL THEN s.id END), 0) as paid_acceptance,
+                            COALESCE(COUNT(DISTINCT CASE WHEN t.id IS NOT NULL THEN s.id END), 0) as paid_school_fee
+                        FROM programmes p
+                        LEFT JOIN form_settings fs ON fs.programme_id = p.id AND fs.session = ?
+                        LEFT JOIN candidate_forms cf ON cf.form_setting_id = fs.id
+                        LEFT JOIN students s ON s.application_number = cf.id
+                        LEFT JOIN sundry_transactions st ON st.payer_id = s.id 
+                            AND st.payer_type = 'Student' 
+                            AND st.code = 'PSC' 
+                            AND st.payment_status = 'Paid'
+                        LEFT JOIN transactions t ON t.student_id = s.id 
+                            AND t.code = 'REG' 
+                            AND t.payment_status = 'Paid'
+                        WHERE p.id = ?
+                    ", [$session, $programme->programme_id]);
+
+                    $result = $data[0] ?? (object)[
+                        'applied' => 0,
+                        'admitted' => 0,
+                        'screened' => 0,
+                        'paid_acceptance' => 0,
+                        'paid_school_fee' => 0
+                    ];
+                } catch (\Exception $queryError) {
+                    \Log::error("Query error for programme {$programme->programme_id}: " . $queryError->getMessage());
+                    $result = (object)[
+                        'applied' => 0,
+                        'admitted' => 0,
+                        'screened' => 0,
+                        'paid_acceptance' => 0,
+                        'paid_school_fee' => 0
+                    ];
+                }
+
+                $report->push((object)[
+                    'programme_name' => $programme->programme_name,
+                    'department_name' => $programme->department_name,
+                    'faculty_name' => $programme->faculty_name,
+                    'prog_type_name' => $programme->prog_type_name,
+                    'applied' => $result->applied,
+                    'admitted' => $result->admitted,
+                    'screened' => $result->screened,
+                    'paid_acceptance' => $result->paid_acceptance,
+                    'paid_school_fee' => $result->paid_school_fee
+                ]);
+            }
+
+            // Sort the results
+            $report = $report->sortBy([
+                ['faculty_name', 'asc'],
+                ['department_name', 'asc'],
+                ['programme_name', 'asc']
+            ])->values();
+
+            \Log::info('General Statistics Query Results', [
+                'report_count' => $report->count(),
+                'first_record' => $report->first()
+            ]);
+
+        return view('pages.staff.reports.generalstatistics.result_byadmission', compact('report'));
+
+        } catch (\Exception $e) {
+            \Log::error('General Statistics by Admission Error: ' . $e->getMessage());
+            \Log::error('Error File: ' . $e->getFile() . ' Line: ' . $e->getLine());
+            \Log::error('Stack trace: ' . $e->getTraceAsString());
+            
+            // Return JSON error for AJAX requests or redirect for form submissions
+            if (request()->ajax()) {
+                return response()->json([
+                    'error' => true,
+                    'message' => 'Error generating report: ' . $e->getMessage(),
+                    'details' => config('app.debug') ? $e->getTraceAsString() : 'Contact administrator'
+                ], 500);
+            }
+            
+            return redirect()->back()->with('error', 'Error generating report: ' . $e->getMessage());
+        }
+    }
+}

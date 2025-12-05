@@ -1,0 +1,17 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class CoursePeriod extends Model
+{
+    public function coursegroup(){
+        return $this->belongsTo(CourseGroup::class);
+    }
+
+    public function facility()
+    {
+        return $this->belongsTo(Facility::class);
+    }
+}

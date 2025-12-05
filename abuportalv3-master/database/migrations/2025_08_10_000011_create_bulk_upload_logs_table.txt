@@ -1,0 +1,30 @@
+<?php
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create('bulk_upload_logs', function (Blueprint $table) {
+            $table->id();
+            $table->string('file_name');
+            $table->string('storage_path')->nullable();
+            $table->json('column_mapping')->nullable(); // saved mapping from UI
+            $table->integer('total_records')->default(0);
+            $table->integer('successful_records')->default(0);
+            $table->integer('failed_records')->default(0);
+            $table->json('errors')->nullable();
+            $table->json('dry_run_map')->nullable(); // allocation map generated during dry run
+            $table->boolean('reverted')->default(false);
+            $table->unsignedBigInteger('reverted_by')->nullable();
+            $table->timestamps();
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('bulk_upload_logs');
+    }
+};

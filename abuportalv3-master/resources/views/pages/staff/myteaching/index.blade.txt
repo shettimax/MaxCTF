@@ -1,0 +1,115 @@
+@extends("layout.staff.master")
+@section("pageTitle")
+    Dashboard
+@endsection
+@section("css")
+    <style>
+        .myteaching-div a, table {
+            color: blue;
+            font-size: 13px;
+            font-family: 'Roboto Slab', serif;
+            text-decoration: none;
+            /*text-transform: lowercase;*/
+        }
+
+        .myteaching-div a:hover {
+            /*text-decoration: underline;*/
+        }
+
+        .myteaching-div a:active {
+            color: black;
+        }
+
+        .myteaching-div a:visited {
+            color: purple;
+        }
+
+        .panel-group .panel-heading .panel-title a {
+            color: white;
+            display: block;
+            padding: 10px 15px;
+            background-color: #43B14B;
+            font-size: 15px;
+        }
+
+    </style>
+    <link rel="stylesheet" href="{{ asset('css/bootstrap-card.css')}}"/>
+@endsection
+
+@section("content")
+    <section>
+        <div class="main-section">
+            <div class="container myteaching-div">
+                {{--                <div class="heading-line-bottom mb-50">--}}
+                {{--                    <h4 class="heading-title">My Teaching History</h4>--}}
+                {{--                </div>--}}
+                <div class="row mb-30 mt-30">
+                    @php $i=1; @endphp
+                    @foreach($coursegroupsArr as $session=>$semesterCourseGroup)
+                        <div class="col-md-6">
+                            <div class="panel-group" id="accordion1" role="tablist" aria-multiselectable="true">
+                                <div class="panel panel-default">
+                                    <div class="panel-heading" role="tab" id="headingOne1">
+                                        <h4 class="panel-title">
+                                            <a aria-expanded="true">{{$session}} / {{intval($session) + 1}} Academic
+                                                Session</a>
+                                        </h4>
+                                    </div>
+                                    <div id="collapseOne1" class="panel-collapse collapse in" role="tabpanel"
+                                         aria-labelledby="headingOne1">
+                                        <div class="panel-body">
+                                            <div class="row">
+                                                @foreach($semesterCourseGroup as $semesterKey=>$courseGroups)
+                                                    <div class="col-md-6">
+                                                        <table class="table table-bordered table-striped"
+                                                               style="color: #0f1824">
+                                                            <tr>
+                                                                @php $semester = ($semesterKey == 1) ? "First":"Second" @endphp
+                                                                <td>
+                                                                    <strong>{{$semester}} Semester</strong>
+                                                                    (<a href="{{route('myteaching.employee_to_timetable', ['session'=>$session, 'semester'=>$semesterKey])}}"
+                                                                        target="_blank">My Timetable</a>)
+                                                                </td>
+                                                            </tr>
+                                                            @foreach($courseGroups as $courseGroup)
+                                                                <tr>
+                                                                    <td>
+                                                                        <a href="{{route('myteaching.students.enrolment', ['session'=>$session, 'semester'=>$semesterKey, 'coursecode'=>$courseGroup->course->coursecode,'group_id'=>$courseGroup->id])}}">
+                                                                            {{$courseGroup->course->coursecode}}
+                                                                            (<span class="fa fa-user"></span>)
+                                                                        </a>
+                                                                    </td>
+                                                                </tr>
+                                                            @endforeach
+                                                        </table>
+                                                    </div>
+                                                @endforeach
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        @if(($i != 0) && (($i % 2) == 0))
+                </div>
+                <div class="row mb-30">
+                    @endif
+                    @php $i++; @endphp
+                    @endforeach
+                    @if((($i - 1) % 2) != 0)
+                </div>
+                @endif
+            </div>
+        </div>
+    </section>
+@endsection
+
+@section("js")
+    <script>
+        $(document).ready(function () {
+            $('#close').click(function () {
+                window.location.href = '{{ url('settings/faculty') }}';
+            });
+        });
+    </script>
+@endsection

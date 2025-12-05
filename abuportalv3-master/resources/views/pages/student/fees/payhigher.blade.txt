@@ -1,0 +1,27 @@
+
+@extends("layout.student.master")
+
+@section("content")
+    <div class="main-section">
+        <div class="page-section " style="margin-top: 0px;margin-bottom: 0px;border-top: 0px #e0e0e0 solid;border-bottom: 0px #e0e0e0 solid;">
+            <!-- Container Start -->
+            <div class="container">
+
+                    <div class="row">
+                        <div class="col-md-2"></div>
+                        <div class="col-md-8">
+
+                                <div class="alert alert-danger">
+                                    <p class="text-danger text-center">
+                                        Sorry You are not qualified to use this plan for this session.
+                                    </p>
+                                    <p class="text-danger text-center">
+                                        <a class="btn btn-warning" href="{{ route("fees.index") }}">Go back</a>
+                                    </p>
+                                </div>
+                        </div>
+                    </div>
+            </div>
+        </div>
+    </div>
+@endsection

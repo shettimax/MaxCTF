@@ -1,0 +1,573 @@
+@extends("layout.staff.master")
+
+@section("content")
+
+    @php
+        $user = auth()->user();
+    @endphp
+    <section>
+        <div class="main-section">
+            <div class="container" id="cont">
+                <div class="row" id="inner">
+                    <div class="col-md-1"></div>
+                    <div class="col-md-12">
+                        <div class="row">
+                            <div class="col-md-1"></div>
+                            <div class="col-md-10"
+                                 style="padding: 10px 20px;box-shadow: 0 0 5px rgba(0,0,0,0.2);background-color: #fff;">
+                                <div class="row">
+
+                                    @if ($message = Session::get('success'))
+                                        <div class="alert alert-success" role="alert">
+                                            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                                <span aria-hidden="true">&times;</span></button>
+                                            {{ $message }}
+                                        </div>
+                                    @endif
+                                    @if ($message = Session::get('error'))
+                                        <div class="alert alert-danger" role="alert">
+                                            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                                <span aria-hidden="true">&times;</span></button>
+                                            {{ $message }}
+                                        </div>
+                                    @endif
+                                    <div id="warning" message="{{  $screened?? '' }}"
+                                         class="alert alert-warning hidden" role="alert">
+                                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                            <span aria-hidden="true">&times;</span></button>
+                                        {{ $screened??'' }}
+                                    </div>
+                                    @php
+                                        $candi = false;
+                                        if(isset($candidate)){
+                                            $candi = count($candidate->olevels())?false:true;
+                                        }
+                                    @endphp
+                                    @if($candidateBiodataCheck || $candidateContactCheck || $candi)
+
+                                        <div class="alert alert-warning">
+                                            <h3>Please advice this candidate to Update the below on Application
+                                                Portal</h3>
+                                            <ol style="margin-left: 120px; ">
+                                                @if($candidateBiodataCheck)
+                                                    <li>
+                                                        Biodata
+                                                        <ul>
+                                                            @foreach($candidateBiodataCheckArr as $it)
+                                                                <li>{{$it}}</li>
+                                                            @endforeach
+                                                        </ul>
+                                                    </li>
+                                                @endif
+                                                @if($candidateContactCheck)
+                                                    <li>
+                                                        Contact
+                                                    </li>
+
+                                                @endif
+                                                @if(!$candidate->olevels())
+                                                    <li>
+                                                        O-levels
+                                                    </li>
+                                                @endif
+                                            </ol>
+                                            </p>
+                                        </div>
+                                    @else
+                                        <div class="col-md-10 col-md-offset-1">
+                                            <form class="form-horizontal" method="post"
+                                                  action="{{route('search.admitted.candidate')}}">
+                                                @csrf
+                                                <div class="form-group">
+                                                    <label class="col-md-4">Enter Application/JAMB Number:</label>
+                                                    <div class="col-md-6 text-center">
+                                                        <input type="text" name="jambnumber"
+                                                               placeholder="Application/JAMB Number"
+                                                               class="form-control text-center">
+                                                    </div>
+                                                </div>
+                                                <div class="form-group">
+                                                    <label class="col-md-4">Applicant Type:</label>
+                                                    <div class="col-md-6 text-center">
+                                                        <select name="type" id="" class="form-control" required>
+                                                            @if($user->isUGScreeningOfficer())
+                                                                <option value="UTME">UTME</option>
+                                                            @endif
+                                                            <option value="others">Others</option>
+                                                        </select>
+                                                    </div>
+                                                    <button type="submit" class="btn btn-success btn-flat col-md-2">
+                                                        <i class="fa fa-search"></i> Search
+                                                    </button>
+                                                </div>
+
+                                            </form>
+                                        </div>
+                                        @if (isset($candidateBiodata))
+                                            <div class="row">
+                                                <div class="element-size-60">
+                                                    <div class="cs-team team-grid" style="margin:0 auto;">
+                                                        <table class="table table-bordered table-stripped"
+                                                               style="font-size:12px;">
+                                                            <tr>
+                                                                <th colspan="6"><h4>Basic Information</h4></th>
+                                                            </tr>
+                                                            <tr>
+                                                                <td rowspan="4" colspan="2">
+                                                                    <div style="position: relative; display: inline-block;">
+                                                                        <img
+                                                                            src="{{ route("applicant.profile.image",[$candidate->id]) }}?t={{ time() }}"
+                                                                            class="rounded" alt="..." width="200"
+                                                                            height="200" id="candidate-photo-{{ $candidate->id }}">
+                                                                        <form action="{{ route('staff.candidate.photo.delete') }}" method="POST"
+                                                                              style="margin-top: 10px;"
+                                                                              onsubmit="return confirm('Are you sure you want to delete this candidate\'s photo?');">
+                                                                            @csrf
+                                                                            <input type="hidden" name="candidate_id" value="{{ $candidate->id }}">
+                                                                            <button type="submit" class="btn btn-danger btn-sm"
+                                                                                    style="width: 100%;">
+                                                                                <i class="fa fa-trash"></i> Remove Picture
+                                                                            </button>
+                                                                        </form>
+                                                                    </div>
+                                                                    {{--<img src="{{ asset($url,[time()]) }}" class="rounded" alt="..." width="200" height="200">--}}
+                                                                </td>
+
+                                                                <th>Full Name:</th>
+                                                                <td>{{ strtoupper($candidateBiodata?$candidateBiodata->surname:"").", ". ($candidateBiodata?$candidateBiodata->firstname:"")." ".($candidateBiodata?$candidateBiodata->othernames:"") }}</td>
+                                                                <td rowspan="4" colspan="2">
+                                                                    <img
+                                                                        src="{{ route("applicant.profile.image",[time()]) }}"
+                                                                        class="rounded" alt="..." width="200"
+                                                                        height="200">
+                                                                </td>
+                                                            </tr>
+
+                                                            <tr>
+                                                                <th>Date of Birth:</th>
+                                                                <td>{{ $candidateBiodata->date_of_birth }} &dash;
+                                                                    <strong>({{ \Carbon\Carbon::parse($candidateBiodata->date_of_birth)->age }}
+                                                                        yrs)</strong></td>
+                                                            </tr>
+
+                                                            <tr>
+                                                                <th>Place of Birth:</th>
+                                                                <td>{{ $candidateBiodata->place_of_birth }}</td>
+                                                            </tr>
+                                                            <tr>
+                                                                <th>Gender:</th>
+                                                                <td>{{ $candidateBiodata->gender }}</td>
+                                                            </tr>
+
+                                                            <tr>
+                                                                <th>Country:</th>
+                                                                <td>{{ $candidateBiodata->country()->name }}</td>
+                                                                <th>State:</th>
+                                                                <td>{{ $candidateBiodata->state()->name }}</td>
+                                                                <th>LGA:</th>
+                                                                <td>{{ $candidateBiodata->lga()->name }}</td>
+                                                            </tr>
+                                                            <tr>
+                                                                <th>Phone Number:</th>
+                                                                <td>{{ $candidateContact->gsm }}</td>
+                                                                <th>Email:</th>
+                                                                <td>{{ $candidate->email }}</td>
+                                                                <th>Marital Status:</th>
+                                                                <td>{{ $candidateBiodata->marital_status }}</td>
+                                                            </tr>
+                                                        </table>
+
+                                                        <table class="table table-bordered table-stripped">
+                                                            <tr>
+                                                                <td colspan="6"><h4>Course Details</h4></td>
+                                                            </tr>
+                                                            <tr>
+                                                                <th>Faculty:</th>
+                                                                <td>{{ $candidateForm->faculty()->name }}</td>
+                                                                <th>Department:</th>
+                                                                <td>{{ $candidateForm->department()->name }}</td>
+                                                                <th>Programme:</th>
+                                                                <td>{{ $candidateForm->programme()->name }}</td>
+                                                            </tr>
+                                                        </table>
+
+                                                        <table class="table table-stripped table-bordered"
+                                                               id="trans"
+                                                               style="font-size:12px;">
+                                                            <tr>
+                                                                <th colspan="2">
+                                                                    <h4>JAMB Details</h4>
+                                                                </th>
+                                                            </tr>
+                                                            <tr>
+                                                                <th>JAMB No.</th>
+                                                                <th>{{ $candidate->username }}</th>
+                                                            </tr>
+                                                            @php $jamb = $candidate->candidateJAMB(); @endphp
+                                                            <tr>
+                                                                <th colspan="2">
+                                                                    <h4>UTME Result</h4>
+                                                                </th>
+                                                            </tr>
+                                                            @if(!empty($jamb))
+                                                                @foreach($jamb as $subject)
+                                                                    <tr>
+                                                                        <th>{{$loop->index+1}}
+                                                                            . {{ $subject->subject_description }}</th>
+                                                                        <td>{{ $subject->score }}</td>
+                                                                    </tr>
+                                                                @endforeach
+                                                                <tr>
+                                                                    <th><strong>Aggregate</strong></th>
+                                                                    <td>{{ $candidateForm->jamb_score }}</td>
+                                                                </tr>
+
+                                                                <hr>
+                                                            @endif
+                                                        </table>
+
+                                                        <table class="table table-stripped table-bordered"
+                                                               id="trans" style="font-size:12px;">
+                                                            <tr>
+                                                                <th colspan="4">
+                                                                    <h3>O-Levels</h3>
+                                                                </th>
+                                                            </tr>
+                                                            @php
+                                                                $olevels = $candidate->olevels();
+                                                            @endphp
+                                                            <tr>
+                                                                <th>Exam Type:</th>
+                                                                <td>{{ $olevels[0]->examtype()->exam_type_code }}</td>
+                                                                @if(isset($olevels[1]))
+                                                                    <th>Exam Type:</th>
+                                                                    <td>{{ $olevels[1]->examtype()->exam_type_code }}</td>
+                                                                @endif
+                                                            </tr>
+                                                            <tr>
+                                                                <th>Exam Year:</th>
+                                                                <td>{{ $olevels[0]->exam_year }}</td>
+                                                                @if(isset($olevels[1]))
+                                                                    <th>Exam Year:</th>
+                                                                    <td>{{ $olevels[1]->exam_year }}</td>
+                                                                @endif
+                                                            </tr>
+                                                            <tr>
+                                                                <th>Exam Number:</th>
+                                                                <td>{{ $olevels[0]->exam_number }}</td>
+                                                                @if(isset($olevels[1]))
+                                                                    <th>Exam Number:</th>
+                                                                    <td>{{ $olevels[1]->exam_number }}</td>
+                                                                @endif
+                                                            </tr>
+                                                            <tr>
+                                                                <th>Center Number:</th>
+                                                                <td>{{ $olevels[0]->center_number }}</td>
+                                                                @if(isset($olevels[1]))
+                                                                    <th>Center Number:</th>
+                                                                    <td>{{ $olevels[1]->center_number }}</td>
+                                                                @endif
+                                                            </tr>
+                                                            <tr>
+                                                                <th>Center Name:</th>
+                                                                <td>{{ $olevels[0]->center_name }}</td>
+                                                                @if(isset($olevels[1]))
+                                                                    <th>Center Name:</th>
+                                                                    <td>{{ $olevels[1]->center_name }}</td>
+                                                                @endif
+                                                            </tr>
+                                                            <tr>
+                                                                <th>Sitting:</th>
+                                                                <td>{{ $olevels[0]->sitting }}</td>
+                                                                @if(isset($olevels[1]))
+                                                                    <th>Sitting:</th>
+                                                                    <td>{{ $olevels[1]->sitting }}</td>
+                                                                @endif
+                                                            </tr>
+                                                            <tr>
+                                                                <td></td>
+                                                                <td></td>
+                                                                @if(isset($olevels[1]))
+                                                                    <td></td>
+                                                                    <td></td>
+                                                                @endif
+                                                            </tr>
+                                                            <tr>
+                                                                <th>Subject</th>
+                                                                <th>Grade</th>
+                                                                @if(isset($olevels[1]))
+                                                                    <th>Subject</th>
+                                                                    <th>Grade</th>
+                                                                @endif
+                                                            </tr>
+                                                            @php
+                                                                $sittingOne = [];
+                                                                $sittingTwo = [];
+                                                                foreach ($olevels[0]->results() as $result){
+                                                                    $sittingOne[] = "<td>{$result->subject}</td><td>{$result->grade}</td>";
+                                                                }
+                                                                if(isset($olevels[1])){
+                                                                    foreach ($olevels[1]->results() as $result){
+                                                                        $sittingTwo[] = "<td>{$result->subject}</td><td>{$result->grade}</td>";
+                                                                    }
+                                                                }
+
+                                                            @endphp
+                                                            @for($i=0;$i<max(count($sittingOne),count($sittingTwo));$i++)
+                                                                <tr>
+                                                                    @php
+                                                                        if(isset($sittingOne[$i])){echo $sittingOne[$i];}else{ echo "<td></td><td></td>";}
+                                                                        if(isset($sittingTwo[$i])){echo $sittingTwo[$i];}else{ echo "<td></td><td></td>";}
+                                                                    @endphp
+                                                                </tr>
+                                                            @endfor
+                                                        </table>
+
+                                                        <h4>Documents</h4>
+                                                        <!-- Modal -->
+                                                        <div class="modal fade" id="myModal" tabindex="-1" role="dialog"
+                                                             aria-labelledby="myModalLabel">
+                                                            <div class="modal-lg modal-dialog" role="document">
+                                                                <div class="modal-content">
+                                                                    <div class="modal-header">
+                                                                        <button type="button" class="close"
+                                                                                data-dismiss="modal"
+                                                                                aria-label="Close"><span
+                                                                                aria-hidden="true">&times;</span>
+                                                                        </button>
+                                                                        <h4 class="modal-title text-left">
+                                                                            <span id="document-type"></span>
+                                                                            <div
+                                                                                class="double-line-bottom-theme-colored-2"></div>
+                                                                        </h4>
+                                                                    </div>
+                                                                    <div class="modal-body">
+                                                                        <div class="row">
+                                                                            <img id="document" src="" alt=""
+                                                                                 class="img-fluid">
+                                                                            <input type="hidden" id="type">
+                                                                        </div>
+                                                                    </div>
+                                                                    <div class="modal-footer">
+                                                                        <div class="form-group">
+                                                                            <button type="button" class="btn btn-danger"
+                                                                                    id="remove" data-dismiss="modal">
+                                                                                <span
+                                                                                    class="icon icon_trash"></span>
+                                                                                Remove
+                                                                            </button>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="row mr-3">
+                                                            @forelse ($docs as $document)
+                                                                @php
+                                                                    // Get external URL if available, otherwise try to construct it
+                                                                    $docUrl = $document['external_url'] ?? null;
+                                                                    if (!$docUrl && isset($document['document'])) {
+                                                                        // If document path starts with candidate/documents, use external file service
+                                                                        if (Str::startsWith($document['document'], 'candidate/documents/')) {
+                                                                            $docUrl = app(\App\Services\ExternalFileService::class)->getUrl($document['document']);
+                                                                        } elseif (Str::startsWith($document['document'], 'candidatedocs/')) {
+                                                                            // Legacy local storage path
+                                                                            $docUrl = asset('storage/' . $document['document']);
+                                                                        } else {
+                                                                            // Try external service first, then fallback to local
+                                                                            $externalService = app(\App\Services\ExternalFileService::class);
+                                                                            $docUrl = $externalService->getUrl($document['document']);
+                                                                            if (!$docUrl) {
+                                                                                $docUrl = asset('storage/' . $document['document']);
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                @endphp
+                                                                @if ($docUrl)
+                                                                    <div class="col-md-3">
+                                                                        <div class="card">
+                                                                            <div class="ratio ratio-4x3">
+                                                                                <img
+                                                                                    src="{{ $docUrl }}"
+                                                                                    class="card-img-top document"
+                                                                                    alt="{{ $document['type'] }}"
+                                                                                    data-toggle="modal"
+                                                                                    data-target="#myModal"
+                                                                                    data-file="{{ $docUrl }}"
+                                                                                    data-type="{{ $document['type'] }}"
+                                                                                    onerror="this.onerror=null; this.style.display='none'; const card = this.closest('.card'); const placeholder = document.createElement('div'); placeholder.className = 'document-placeholder'; placeholder.style.cssText = 'display:flex;align-items:center;justify-content:center;height:100%;background:#f0f0f0;cursor:pointer;'; placeholder.setAttribute('data-file', '{{ $docUrl }}'); placeholder.setAttribute('data-type', '{{ $document['type'] }}'); placeholder.innerHTML = '<i class=\'fa fa-file-image-o fa-3x text-muted\'></i><p class=\'ml-2 text-muted\'>View Document</p>'; this.parentElement.appendChild(placeholder);">
+                                                                            </div>
+                                                                            <div class="card-body">
+                                                                                <h5 class="card-title">{{ ucfirst($document['type']) }}</h5>
+                                                                                @if(isset($document['uploaded_at']))
+                                                                                    <small class="text-muted d-block">
+                                                                                        Uploaded: {{ \Carbon\Carbon::parse($document['uploaded_at'])->format('M d, Y') }}
+                                                                                    </small>
+                                                                                @endif
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                @else
+                                                                    <div class="col-md-3">
+                                                                        <div class="card">
+                                                                            <div class="card-body">
+                                                                                <p class="card-text">
+                                                                                    File: {{ $document['document'] ?? 'N/A' }}</p>
+                                                                                <p class="text-muted">{{ ucfirst($document['type']) }}</p>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                @endif
+                                                            @empty
+                                                                <div class="parent">
+                                                                    <div class="center">
+                                                                        <p>No document uploaded yet.</p>
+                                                                    </div>
+                                                                </div>
+                                                            @endforelse
+                                                        </div>
+                                                        <div class="mb-5">&nbsp;</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                @if(count($docs)>0 || $candidateForm->admittedProgramme->isPG())
+                                                    <form class="form-horizontal" method="post"
+                                                          action="{{route('update.admitted.candidate')}}">
+                                                        @csrf
+                                                        <input type="hidden" name="candid" value="{{ $cId }}">
+                                                        <div class="row col-md-12">
+                                                            <div
+                                                                class="custom-control custom-radio custom-control-inline col-md-2">
+                                                                <label class="custom-control-label"
+                                                                       for="candidatestatus">
+                                                                    <input type="radio" id="candidatestatus"
+                                                                           name="candidate_status"
+                                                                           class="custom-control-input status"
+                                                                           value="Qualified"
+                                                                           @if ("Qualified" == $candidateForm->screening_status) checked @endif>
+                                                                    Qualified</label>
+                                                            </div>
+
+                                                            <div
+                                                                class="custom-control custom-radio custom-control-inline col-md-2">
+                                                                <label class="custom-control-label"
+                                                                       for="candidatestatus">
+                                                                    <input type="radio"
+                                                                           id="candidatestatus" name="candidate_status"
+                                                                           class="custom-control-input status"
+                                                                           value="Not Qualified"
+                                                                           @if('Not Qualified' == $candidateForm->screening_status ) checked @endif>
+                                                                    Not Qualified</label>
+                                                            </div>
+
+                                                            @if($candidateForm->admittedProgramme->isPG())
+                                                                <div
+                                                                    class="custom-control custom-radio custom-control-inline col-md-2">
+                                                                    <label class="custom-control-label"
+                                                                           for="candidatestatus">
+                                                                        <input type="radio" id="candidatestatus"
+                                                                               name="candidate_status"
+                                                                               required
+                                                                               class="custom-control-input status"
+                                                                               value="Pending"
+                                                                               @if('Pending' == $candidateForm->screening_status ) checked @endif>
+                                                                        Pending</label>
+                                                                </div>
+
+                                                                <div
+                                                                    class="col-md-4 {{ $candidateForm->remark_id==null?'hidden':'' }} "
+                                                                    id="remarkDiv"
+                                                                    style="width: 20%">
+                                                                    <select name="remark_id" id="remark"
+                                                                            class="form-control">
+                                                                        <option value="">Select Remark</option>
+                                                                        @foreach(\App\Models\Remark::all() as $remark)
+                                                                            <option
+                                                                                value="{{ $remark->id }}" {{ $candidateForm->remark_id==$remark->id?'selected':'' }}>{{ $remark->remark }}</option>
+                                                                        @endforeach
+                                                                    </select>
+                                                                </div>
+                                                            @endif
+
+                                                            @if(isset($availableLevels) && count($availableLevels) > 0 && isset($admissionLevel))
+                                                                <div class="col-md-4">
+                                                                    <label for="level_admitted_index" class="form-label">
+                                                                        Step Down Level
+                                                                        <small class="text-muted">
+                                                                            (Current: Level {{ $currentLevelNumber ?? $admissionLevel->number }})
+                                                                        </small>
+                                                                    </label>
+                                                                    <select name="level_admitted_index" id="level_admitted_index" class="form-control">
+                                                                        <option value="">Keep Original Level ({{ $admissionLevel->number }})</option>
+                                                                        @foreach($availableLevels as $level)
+                                                                            <option value="{{ $level->number }}"
+                                                                                {{ ($candidateForm->level_admitted_index == $level->number) ? 'selected' : '' }}>
+                                                                                Level {{ $level->number }} - {{ $level->name ?? '' }}
+                                                                            </option>
+                                                                        @endforeach
+                                                                    </select>
+                                                                    <small class="text-muted">Select a lower level to step down the candidate's admission level</small>
+                                                                </div>
+                                                            @endif
+
+                                                            <div class="col-md-2">
+                                                                <input class="btn btn-success" type="submit"
+                                                                       value="Save"/>
+                                                            </div>
+                                                        </div>
+                                                    </form>
+                                                @endif
+                                            </div>
+                                        @endif
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+@endsection
+
+@section("js")
+    <script>
+        $(function () {
+            let message = $('#warning').attr('message')
+            if (!message == '') {
+                alert(message)
+                $('#warning').removeClass('hidden')
+            } else $('#warning').addClass('hidden')
+
+            $('.status').on('change', function () {
+                if ($(this).val() == 'Pending')
+                    $('#remarkDiv').removeClass('hidden')
+                else $('#remarkDiv').addClass('hidden')
+            })
+
+            $('.document').on('click', function () {
+                $('#document').attr('src', $(this).data('file'))
+                $('#document-type').html($(this).data('type'))
+                $('#type').val($(this).data('type'))
+            })
+
+            $('#remove').on('click', function () {
+                if (confirm('Are you sure you want to delete this file?')) {
+                    console.log($('#type').val())
+                    $.post('{{ route('remove.candidate.document') }}', {
+                        '_token': '{{ csrf_token() }}',
+                        'candidate_id': '{{ $candidate->id?? null }}',
+                        'type': $('#type').val()
+                    }, function (response) {
+                        console.log(response)
+                        if (response.success) {
+                            location.reload()
+                        } else alert(response.message)
+                    })
+                }
+            })
+        })
+    </script>
+@endsection

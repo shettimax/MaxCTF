@@ -1,0 +1,26 @@
+
+@extends('layouts.frontmaster')
+
+@section('content')
+    <div class="main-section">
+        <!-- Page Section -->
+        <div  class="page-section"   style="margin-top: -20px;margin-bottom: 0px;border-top: 0px #e0e0e0 solid;border-bottom: 0px #e0e0e0 solid;" >
+            <!-- Container Start -->
+            <div  class="container">
+                <div class="col-md-12 cs-tabs box">
+                    <div id="cs-tab">
+                        <ul class="nav nav-tabs">
+                            <li class="active in"><a aria-expanded="true" href="#tababout-university9432" data-toggle="tab">Oops! Error</a></li>
+                        </ul>
+                        <div class="tab-content">
+                            <div class="alert alert-danger">
+                                Sorry you don't have the required clearance to View this record.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+@endsection

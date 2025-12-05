@@ -1,0 +1,193 @@
+
+@extends('layout.student.master')
+@section('css')
+    <style type='text/css'>
+        .disableit{
+            opacity:0.3;
+        }
+        a > i.disableit:hover, a > i.disableit:link{
+            cursor: default;
+        }
+        #refactions a{
+            margin-left: 3px;
+            margin-right: 3px;
+        }
+        @media print{
+            .main-nav, nav.navigation, ul.nav, #candformnav, div.bottom-footer, div.txnslipactions, div.right-side, img#remita-logo{display:none;}
+            h3#txnid{
+                text-align: right !important;
+            }
+            @page {
+                margin: 0cm;
+            }
+        }
+        @media print {
+            #cont {
+                background-color: white;
+                height: 100%;
+                width: 100%;
+                top: 0;
+                left: 0;
+                margin: auto auto;
+                padding: 15px;
+                font-size: 14px;
+                line-height: 18px;
+            }
+            .logo, #print{
+                display: none;
+            }
+
+            #inner{
+                width: 100%;
+            }
+
+            #footer-widget{
+                display:none;
+            }
+        }
+
+    </style>
+@endsection
+@section('content')
+    <div class="main-section">
+        <div  class="container"   id="cont">
+            <div id='candformnav' class="text-right" style="margin-bottom: 20px;">
+                <a class="btn btn-sm btn-primary" href ="{{route('candidateform.apply', array('id'=>$candform->id))}}">Back To Form</a> <a class="btn btn-sm btn-primary" href ="{{route('candidateform.myforms')}}">My Forms</a>
+            </div>
+            <div id="inner" style="margin:0 auto;padding:10px; padding-top:20px; border-style:solid; border-width:1px; border-color:#cccccc; border-radius:5px;">
+                <h1 class="display-1 text-center">TRANSACTION SLIP</h1><br />
+                @if(count($transactions)==1)
+                    <h3 id='txnid' style="text-align:center;" >TRANSACTION ID:
+                        <span style="padding:10px; border-radius: 5px; border-width: 1px; border-color:#cccccc; border-style: solid;">{{$transaction->transcode}}</span>
+                    </h3>
+                    <br />
+                @endif
+                <div class="row">
+                    <div class="col-12">
+                        <h3>Student Details</h3>
+                        <div style="text-align:right; vertical-align: top; height: 0px; overflow-y: visible;">
+                            <img style="width:170px; height: 200px;" class="img-thumbnail img-fluid" src="{{asset('/studentpics')}}/{{Auth::user()->id}}.jpg" />
+                        </div>
+
+                        <table class="table table-condensed table-bordered table-striped">
+                            <tr>
+                                <th>Full Name:</th>
+                                <td>
+                                    {{strtoupper($biodata->surname)." ".$biodata->firstname." ".$biodata->othernames}}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Gender:</th>
+                                <td>{{$biodata->gender}}</td>
+                            </tr>
+                            <tr>
+                                <th>Mobile No.:</th>
+                                <td>{{$contact->gsm}}</td>
+                            </tr>
+                            <tr>
+                                <th>Email:</th>
+                                <td>{{$user->email}}</td>
+                            </tr>
+                        </table>
+                        <h3>Form Details</h3>
+                        <table class="table table-condensed table-bordered table-striped">
+                            <tr>
+                                @php
+                                    $programme = \App\Models\Programme::find($student->programme_id);
+                                @endphp
+                                <th>Faculty:</th>
+                                <th>Department:</th>
+                                <th>Programme:</th>
+                                <th>Session:</th>
+                            </tr>
+                            <tr>
+                                <td>{{$faculty}}</td>
+                                <td>{{$programme->department->name}}</td>
+                                <td>{{$programme->name}}</td>
+                                <td>{{$student->session}}/{{($student->session + 1)}}</td>
+
+                            </tr>
+
+                        </table>
+
+                        <h3>Payment Details</h3>
+                        <table class="table table-condensed table-bordered ">
+                            @foreach($transactions as $trans)
+                                <tr>
+                                    <th colspan="2" class="text-center" style="font-size: larger; font-family: Arial"><span style="padding:10px; border-radius: 5px; border-width: 1px; border-color:#cccccc; border-style: solid;">TRANSACTION ID: {{$trans->transcode}}</span></th>
+                                </tr>
+                                <tr>
+                                    <th>Purpose:</th>
+                                    <td>Non-refundable Charges</td>
+                                </tr>
+
+                                <tr>
+                                    <th>Payment Status</th>
+                                    <td>{{$trans->paymentstatus}}</td>
+                                </tr>
+                                <tr>
+                                    <th>Date Generated</th>
+                                    <td>{{$trans->created_at}}</td>
+                                </tr>
+                                <tr>
+                                    <th colspan="2">
+                                        <table width="80%">
+                                            <tr>
+                                                <th>S/N</th>
+                                                <th>Item Name</th>
+                                                <th>Amount</th>
+                                            </tr>
+                                             @foreach($fees as $fee)
+                                                <tr>
+                                                    <td>{{ $loop->index+1 }}</td>
+                                                    <td>{{ $fee->itemname }}</td>
+                                                    <td>&#8358;
+                                                        {{number_format( $fee->amount,2,'.',',') }}</td>
+                                                </tr>
+                                            @endforeach
+
+                                        @if($trans->paymentstatus == "Paid")
+                                            <tr>
+                                                <th colspan="2">Amount Paid</th>
+                                                <th>&#8358;
+                                                    {{number_format($trans->transamount,2,'.',',')}}</th>
+                                                </tr>
+                                        @else
+                                            <tr>
+                                                <th colspan="2">Amount Payable</th>
+                                                <th>&#8358;
+                                                    {{number_format($trans->transamount,2,'.',',')}}</th>
+                                            </tr>
+
+                                        @endif
+                                        </table>
+                                    </th>
+                                </tr>
+
+
+                            @endforeach
+                        </table>
+                        <div class="text-center">
+                            <button class="btn btn-info" id="print">Print</button>
+                        </div>
+
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+@endsection
+
+@section('js')
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+    <script type='text/javascript'>
+        $('body').on('click','#print',function(){
+            window.print();
+        });
+    </script>
+@endsection

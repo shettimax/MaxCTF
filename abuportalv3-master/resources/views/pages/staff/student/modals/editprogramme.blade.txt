@@ -1,0 +1,149 @@
+<div class="modal fade" id="editProgrammeModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+    <div class="modal-dialog bs-example-modal-lg" role="document" style="min-width: 1024px;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span>
+                </button>
+                <h4 class="modal-title" id="myModalLabel">
+                    Update Student Record
+                    <div class="double-line-bottom-theme-colored-2"></div>
+                </h4>
+            </div>
+            <div class="modal-body">
+                <form class="form-horizontal" method="post" action="" id="changeProgrammeForm">
+                    @csrf
+                    <input type="hidden" name="student_id" value="{{ encrypt($student->id) }}">
+                    <div class="form-group">
+                        <div class="col-md-6">
+
+                            <label for="name" class="control-label">{{ $student->getFullName() }}</label>
+                        </div>
+                        <div class="col-md-6" style="align-content: flex-end">
+                            <span><i>Current Programme</i></span>
+                            <p>{{ $student->getprogramme->name }}</p>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <div class="col-md-3">
+                            <span><i>Choose Session</i></span>
+                            <select name="session" id="session" class="form-control">
+                                <option>-- select --</option>
+
+                                @foreach(range(date("Y")+2,date("Y")-10) as $year)
+                                    <option value="{{$year}}">{{$year}}</option>
+                                @endforeach
+
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <span><i>Select Faculty</i></span>
+                            <select id="newfac" name="programme" class="form-control">
+                                <option>-- select --</option>
+                                @foreach(App\Models\Faculty::select('*')->orderBy('name', 'ASC')->get() as $faculty)
+                                    <option value="{{ $faculty->id }}">{{ $faculty->name }}</option>
+                                @endforeach
+
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <span><i>Select Department</i></span>
+                            <select id="newdept" name="dept" class="form-control">
+                                <option>-- select --</option>
+                                @foreach(App\Models\Department::all() as $department)
+                                    <option value="{{ $department->id }}"
+                                            faculty-id="{{$department->faculty_id}}">{{ $department->name }}</option>
+                                @endforeach
+
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <span><i>Select Programme</i></span>
+                            <select id="newprog" name="programme2" class="form-control">
+                                <option>-- select --</option>
+                                @foreach(App\Models\Programme::select('*')->orderBy('name', 'ASC')->get() as $programme)
+                                    <option value="{{ $programme->id }}"
+                                            dept-id="{{ $programme->department_id }}">{{ $programme->name }}</option>
+                                @endforeach
+
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="col-md-12">
+                            <h3>Update Session Records <input type="checkbox" name="updateSessionRecord" id="updateSessionRecord" value="yes"></h3>
+                        </div>
+                    </div>
+                    <div id="display">
+
+                        <div class="form-group">
+                            <div class="col-md-4">
+                                <span><i>Matric No.</i></span>
+                                <input type="text" id="matricno" name="matricno" value="" class="form-control">
+                            </div>
+                            <div class="col-md-4">
+                                <span><i>Level</i></span>
+                                <select id="level" name="level" class="form-control">
+                                    <option>-- select --</option>
+                                    @foreach(\App\Models\Level::list() as $level)
+                                        <option value="{{$level->id}}"  {{$student->entry_level_id==$level->id?"selected":""}}>{{$level->short_name}}{{$level->prog_type_code=="PG"?"-".$level->prog_short_name:""}}</option>
+                                    @endforeach
+
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <span><i>Study Type</i></span>
+                                <select id="studtype" name="studtype" class="form-control">
+
+
+                                    <option value="">---Select---</option>
+
+                                    <option value="Academic">Academic</option>
+                                    <option value="Non Academic">Non Academic</option>
+                                    <option value="Others">Others</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <span><i>Study Mode</i></span>
+                                <select id="studymode" name="study_mode" class="form-control">
+                                    <option>-- select --</option>
+                                    <option value="Part Time">Part Time</option>
+                                    <option value="Full Time">Full Time</option>
+
+
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <span><i>Marital Status</i></span>
+                                <select id="maritalstat" name="marital_status" class="form-control">
+                                    <option>-- select --</option>
+
+                                    <option value="Single">Single</option>
+                                    <option value="Married">Married</option>
+                                    <option value="Divorced">Divorced</option>
+
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <span><i>Session</i></span>
+                                <input type="text" id="newsession" name="newsession" value="" class="form-control">
+                            </div>
+                        </div>
+
+                    </div>
+
+
+                </form>
+                <p class="alert alert-info" id="messageChangeProgramme">
+
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default btn-flat" data-dismiss="modal"
+                        id="changeProgrammeBtnClose">Close
+                </button>
+                <button type="button" class="btn btn-success btn-flat" id="changeProgrammeBtn">Save changes</button>
+            </div>
+        </div>
+    </div>
+</div>

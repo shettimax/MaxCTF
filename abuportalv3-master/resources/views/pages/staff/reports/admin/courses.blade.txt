@@ -1,0 +1,163 @@
+@extends("layout.staff.master")
+
+@section("css")
+    <link rel="stylesheet" href="{{ asset('js/jqueryui/jquery-ui.min.css')}}" type="text/css" media="all">
+    <link rel="stylesheet" href="{{ asset('js/datatables/jquery.dataTables.min.css')}}"/>
+    <style>
+        label {
+            width: 100%;
+            color: #000000;
+            text-align: left;
+            margin-top: 2vh;
+        }
+      
+        .loader {
+            width: 50px;
+            aspect-ratio: 1;
+            display: grid;
+            border: 4px solid #0000;
+            border-radius: 50%;
+            border-right-color: orange;
+            animation: l15 1s infinite linear;
+            }
+            .loader::before,
+            .loader::after {    
+            content: "";
+            grid-area: 1/1;
+            margin: 2px;
+            border: inherit;
+            border-radius: 50%;
+            animation: l15 2s infinite;
+            }
+            .loader::after {
+            margin: 8px;
+            animation-duration: 3s;
+            }
+            @keyframes l15{ 
+            100%{transform: rotate(1turn)}
+            }
+    </style>
+@endsection
+
+@section("content")
+    <section class="pt-10 pl-5">
+        <div class="section-content">
+            <div class="row  mt-20 ml-10">
+                <form id="filterForm" action="" method="post">
+                    @csrf
+                    <div class="col-md-3 mb-3">
+                        <label for="faculty">Faculty:</label>
+                        <select id="faculty" name="faculty"
+                                class="form-control is-valid"
+                                required>
+                            <option value="">--select--</option>
+    
+                        </select>
+    
+                    </div>            
+                    <div class="col-md-3 mb-3">
+                        <label for="department">Department:</label>
+                        <select id="department" name="department"
+                                class="form-control is-valid"
+                                required>
+                            <option value="">--select--</option>
+    
+                        </select>
+                    </div>   
+                    <div class="col-md-1"></div>
+                    <div class="col-md-3">
+                        <br><br>
+                        <div class="loader"></div>
+                    </div>  
+                </form>
+            </div>
+        </div>
+        <hr class="mt-50">
+        <div class="row mt-20">
+            <div class="col-md-12">
+                <div class="container mb-30" id="display"></div>
+            </div>
+        </div>
+    </section>
+@endsection
+
+@section("js")
+    <script src="{{ asset('DataTables/datatables.min.js') }}"></script>
+    <script>
+        $('.loader').hide();
+
+        $.ajax({
+            url: '{{route("filter.faculties")}}',
+            type: 'GET',
+            data: {permission: '{{Route::currentRouteName()}}',category:'academic'}
+        }).done(function (msg) {
+           $("#faculty").html("<option value='%'>--select--</option>" + msg);
+        });
+
+        $(document).on("change", "#faculty", function (event) {
+            $("#department").html("<option value=''>Loading...</option>");
+
+            $.ajax({
+                url: '{{route("filter.departments")}}',
+                type: 'GET',
+                data: {
+                    permission: '{{Route::currentRouteName()}}',
+                    faculty_id: $("#faculty").val()
+                }
+            }).done(function (msg) {
+                $("#department").html("<option value=''>--select--</option>" + msg);
+            });
+        });
+
+        $("body").on("change", "#department", function () {
+                $('.loader').show();
+                var department = $(this).val();
+
+                $.post('{{ route('reports.admin.courses.load') }}', $('#filterForm').serialize(), function(response){
+                    $('.loader').hide();
+                    $('#display').html(response);
+                    $('#courses').DataTable({
+                        "lengthMenu": [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+                        pageLength: 10,
+                        dom: "<'row'<'col-sm-12'B>>" +
+                            "<'row'<'col-sm-12 col-md-6'l><'col-sm-12 col-md-6'f>>" +
+                            "<'row'<'col-sm-12'tr>>" +
+                            "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+                        buttons: [
+                            {
+                                extend: 'excelHtml5',
+                                exportOptions: {
+                                    columns: ':visible'
+                                }
+                            },
+                            {
+                                extend: 'pdfHtml5',
+                                orientation: 'landscape',
+                                pageSize: 'LEGAL',
+                                exportOptions: {
+                                    columns: ':visible'
+                                }
+                            },
+                            {
+                                extend: 'print',
+                                messageTop: 'Candidates Report',
+                                orientation: 'landscape',
+                                pageSize: 'LEGAL'
+                            }
+                        ],
+                        language: {
+                            "emptyTable": "No matching record found"
+                        }
+                    });
+                })
+
+                // $.ajax({
+                //     type: "GET",
+                //     url: "{{ route('reports.admin.courses.load', '') }}/" + department
+                // }).done(function (data) {
+                   
+                // });
+            });
+    </script>
+@endsection
+

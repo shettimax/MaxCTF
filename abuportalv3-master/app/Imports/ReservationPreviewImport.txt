@@ -1,0 +1,58 @@
+<?php
+namespace App\Imports;
+
+use Illuminate\Support\Collection;
+use Maatwebsite\Excel\Concerns\ToCollection;
+use App\Models\Hostel;
+use App\Models\Block;
+use App\Models\Room;
+
+class ReservationPreviewImport implements ToCollection
+{
+    public $results = [];
+
+    public function collection(Collection $rows)
+    {
+        $rows->shift(); // remove header row
+
+        foreach ($rows as $index => $row) {
+            $matric = trim($row[0]);
+            $hostel = trim($row[1]);
+            $block = trim($row[2]);
+            $room = trim($row[3]);
+
+            $valid = true;
+            $error = '';
+
+            $hostelObj = Hostel::where('name', $hostel)->first();
+            if (!$hostelObj) {
+                $valid = false;
+                $error = 'Invalid hostel';
+            }
+
+            $blockObj = $hostelObj ? $hostelObj->blocks()->where('name', $block)->first() : null;
+            if (!$blockObj) {
+                $valid = false;
+                $error = 'Invalid block';
+            }
+
+            $roomObj = null;
+            if ($room && $blockObj) {
+                $roomObj = $blockObj->rooms()->where('name', $room)->first();
+                if (!$roomObj) {
+                    $valid = false;
+                    $error = 'Invalid room';
+                }
+            }
+
+            $this->results[] = [
+                'matric_number' => $matric,
+                'hostel' => $hostel,
+                'block' => $block,
+                'room' => $room,
+                'valid' => $valid,
+                'error' => $valid ? null : $error,
+            ];
+        }
+    }
+}

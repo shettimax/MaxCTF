@@ -1,0 +1,168 @@
+@extends('layout.student.master')
+@section('content')
+    <section class="">
+        <div class="main-section">
+            <div class="container">
+                <div class="col-md-12 cs-tabs box">
+                    <div id="cs-tab">
+                        <ul class="nav nav-tabs">
+                            <li class="active in"><a aria-expanded="true" href="#tababout-university9432" data-toggle="tab">A-Level Result</a></li>
+                        </ul>
+                        <div class="tab-content">
+
+                            @if(Session::has('flash_message'))
+                                <div class="alert alert-success">
+                                    {{ Session::get('flash_message') }}
+                                </div>
+                            @endif
+
+                            <div class="row">
+                                <div class="col-md-2"></div>
+                                <div class="col-md-8">
+                                    <div class="text-right">
+                                        <a href = "{{route('studentalevel')}}" class = "btn btn-success">View Records</a>
+
+                                    </div>
+                                    <form action="{{route('studentalevel.store',['id'=>$id])}}" method="POST">
+                                        @csrf
+                                        <div class="form-row">
+                                            <div class="col-md-12 mb-3">
+                                                <label for="inst">Institution Name:</label>
+                                                <input type="text" class="form-control {{ $errors->has('inst')?'is-invalid':'is-valid' }}" name="inst" placeholder="Name of Institution" value="{{isset($alevel->institutionname)? $alevel->institutionname: ""}}" required>
+                                                @if($errors->has('inst'))
+                                                    <div class="invalid-feedback">
+                                                        {{ $errors->first('inst')}}
+                                                    </div>
+                                                @endif
+                                            </div>
+                                        </div>
+                                        <div class="form-row">
+                                            <div class="col-md-4 mb-3">
+                                                <label for="inst">From Year:</label>
+                                                <select id="startDate" class="form-control {{ $errors->has('fromyear')?'is-invalid':'is-valid' }}" size="" name="fromyear" placeholder="From Year" aria-label="Year" aria-describedby="basic-addon2" required>
+                                                    <option value="">From Year</option>
+                                                    @foreach(range(date("Y")-50,date("Y")) as $year)
+                                                        <option value="{{$year}}" {{ isset($alevel->fromyear)&& $alevel->fromyear ==$year?"selected":"" }}>{{$year}}</option>
+                                                    @endforeach
+                                                </select>
+                                                @if($errors->has('fromyear'))
+                                                    <div class="invalid-feedback">
+                                                        {{ $errors->first('fromyear')}}
+                                                    </div>
+                                                @endif
+                                            </div>
+                                            <div class="col-md-4 mb-3">
+                                                <label for="inst">To Year:</label>
+                                                <select id="endDate" class="form-control {{ $errors->has('toyear')?'is-invalid':'is-valid' }}" size="" name="toyear" placeholder="To Year" aria-label="To Year" aria-describedby="basic-addon2" required>
+                                                    <option value="">To Year</option>
+                                                    @foreach(range(date("Y")-50,date("Y")) as $year)
+                                                        <option value="{{$year}}" {{ isset($alevel->toyear)&& $alevel->toyear==$year?"selected":"" }}>{{$year}}</option>
+                                                    @endforeach
+                                                </select>
+                                                @if($errors->has('toyear'))
+                                                    <div class="invalid-feedback">
+                                                        {{ $errors->first('toyear')}}
+                                                    </div>
+                                                @endif
+                                            </div>
+                                            <div class="col-md-4 mb-3">
+                                                <label for="inst">Qualification:</label>
+                                                <select class="form-control form-control-lg {{ $errors->has('qual')?'is-invalid':'is-valid' }}" name="qual" required>
+                                                    <option value="">Select...</option>
+                                                    {{$id = isset($studentAlevels)?$studentAlevels->qualificationid:""}}
+                                                    @foreach($qualifications as $qualification)
+                                                        <option value="{{$qualification->id}}" {{ isset($alevel->qualification_id)&& $alevel->qualification_id == $qualification->id?"selected":""}}>{{$qualification->qualification}}</option>
+                                                    @endforeach
+                                                </select>
+                                                @if($errors->has('qualification_id'))
+                                                    <div class="invalid-feedback">
+                                                        {{ $errors->first('qual')}}
+                                                    </div>
+                                                @endif
+                                            </div>
+                                        </div>
+                                        <div class="form-row">
+                                            <div class="col-md-4 mb-3">
+                                                <label for="inst">Course:</label>
+                                                <input type="text" class="form-control {{ $errors->has('course')?'is-invalid':'is-valid' }}" name="course" placeholder="Name of Course" value="{{isset($alevel->course)?$alevel->course:""}}" required>
+                                                @if($errors->has('course'))
+                                                    <div class="invalid-feedback">
+                                                        {{ $errors->first('course')}}
+                                                    </div>
+                                                @endif
+                                            </div>
+                                            <div class="col-md-4 mb-3">
+                                                <label for="inst">Qualification Class:</label>
+                                                <select size class="form-control form-control-lg {{ $errors->has('degree')?'is-invalid':'is-valid' }}" name="degree" required>
+                                                    <option value="">Select...</option>
+                                                    @foreach($degreeclasses as $degreeclasse)
+                                                        <option value="{{$degreeclasse->id}}"
+                                                            {{ isset($alevel->degreeclass_id)&&  ($alevel->degreeclass_id == $degreeclasse->id)?"selected":""}}>
+                                                            {{$degreeclasse->grade}}</option>
+                                                    @endforeach
+                                                </select>
+                                                @if($errors->has('degree'))
+                                                    <div class="invalid-feedback">
+                                                        {{ $errors->first('degree')}}
+                                                    </div>
+                                                @endif
+                                            </div>
+                                            <div class="col-md-4 mb-3">
+                                                <label for="inst">CGPA:</label>
+                                                <input type="text" class="form-control {{ $errors->has('cgpa')?'is-invalid':'is-valid' }}" name="cgpa" id="cgpa" placeholder="CGPA" value="{{isset($alevel->cgpa)?$alevel->cgpa: ""}}" required>
+                                                @if($errors->has('cgpa'))
+                                                    <div class="invalid-feedback">
+                                                        {{ $errors->first('cgpa')}}
+                                                    </div>
+                                                @endif
+                                            </div>
+                                        </div>
+                                        <div class="form-row">
+                                            <div class="col-md-3 text-left">
+
+                                            </div>
+                                            <div class="col-md-6 mb-3 text-center">
+                                                <div class="form-group">
+                                                    <button type="submit" name="submit" id="submitbtn" class="btn btn-success text-right">Save</button>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3 text-left">
+                                            </div>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <script type='text/javascript'>
+        $(function(){<!--from w  w w .j  av a  2s .  c  om-->
+            $("body").on("click","#submitbtn",function(){
+                var cgpa = $("#cgpa").val();
+                if(!$.isNumeric( cgpa )) {
+                    alert("Please enter a valid CGPA.");
+                    return false;
+                }else{
+                    if(cgpa < 0){
+                        alert("Invalid Input for CGPA");
+                        return false;
+                    }
+                }
+
+            });
+
+            $("body").on("change","#startDate",function(){
+                var from = $("#startDate").val() * 1;
+                $("#endDate").val(from+1);
+                $("#endDate option").show().filter(function() {
+                    return $(this).attr("value") <= from ;
+                }).hide();
+            });
+        });
+    </script>
+@endsection
+

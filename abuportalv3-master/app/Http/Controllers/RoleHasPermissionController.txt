@@ -1,0 +1,91 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Permission;;
+use App\Models\Role;;
+use App\Models\RoleHasPermission;;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+
+class RoleHasPermissionController extends Controller
+{
+    public function __construct()
+    {
+        $this->middleware(["auth:staff", "mmode"]);
+    }
+
+    public function index()
+    {
+        //$details = Faculty::select('*')->orderby('name')->get();
+        Auth::user();
+        return view('pages.staff.authorization.roleperms');
+    }
+
+    public function store(Request $request)
+    {
+        try {
+            if (!Auth::user()) {
+                return view("pages.staff.error.access");
+            }
+            $roleid = $request->role;
+            $newPermission = $request->permissions;
+            $oldpermissions = $this->rolePermissionToArray($roleid);
+            DB::beginTransaction();
+            DB::table('role_has_permissions')->whereIn('permission_id', $oldpermissions)->where(['role_id' => $roleid])->delete();
+            foreach ($newPermission as $key => $val) {
+                DB::table('role_has_permissions')->insert(['permission_id' => $val, 'role_id' => $roleid]);
+            }
+            DB::commit();
+            DB::rollBack();
+//            app()->make(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+            if ($request->has('permissionid'))
+                return 'Permissions have been updated';
+            else
+                return 'Permissions have been added to the specified role';
+            //return  redirect()->back();
+        } catch (\Exception $e) {
+            return view("pages.staff.error.technical");
+        }
+    }
+
+    public function edit($id)
+    {
+        //$model = RoleHasPermission::find($id);
+        //return view('pages.staff.settings.assignpermissiontorole',compact('model'));
+    }
+
+    public function show($roleid)
+    {
+
+        $rolepermssions = $this->rolePermissionToArray($roleid);
+        $permissions = Permission::all();
+        $record = "<table class='table table-bordered table-responsive'>";
+        $i = 0;
+        $record .= "<tr><td colspan='12' style='text-align: right;'>Check All <input type='checkbox' id='checkAll' name='checkAll'/> </td></tr>";
+        $record .= "<tr>";
+        $checked = "";
+//        app()->make(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+        foreach ($permissions as $permission) {
+            if (in_array($permission->id, $rolepermssions))
+                $checked = "checked";
+            $record .= "<td>" . (++$i) . "</td><td>$permission->name </td><td style='text-align: center;vertical-align: middle;'><input type='checkbox' $checked name='permissions[]' id='permissions' class='permissions' value='" . $permission->id . "'/></td>";
+            if ($i % 4 == 0)
+                $record .= "</tr><tr>";
+            $checked = "";
+        }
+        $record .= "</tr></table>";
+        return $record;
+    }
+
+    public function rolePermissionToArray($roleid)
+    {
+        $toarray = array();
+//        app()->make(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+        $rolepermssions = Role::find($roleid)->rolepermissions;
+        foreach ($rolepermssions as $rolepermssion)
+            $toarray[] = $rolepermssion->id;
+        return $toarray;
+    }
+}

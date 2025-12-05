@@ -1,0 +1,116 @@
+<?php
+
+namespace App\Http\Controllers\Staff;
+
+use App\Models\Department;
+use App\Models\Employee;
+use App\Models\Faculty;
+use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+
+class DepartmentController extends Controller
+{
+    public function __construct()
+    {
+        $this->middleware('auth:staff');
+    }
+
+    public function index()
+    {
+        $user = Auth::user();
+        if (!$this->access($user, "admin.department"))
+            return view("pages.errors.nopermission");
+
+        return view('pages.staff.settings.managedepartment',compact('user'));
+    }
+
+    public function store(Request $request)
+    {
+        try {
+            if (!$this->access(Auth::user(), 'admin.department')) {
+                return view("pages.errors.nopermission");
+            }
+            $rules = [
+                'faculty' => 'required',
+                'department' => 'required|unique:departments,name',
+                'nature' => 'required'
+            ];
+            if ($request->department_id > 0)
+                $rules["department"] = 'required';
+
+
+            $validator = $request->validate($rules);
+            if (!$validator) {
+                return redirect()->route('department')->withInput()->withErrors();
+            } else {
+
+                if ($request->department_id > 0)
+                    $db = Department::find($request->department_id);
+                else if($db = Department::where('name',$request->department_id)->first()){
+                    $request->session()->flash('flash_error_message', 'Duplicate Department Name');
+                    return back();
+                }else
+                    $db = new Department();
+
+                $db->name = $request->department;
+                $db->faculty_id = $request->faculty;
+                $db->depttype = $request->nature;
+                $db->head_pno = $request->p_number;
+                $db->save();
+
+                $employee = Employee::where('personnel_no',$request->p_number)->first();
+                if($employee){
+                    $employeeUser = $employee->user();
+                    $employeeUser->makeConfiguration("HOD",$db->id,'Department',"HOD","");
+                }
+                if ($request->department_id > 0)
+                    $request->session()->flash('flash_message', 'Department has been updated');
+                else
+                    $request->session()->flash('flash_message', 'Faculty has been added');
+                return redirect()->back();
+            }
+        } catch (\Exception $e) {
+            return $e->getMessage();//view("pages.errors.technical");
+        }
+
+    }
+
+    public function edit($id)
+    {
+        $model = Department::find($id);
+        if (!$this->access(Auth::user(), "admin.department"))
+            return view("pages.errors.nopermission");
+
+        return view('pages.staff.settings.managedepartment', compact('model'));
+    }
+
+    public function show($id)
+    {
+        $departments = Faculty::find($id)->departments()->get();
+        $table = '<table align="center" class="table table-bordered stripped" style="width:95%;font-size:16px;font-family: Calibri; text-align: left; color: #000000">';
+        $table .= '<tr><th>S/N</th><th>Name</th><th>Faculty</th><th>Nature</th><th>Action</th></tr>';
+        $i = 1;
+        $text = "";
+        foreach ($departments as $department) {
+            $table .= "<tr><td>" . ($i++) . "</td><td>" . $department->name . "</td><td>" . Department::find($department->id)->faculty()->first()->name . "</td>";
+            $table .= "<td>";
+            if ($department->depttype == 2)
+                $text = "Degree Awarding";
+            elseif ($department->depttype == 1)
+                $text = "Non Degree Awarding";
+            else
+                $text = "Others";
+
+            $table .= $text . "</td><td><a href=" . route('department.edit', ['id' => $department->id]) . "><span class='icon icon-edit2'></span> Edit</a> </td></tr>";
+        }
+        $table .= "</table>";
+
+        return $table;
+    }
+
+    public function getDepartmets()
+    {
+        return Department::all();
+    }
+}

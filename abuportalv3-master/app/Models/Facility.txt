@@ -1,0 +1,21 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class Facility extends Model
+{
+    public function courseperiods()
+    {
+        return $this->hasMany(CoursePeriod::class);
+    }
+    public function department()
+    {
+        return $this->belongsTo(Department::class, 'departmentid');
+    }
+
+    public function getProgramme($id){
+        return $this->find($id);
+    }
+}

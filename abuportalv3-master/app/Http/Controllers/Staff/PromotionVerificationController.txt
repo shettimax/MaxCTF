@@ -1,0 +1,263 @@
+<?php
+
+namespace App\Http\Controllers\Staff;
+
+use App\Http\Controllers\Controller;
+use App\Models\PromotionRecomendation;
+use App\Models\Complex;
+use App\Models\Faculty;
+use App\Models\Department;
+use App\Models\Rank;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+
+class PromotionVerificationController extends Controller
+{
+    public function __construct()
+    {
+        $this->middleware(['auth:staff']);
+    }
+
+    /**
+     * Show the verification page
+     */
+    public function index()
+    {
+        if (!$this->access(Auth::user(), 'promotion.verification.index'))
+            return view("pages.errors.nopermission");
+
+        $complexes = Complex::all();
+        $ranks = Rank::orderBy('gradelevel', 'ASC')->orderBy('name', 'ASC')->get();
+        $groupedByGradeLevel = $ranks->groupBy('gradelevel');
+
+        return view('pages.staff.promotion.verification', compact('complexes', 'groupedByGradeLevel'));
+    }
+
+    /**
+     * Load promotion recommendations data for verification
+     */
+    public function loadVerificationData(Request $request)
+    {
+        $staffs = array();
+        if ($request->year) {
+            $year = $request->query->get('year');
+            $complex = $request->query->get('complex');
+            $facultyid = $request->query->get('faculty');
+            $departmentid = $request->query->get('department');
+            $verification_status = $request->query->get('verification_status');
+
+            $arropts = [
+                ["year", "=", $year],
+                ["central_apc_recommendation", "=", "Recommended"], // Only show APC recommended
+                ["council_approval", "!=", "Approved"] // Exclude already council approved
+            ];
+
+            if ($complex != '%') {
+                $arropts[] = ["complex_id", "=", $complex];
+            }
+            if ($facultyid != '%') {
+                $arropts[] = ["faculty_id", "=", $facultyid];
+            }
+            if ($departmentid != '%') {
+                $arropts[] = ["department_id", "=", $departmentid];
+            }
+            if ($verification_status && $verification_status != '%') {
+                $arropts[] = ["verification_status", "=", $verification_status];
+            }
+
+            $staffs = PromotionRecomendation::where($arropts)->get();
+            $complexes = Complex::all();
+
+            return view('pages.staff.promotion.load_verification_data', compact('staffs', 'complexes'))->render();
+        }
+
+        return view('pages.staff.promotion.verification', compact('staffs'));
+    }
+
+    /**
+     * Verify a promotion recommendation
+     */
+    public function verify(Request $request)
+    {
+        // Log::info('Verification request received:', $request->all());
+
+        try {
+            $request->validate([
+                'recommendation_id' => 'required|exists:promotion_recomendations,id',
+                'verification_status' => 'required|in:Pending,Approved,Rejected',
+                'verification_remark' => 'nullable|string|max:1000'
+            ]);
+
+            $recommendation = PromotionRecomendation::find($request->recommendation_id);
+
+            if (!$recommendation) {
+                return response()->json(['success' => false, 'message' => 'Recommendation not found']);
+            }
+
+            // Check if user has permission to verify
+            if (!$this->access(Auth::user(), 'promotion.verification.index')) {
+                return response()->json(['success' => false, 'message' => 'You do not have permission to verify recommendations']);
+            }
+
+            $recommendation->verification_status = $request->verification_status;
+            $recommendation->verification_remark = $request->verification_remark;
+            $recommendation->verified_by = Auth::id();
+            $recommendation->verified_at = now();
+
+            if ($recommendation->save()) {
+                Log::info('Promotion recommendation verified', [
+                    'recommendation_id' => $recommendation->id,
+                    'personnel_no' => $recommendation->personnel_no,
+                    'verification_status' => $request->verification_status,
+                    'verified_by' => Auth::id(),
+                    'verification_remark' => $request->verification_remark
+                ]);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Recommendation verification updated successfully'
+                ]);
+            }
+
+            return response()->json(['success' => false, 'message' => 'Failed to update verification']);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            Log::error('Validation failed:', $e->errors());
+            return response()->json(['success' => false, 'message' => 'Validation failed', 'errors' => $e->errors()], 422);
+        } catch (\Exception $e) {
+            Log::error('Exception in verify method:', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json(['success' => false, 'message' => 'An error occurred: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Bulk verify multiple recommendations
+     */
+    public function bulkVerify(Request $request)
+    {
+        $request->validate([
+            'staff_ids' => 'required|array',
+            'staff_ids.*' => 'exists:promotion_recomendations,id',
+            'verification_status' => 'required|in:Pending,Approved,Rejected',
+            'verification_remark' => 'nullable|string|max:1000'
+        ]);
+
+        if (!$this->access(Auth::user(), 'promotion.verification.index')) {
+            return response()->json(['success' => false, 'message' => 'You do not have permission to bulk verify recommendations']);
+        }
+
+        $updated = PromotionRecomendation::whereIn('id', $request->staff_ids)
+            ->where('central_apc_recommendation', 'Recommended')
+            ->update([
+                'verification_status' => $request->verification_status,
+                'verification_remark' => $request->verification_remark,
+                'verified_by' => Auth::id(),
+                'verified_at' => now()
+            ]);
+
+        if ($updated > 0) {
+            Log::info('Bulk promotion verification completed', [
+                'count' => $updated,
+                'verification_status' => $request->verification_status,
+                'verified_by' => Auth::id(),
+                'staff_ids' => $request->staff_ids
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => "Successfully verified {$updated} recommendations"
+            ]);
+        }
+
+        return response()->json(['success' => false, 'message' => 'No recommendations were updated']);
+    }
+
+    /**
+     * Get verification statistics
+     */
+    public function getVerificationStats(Request $request)
+    {
+        $year = $request->get('year');
+        $complex = $request->get('complex');
+        $faculty = $request->get('faculty');
+        $department = $request->get('department');
+
+        $query = PromotionRecomendation::where('central_apc_recommendation', 'Recommended')
+            ->where('council_approval', '!=', 'Approved');
+
+        if ($year) {
+            $query->where('year', $year);
+        }
+        if ($complex && $complex != '%') {
+            $query->where('complex_id', $complex);
+        }
+        if ($faculty && $faculty != '%') {
+            $query->where('faculty_id', $faculty);
+        }
+        if ($department && $department != '%') {
+            $query->where('department_id', $department);
+        }
+
+        $stats = $query->selectRaw('
+            COUNT(*) as total,
+            SUM(CASE WHEN verification_status = "Pending" THEN 1 ELSE 0 END) as pending,
+            SUM(CASE WHEN verification_status = "Approved" THEN 1 ELSE 0 END) as approved,
+            SUM(CASE WHEN verification_status = "Rejected" THEN 1 ELSE 0 END) as rejected
+        ')->first();
+
+        return response()->json([
+            'success' => true,
+            'stats' => $stats
+        ]);
+    }
+
+    /**
+     * Get verification report
+     */
+    public function verificationReport(Request $request)
+    {
+        if (!$this->access(Auth::user(), 'promotion.verification.index'))
+            return view("pages.errors.nopermission");
+
+        $complex = Complex::find($request->query->get('complex'));
+        $staffs = array();
+
+        if ($request->year) {
+            $year = $request->query->get('year');
+            $complex_ = $request->query->get('complex');
+            $facultyid = $request->query->get('faculty');
+            $departmentid = $request->query->get('department');
+            $verification_status = $request->query->get('verification_status');
+
+            $arropts = [
+                ["year", "=", $year],
+                ["central_apc_recommendation", "=", "Recommended"]
+            ];
+
+            if ($complex_ != '%') {
+                $arropts[] = ["complex_id", "=", $complex_];
+            }
+            if ($facultyid != '%') {
+                $arropts[] = ["faculty_id", "=", $facultyid];
+            }
+            if ($departmentid != '%') {
+                $arropts[] = ["department_id", "=", $departmentid];
+            }
+            if ($verification_status && $verification_status != '%') {
+                $arropts[] = ["verification_status", "=", $verification_status];
+            }
+
+            $staffs = PromotionRecomendation::where($arropts)->pluck('employee_id');
+            $employees = \App\Models\Employee::whereIn('id', $staffs)->get();
+
+            return view('pages.staff.promotion.verification_report_data', compact('employees', 'complex', 'year'))->render();
+        }
+
+        return view('pages.staff.promotion.verification_report', compact('staffs'));
+    }
+}

@@ -1,0 +1,65 @@
+@inject('Accommodation', 'App\Models\Accommodation')
+
+<div class='row'>
+    <div class='col-xs-12 col-md-10'>
+        <div class='row'>
+            <div class='col-xs-1 col-md-3'></div>
+            <div class ='col-xs-10 col-md-6'>
+                <div class='row'>
+                    <div class='col-12 text-center'>
+                        <h2 class="text-theme-colored2 font-20">Modify Room Configuration</h2>
+                    </div>
+                </div>
+                <form class='form' name='modifyroomfrm' id='modifyroomfrm' action='{{route('accommodation.admin.roomconfig.modify')}}' method='POST'>
+                    @if ($errors->any())
+                    <div class="alert alert-danger">
+                        Fix the errors highlighted.
+                    </div>
+                    @endif
+                    @if (isset($success))
+                    <div class="alert alert-success">
+                        Room configuration modified successfully!
+                    </div>
+                    @endif
+                    <div class="form-controls">
+                        <p class="form-control-static"><label for="hostelname">Hostel:</label>{{$roomconfig->room->block->hostel->name}}</p>
+                    </div>
+                    <div class="form-controls">
+                        <label for="blockname">Block:</label>
+                        <p class="form-control-static">{{$roomconfig->room->block->name}}</p>
+                    </div>
+                    <div class="form-controls">
+                        <label for="roomno">Room No.:</label>
+                        <p class="form-control-static">{{$roomconfig->room->room_no}}</p>
+                    </div>
+                    <div class="form-controls">
+                        <label for="session">Session:</label>
+                        <p class="form-control-static">{{$roomconfig->session}}</p>
+                    </div>
+                    <div class="form-controls">
+                        <label for="bedspace">Bedspace:</label>
+                        <input type='text' name='bedspace' id='bedspace' value='{{$roomconfig->bed_space}}' />
+                    </div>
+                    <div class="form-controls">
+                        <label>Reserved:</label> <br />
+                        <label class='checkbox-inline'><input type='radio' name='reserved' value='1' @if ($roomconfig->reserved == '1') checked @endif /> Reserved For SAD</label>
+                        <label class='checkbox-inline'><input type='radio' name='reserved' value='0' @if ($roomconfig->reserved == '0') checked @endif/> Available</label>
+                    </div>
+                    <div class="form-controls">
+                        <label>Status:</label> <br />
+                        <label class='checkbox-inline'><input type='radio' name='status' value='1' @if ($roomconfig->status == '1') checked @endif /> OK</label>
+                        <label class='checkbox-inline'><input type='radio' name='status' value='0' @if ($roomconfig->status == '0') checked @endif/> NOT OK</label>
+                    </div>
+                    <input type='hidden' name='_token' value='{{csrf_token()}}' />
+                    <input type='hidden' name='roomconfigid' value='{{$roomconfig->id}}' />
+                    <input id='modifyroom' type='submit' name='submit' value='Modify Room' class='btn btn-primary'/>
+                    <br /><br />
+                </form>
+            </div>
+            <div class='col-xs-1 col-md-3'></div>
+        </div>
+    </div>
+    <div class='col-xs-12 col-md-1'>
+        <a href="#" class="roomaction roomlistaction btn btn-sm btn-default"><i class='icon icon-list6 icon-2x'></i> Back to Room Configurations</a> <br />
+    </div>
+</div>

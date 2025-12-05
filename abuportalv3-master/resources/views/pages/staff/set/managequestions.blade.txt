@@ -1,0 +1,283 @@
+@extends("layout.staff.master")
+@section("css")
+    <link rel="stylesheet" href="{{ asset('js/datatables/jquery.dataTables.min.css')}}"/>
+    <style>
+        label {
+            width: 100%;
+            color: #0f1824;
+            text-align: left;
+        }
+    </style>
+@endsection
+@section("pageTitle")
+    Manage Questions
+@endsection
+@section("content")
+    <section>
+        <div class="main-section">
+            <div class="container">
+                <div class="row justify-content-center">
+                    <div class="col-md-12">
+                        {{--                        <div class="heading-line-bottom mb-50">--}}
+                        {{--                            <h4 class="heading-title">Manage Set Questions</h4>--}}
+                        {{--                        </div>--}}
+                        <div class="row mb-30 ml-30 mr-30">
+                            <div class="row">
+                                @if (session('status'))
+                                    <div class="alert alert-success" role="alert">
+                                        {{ session('status') }}
+                                    </div>
+                                @endif
+                                @if (isset($errors))
+                                    <ul>
+                                        @foreach($errors as $error)
+                                            <li>{{$error}}</li>
+                                        @endforeach
+                                    </ul>
+                                @endif
+                                @if(Session::has('flash_message'))
+                                    <div class="alert alert-success">
+                                        {{ Session::get('flash_message') }}
+                                    </div>
+                                @endif
+                                <div class="mb-70">
+                                    <!-- Button trigger modal -->
+                                    <button type="button" class="btn btn-primary pull-right add" data-toggle="modal"
+                                            data-target="#myModal">
+                                        Add New
+                                    </button>
+
+                                    <!-- Add/Edit Modal -->
+                                    <div class="modal fade" id="myModal" tabindex="-1" role="dialog"
+                                         aria-labelledby="myModalLabel">
+                                        <div class="modal-dialog modal-lg" role="document">
+                                            <div class="modal-content">
+                                                <div class="modal-header">
+                                                    <button type="button" class="close" data-dismiss="modal"
+                                                            aria-label="Close"><span aria-hidden="true">&times;</span>
+                                                    </button>
+                                                    <h4 class="modal-title text-left" id="myModalLabel">Add/Edit
+                                                        Question
+                                                        <div class="double-line-bottom-theme-colored-2"></div>
+                                                    </h4>
+                                                </div>
+                                                <form class="form" action="{{route('staff.set.questions.create')}}"
+                                                      method="POST" style="width: 100%; margin-top: 3vh;">
+                                                    @csrf
+                                                    <div class="modal-body">
+                                                        <input type="hidden" id="question_id" name="question_id"
+                                                               value="0"/>
+                                                        <div class="row">
+                                                            <div class="form-group col-md-5">
+                                                                <label for="faculty">Question:</label>
+                                                                <textarea class="form-control" name="question"
+                                                                          id="question" cols="30" rows="10"
+                                                                          placeholder="Question"></textarea>
+                                                            </div>
+                                                            <div class="form-group col-md-5">
+                                                                <label for="description">Description:</label>
+                                                                <textarea class="form-control" name="description"
+                                                                          id="description" cols="30" rows="10"
+                                                                          placeholder="Description"></textarea>
+                                                                <div id="description_error"
+                                                                     class="invalid-feedback"></div>
+                                                            </div>
+                                                            <div class="form-group col-md-2">
+                                                                <label for="category">Category:</label>
+                                                                <select id="category" class="form-control"
+                                                                        name="category" required>
+                                                                    <option value="-1">Select...</option>
+                                                                    @foreach(App\Models\SetQuestionCategory::select(['id','category'])->get() as $category)
+                                                                        <option
+                                                                            value="{{$category->id}}"> {{$category->category}}
+                                                                        </option>
+                                                                    @endforeach
+                                                                </select>
+                                                                <div id="nature_error" class="invalid-feedback"></div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <div class="form-group">
+                                                            <button type="button" class="btn btn-flat btn-danger"
+                                                                    data-dismiss="modal">
+                                                                Close
+                                                            </button>
+                                                            <button type="submit" id="addbtn"
+                                                                    class="btn btn-flat btn-success text-right"><span
+                                                                    class="icon icon-save"> Save </span>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!-- Delete Modal -->
+                                    <div class="modal" tabindex="-1" role="dialog" id="delete-modal">
+                                        <div class="modal-dialog" role="document">
+                                            <div class="modal-content">
+                                                <div class="modal-body">
+                                                    <p>
+                                                        Are you sure you want to delete?
+                                                        <input id="question_id" type="hidden" name="question_id">
+                                                    </p>
+                                                    <p>
+                                                        <input type="button" class="btn btn-flat btn-danger"
+                                                               id="delete-btn"
+                                                               value="Delete"/>
+                                                        <input type="button" class="btn btn-flat btn-secondary"
+                                                               data-dismiss="modal"
+                                                               value="Cancel"/>
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mt-30">
+                                    <table id="faculties-table" align="center"
+                                           class="table table-bordered table-striped"
+                                           style="width:100%;font-size:16px;font-family: Calibri; margin-top: 2vh; text-align: left; color: #000000">
+                                        <thead>
+                                        <tr>
+                                            <th>S/N</th>
+                                            <th>Question</th>
+                                            <th>Description</th>
+                                            <th>Category</th>
+                                            <th>Action</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        @php $i =1; @endphp
+                                        @foreach($questions as $question)
+                                            <tr>
+                                                <td>{{$i++}}</td>
+                                                <td>{{$question->question}}</td>
+                                                <td>{{$question->questiondesc}}</td>
+                                                <td>
+                                                    @if($question->question_category_id==2)
+                                                        {{"Resource Assessment"}}
+
+                                                    @elseif($question->question_category_id==1)
+                                                        {{"Staff Assessment"}}
+                                                    @endif
+                                                </td>
+                                                <td valign="center" style="width: 12%">
+                                                    @can('dashboard')
+                                                        <a class="btn btn-primary btn-sm edit"
+                                                           href="#" data-toggle="modal"
+                                                           data-target="#myModal" data-id="{{$question->id}}"
+                                                           data-question="{{$question->question}}"
+                                                           data-category="{{$question->question_category_id}}"
+                                                           data-description="{{$question->questiondesc}}"><span
+                                                                class="icon icon_pencil-edit"></span>
+                                                        </a>
+                                                        <a class="btn btn-danger btn-sm edit"
+                                                           href="#" data-toggle="modal"
+                                                           data-target="#delete-modal" data-id="{{$question->id}}">
+                                                            <span class="icon icon_close_alt2"></span>
+                                                        </a>
+                                                    @endcan
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+@endsection
+
+@section("js")
+    <script src="{{asset('js/datatables/jquery.dataTables.min.js')}}"></script>
+    <script>
+        $(document).on('click', '.add', function () {
+            $(".modal-body #category").val(-1);
+            $(".modal-body #question").text('');
+            $(".modal-body #question_id").val(0);
+            $(".modal-body #description").text('');
+        });
+
+        $(document).on('click', '.edit', function () {
+            const id = $(this).data('id'),
+                question = $(this).data('question'),
+                description = $(this).data('description'),
+                category = $(this).data('category');
+
+            $(".modal-body #question_id").val(id);
+            $(".modal-body #category").val(category);
+            $(".modal-body #question").text(question);
+            $(".modal-body #description").text(description);
+        });
+
+        $(document).on('click', '#delete-btn', function () {
+            $.ajax({
+                type: 'POST',
+                url: '{{route('staff.set.questions.delete')}}',
+                //dataType: 'json',
+                data: {
+                    question_id: $("#delete-modal input[name = 'question_id']").val(),
+                    _token: '<?php echo csrf_token() ?>'
+                },
+                success: function (data) {
+                    // console.log(data)
+                    location.reload();
+                }
+            });
+        });
+
+        $('#faculties-table').DataTable({
+            "lengthMenu": [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+            pageLength: 10,
+            dom: "<'row'<'col-sm-12'B>>" +
+                "<'row'<'col-sm-12 col-md-6'l><'col-sm-12 col-md-6'f>>" +
+                "<'row'<'col-sm-12'tr>>" +
+                "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+            buttons: [
+                {
+                    extend: 'excelHtml5',
+                    exportOptions: {
+                        columns: ':visible'
+                    }
+                },
+                {
+                    extend: 'pdfHtml5',
+                    orientation: 'landscape',
+                    pageSize: 'LEGAL',
+                    exportOptions: {
+                        columns: ':visible'
+                    }
+                },
+                {
+                    extend: 'print',
+                    messageTop: 'Candidates Report',
+                    orientation: 'landscape',
+                    pageSize: 'LEGAL'
+                },
+                {
+                    extend: 'colvis',
+                    columns: ':not(.noVis)',
+                    collectionLayout: 'fixed two-column',
+                    postfixButtons: [{
+                        extend: 'colvisGroup',
+                        text: 'Show all',
+                        show: ':hidden'
+                    }]
+                }
+            ],
+            language: {
+                buttons: {
+                    colvis: 'Show/Hide columns'
+                }
+            }
+        });
+    </script>
+@endsection
+

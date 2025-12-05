@@ -1,0 +1,81 @@
+
+@extends("layout.staff.master")
+
+@section("pageTitle")
+    Profile: Biodata
+@endsection
+
+@include('pages.staff.profile.custom-css')
+
+@section('dashboard-page-menu', 'active')
+
+@section("content")
+    <section>
+        <div class="container pt-30 pb-30 pl-30 pr-30">
+            <div class="row">
+                <?php try{ ?>
+                <div class="col-md-9 pull-right flip sm-pull-none">
+                    <div class="blog-posts">
+                        <div class="col-md-12">
+                            <h2 class="widget-title">Dashboard (<small>Profile Overview</small>)</h2>
+                            <div class="double-line-bottom-theme-colored-2"></div>
+                            <div class="mt-30"></div>
+
+                            <section class="bg-white-f7 pr-40 pl-40 pt-40 pb-40" style="border-left:2px solid #43B14B;">
+                                <div class="container pb-0">
+                                    <div class="section-title">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="text-right flip">
+                                                    <h5 class="sub-title">{{ $employee->title }}</h5>
+                                                    <h2 class="title" style="font-size: 2.5rem;">{{ ucfirst($employee->surname) }}, {{ ucfirst($employee->firstname) }} {{ ucfirst($employee->othernames) }}</h2>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="text-left flip">
+                                                    <p class="left-bordered">
+                                                        @php
+                                                            $rank =  \App\Models\Rank::find($employee->rank_id);
+                                                        @endphp
+                                                        No.: - {{ $employee->personnel_no }}<br />
+                                                        Rank: - {{ $rank?$rank->name:'' }}<br />
+                                                        Department: - {{ $employee->department->name }}<br />
+                                                        Faculty: - {{ $employee->department->faculty()->name }}<br />
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="text-center mt-30">
+                                    <a href="{{ route('staff.profile.cv.generate.html', $employee->id) }}" class="btn btn-success btn-flat btn-xl">HTML</a>
+                                    {{--<a href="{{ route('staff.profile.cv.generate.word', $employee->id) }}" class="btn btn-success btn-flat btn-xl">WORD</a>--}}
+{{--                                    <a href="{{ route('staff.profile.cv.generate.pdf', $employee->id) }}" class="btn btn-success btn-flat btn-xl">PDF</a>--}}
+                                </div>
+                            </section>
+
+                        </div>
+                    </div>
+                </div>
+                <?php }catch (\Exception $e){
+                    print_r($e->getMessage()."---------------<br><hr>".$e->getTraceAsString());
+                }
+                ?>
+                <div class="col-md-3">
+                    @include('pages.staff.profile.page-menu')
+                </div>
+
+
+            </div>
+        </div>
+    </section>
+
+@endsection
+
+@section("js")
+    <script>
+
+    </script>
+@endsection
+

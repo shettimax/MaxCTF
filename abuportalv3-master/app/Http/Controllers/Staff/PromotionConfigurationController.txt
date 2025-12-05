@@ -1,0 +1,284 @@
+<?php
+
+namespace App\Http\Controllers\Staff;
+
+use App\Http\Controllers\Controller;
+use App\Models\PromotionExercise;
+use App\Models\PromotionStep;
+use App\Models\PromotionStepConfiguration;
+use App\Models\PromotionProgress;
+use App\Models\Complex;
+use App\Models\Faculty;
+use App\Models\Department;
+use App\Models\User;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
+
+class PromotionConfigurationController extends Controller
+{
+    public function __construct()
+    {
+        $this->middleware(['auth:staff']);
+    }
+
+    public function index()
+    {
+        $exercises = PromotionExercise::orderBy('year', 'desc')->get();
+        $currentExercise = PromotionExercise::current()->first();
+
+        return view('pages.staff.promotion.configuration.index', compact('exercises', 'currentExercise'));
+    }
+
+    // Promotion Exercise Management
+    public function exercises()
+    {
+        $exercises = PromotionExercise::orderBy('year', 'desc')->paginate(15);
+        return view('pages.staff.promotion.configuration.exercises.index', compact('exercises'));
+    }
+
+    public function createExercise()
+    {
+        $years = range(date('Y'), date('Y') + 5);
+        return view('pages.staff.promotion.configuration.exercises.create', compact('years'));
+    }
+
+    public function storeExercise(Request $request)
+    {
+        $request->validate([
+            'year' => 'required|unique:promotion_exercises,year',
+            'title' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'start_date' => 'required|date',
+            'end_date' => 'required|date|after:start_date',
+        ]);
+
+        PromotionExercise::create($request->all());
+        return redirect()->route('promotion.configuration.exercises')->with('success', 'Promotion exercise created successfully');
+    }
+
+    public function editExercise(PromotionExercise $exercise)
+    {
+        $years = range(date('Y'), date('Y') + 5);
+        return view('pages.staff.promotion.configuration.exercises.edit', compact('exercise', 'years'));
+    }
+
+    public function updateExercise(Request $request, PromotionExercise $exercise)
+    {
+        $request->validate([
+            'year' => 'required|unique:promotion_exercises,year,' . $exercise->id,
+            'title' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'start_date' => 'required|date',
+            'end_date' => 'required|date|after:start_date',
+        ]);
+
+        $exercise->update($request->all());
+        return redirect()->route('promotion.configuration.exercises')->with('success', 'Promotion exercise updated successfully');
+    }
+
+    // Promotion Steps Management
+    public function steps()
+    {
+        $steps = PromotionStep::ordered()->paginate(15);
+        return view('pages.staff.promotion.configuration.steps.index', compact('steps'));
+    }
+
+    public function createStep()
+    {
+        return view('pages.staff.promotion.configuration.steps.create');
+    }
+
+    public function storeStep(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'order' => 'required|integer|min:1',
+            'is_required' => 'boolean',
+        ]);
+
+        PromotionStep::create($request->all());
+        return redirect()->route('promotion.configuration.steps')->with('success', 'Promotion step created successfully');
+    }
+
+    public function editStep(PromotionStep $step)
+    {
+        return view('pages.staff.promotion.configuration.steps.edit', compact('step'));
+    }
+
+    public function updateStep(Request $request, PromotionStep $step)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'order' => 'required|integer|min:1',
+            'is_required' => 'boolean',
+        ]);
+
+        $step->update($request->all());
+        return redirect()->route('promotion.configuration.steps')->with('success', 'Promotion step updated successfully');
+    }
+
+    // Step Configuration Management
+    public function configurations(PromotionExercise $exercise)
+    {
+        $configurations = $exercise->stepConfigurations()
+            ->with(['step', 'complex', 'faculty', 'department'])
+            ->ordered()
+            ->get();
+
+        $steps = PromotionStep::active()->ordered()->get();
+        $complexes = Complex::orderBy('name')->get();
+        $faculties = Faculty::orderBy('name')->get();
+        $departments = Department::orderBy('name')->get();
+
+        return view('pages.staff.promotion.configuration.configurations.index',
+            compact('exercise', 'configurations', 'steps', 'complexes', 'faculties', 'departments'));
+    }
+
+    public function createConfiguration(PromotionExercise $exercise)
+    {
+        $steps = PromotionStep::active()->ordered()->get();
+        $complexes = Complex::orderBy('name')->get();
+        $faculties = Faculty::orderBy('name')->get();
+        $departments = Department::orderBy('name')->get();
+
+        return view('pages.staff.promotion.configuration.configurations.create',
+            compact('exercise', 'steps', 'complexes', 'faculties', 'departments'));
+    }
+
+    public function storeConfiguration(Request $request, PromotionExercise $exercise)
+    {
+        $request->validate([
+            'step_id' => 'required|exists:promotion_steps,id',
+            'complex_id' => 'nullable|exists:complexes,id',
+            'faculty_id' => 'nullable|exists:faculties,id',
+            'department_id' => 'nullable|exists:departments,id',
+            'approver_type' => 'required|in:Department,Faculty,Complex,University',
+            'approver_role' => 'required|string|max:255',
+            'approver_user_id' => 'nullable|exists:users,id',
+            'order' => 'required|integer|min:1',
+        ]);
+
+        $exercise->stepConfigurations()->create($request->all());
+        return redirect()->route('promotion.configuration.configurations', $exercise)->with('success', 'Step configuration added successfully');
+    }
+
+    public function editConfiguration(PromotionStepConfiguration $configuration)
+    {
+        $exercise = $configuration->promotionExercise;
+        $steps = PromotionStep::active()->ordered()->get();
+        $complexes = Complex::orderBy('name')->get();
+        $faculties = Faculty::orderBy('name')->get();
+        $departments = Department::orderBy('name')->get();
+
+        return view('pages.staff.promotion.configuration.configurations.edit',
+            compact('configuration', 'exercise', 'steps', 'complexes', 'faculties', 'departments'));
+    }
+
+    public function updateConfiguration(Request $request, PromotionStepConfiguration $configuration)
+    {
+        $request->validate([
+            'complex_id' => 'nullable|exists:complexes,id',
+            'faculty_id' => 'nullable|exists:faculties,id',
+            'department_id' => 'nullable|exists:departments,id',
+            'approver_type' => 'required|in:Department,Faculty,Complex,University',
+            'approver_role' => 'required|string|max:255',
+            'approver_user_id' => 'nullable|exists:users,id',
+            'order' => 'required|integer|min:1',
+        ]);
+
+        $configuration->update($request->all());
+        return back()->with('success', 'Configuration updated successfully');
+    }
+
+    public function deleteConfiguration(PromotionStepConfiguration $configuration)
+    {
+        $configuration->delete();
+        return back()->with('success', 'Configuration deleted successfully');
+    }
+
+    // Statistics Dashboard
+    public function statistics()
+    {
+        $currentExercise = PromotionExercise::current()->first();
+
+        if (!$currentExercise) {
+            return view('pages.staff.promotion.configuration.statistics.no-exercise');
+        }
+
+        $stats = $this->getPromotionStatistics($currentExercise);
+
+        return view('pages.staff.promotion.configuration.statistics.index', compact('currentExercise', 'stats'));
+    }
+
+    public function pendingList(Request $request)
+    {
+        $currentExercise = PromotionExercise::current()->first();
+        $stepId = $request->get('step_id');
+        $status = $request->get('status', 'Pending');
+
+        $query = PromotionProgress::where('promotion_exercise_id', $currentExercise->id);
+
+        if ($stepId) {
+            $query->where('step_id', $stepId);
+        }
+
+        if ($status !== 'All') {
+            $query->where('status', $status);
+        }
+
+        $progress = $query->with(['promotionRecommendation.employee', 'step', 'stepConfiguration'])
+            ->paginate(20);
+
+        $steps = PromotionStep::active()->ordered()->get();
+
+        return view('pages.staff.promotion.configuration.statistics.list',
+            compact('progress', 'steps', 'status', 'stepId'));
+    }
+
+    private function getPromotionStatistics(PromotionExercise $exercise)
+    {
+        $totalRecommendations = DB::table('promotion_recomendations')
+            ->where('year', $exercise->year)
+            ->count();
+
+        $stepStats = DB::table('promotion_progress as pp')
+            ->join('promotion_steps as ps', 'pp.step_id', '=', 'ps.id')
+            ->where('pp.promotion_exercise_id', $exercise->id)
+            ->select(
+                'ps.name as step_name',
+                'ps.id as step_id',
+                DB::raw('COUNT(CASE WHEN pp.status = "Completed" THEN 1 END) as completed'),
+                DB::raw('COUNT(CASE WHEN pp.status = "Pending" THEN 1 END) as pending'),
+                DB::raw('COUNT(CASE WHEN pp.status = "Rejected" THEN 1 END) as rejected'),
+                DB::raw('COUNT(CASE WHEN pp.status = "In Progress" THEN 1 END) as in_progress')
+            )
+            ->groupBy('ps.id', 'ps.name')
+            ->get();
+
+        return [
+            'total_recommendations' => $totalRecommendations,
+            'step_statistics' => $stepStats,
+            'overall_progress' => $this->calculateOverallProgress($exercise)
+        ];
+    }
+
+    private function calculateOverallProgress(PromotionExercise $exercise)
+    {
+        $totalSteps = PromotionStep::active()->count();
+        $totalRecommendations = DB::table('promotion_recomendations')
+            ->where('year', $exercise->year)
+            ->count();
+
+        if ($totalRecommendations === 0) return 0;
+
+        $totalProgress = DB::table('promotion_progress')
+            ->where('promotion_exercise_id', $exercise->id)
+            ->where('status', 'Completed')
+            ->count();
+
+        return round(($totalProgress / ($totalSteps * $totalRecommendations)) * 100, 2);
+    }
+}

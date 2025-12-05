@@ -1,0 +1,158 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Services\ExternalFileService;
+use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Contracts\View\Factory;
+use Illuminate\Contracts\View\View;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
+use Intervention\Image\Facades\Image;
+
+class StudentPhotoUploadController extends Controller
+{
+    protected $externalFileService;
+
+    public function __construct(ExternalFileService $externalFileService)
+    {
+        $this->middleware(['auth:student', 'mmode']);
+        $this->externalFileService = $externalFileService;
+    }
+
+    public function index(): Factory|View|Application
+    {
+        $studentId = strtoupper(Auth::user()->matric_number);
+        $photoPath = "student/photos/{$studentId}.JPG";
+
+        // Check if photo exists on external server
+        if ($this->externalFileService->exists($photoPath)) {
+            $url = $this->externalFileService->getUrl($photoPath);
+        } else {
+            // Fallback to default image
+            $url = asset('studentpics/man.jpg');
+        }
+
+        return view('pages.student.profile.photoupload', compact('url'));
+    }
+
+    public function uploadPicture(Request $request)
+    {
+        try {
+            $studentid = Auth::user()->matric_number;
+            $this->validate(request(), [
+                'file' => 'required|mimes:jpeg,jpg,png|max:120'
+            ]);
+
+            $file = $request->file('file');
+            $fileName = str_replace("/", "_", strtoupper($studentid)) . ".JPG";
+            $photoPath = "student/photos/$fileName";
+
+            // Process image if needed
+            if (in_array($file->getMimeType(), ['image/jpeg', 'image/jpg', 'image/png'])) {
+                // Create thumbnail or resize if needed
+                $image = Image::make($file);
+                $image->resize(300, 300, function ($constraint) {
+                    $constraint->aspectRatio();
+                    $constraint->upsize();
+                });
+
+                // Ensure temp directory exists
+                $tempDir = storage_path('app/temp');
+                if (!is_dir($tempDir)) {
+                    mkdir($tempDir, 0755, true);
+                }
+
+                // Save processed image temporarily
+                $tempPath = $tempDir . '/' . $fileName;
+
+                try {
+                    $image->save($tempPath);
+                } catch (\Exception $e) {
+                    Log::error('Failed to save processed image to temp directory', [
+                        'student_id' => $studentid,
+                        'temp_path' => $tempPath,
+                        'error' => $e->getMessage()
+                    ]);
+                    throw new \Exception('Failed to process image: ' . $e->getMessage());
+                }
+
+                // Create a new UploadedFile instance for the processed image
+                $processedFile = new \Illuminate\Http\UploadedFile(
+                    $tempPath,
+                    $fileName,
+                    'image/jpeg',
+                    null,
+                    true
+                );
+
+                // Upload to external server
+                $result = $this->externalFileService->uploadWithRetry($processedFile, $photoPath, [
+                    'category' => 'student_photo',
+                    'student_id' => $studentid,
+                    'original_name' => $fileName,
+                    'size' => $file->getSize()
+                ]);
+
+                // Clean up temp file
+                if (file_exists($tempPath)) {
+                    unlink($tempPath);
+                }
+            } else {
+                // Upload original file directly
+                $result = $this->externalFileService->uploadWithRetry($file, $photoPath, [
+                    'category' => 'student_photo',
+                    'student_id' => $studentid,
+                    'original_name' => $file->getClientOriginalName(),
+                    'size' => $file->getSize()
+                ]);
+            }
+
+            if ($result['success']) {
+                Log::info('Student photo uploaded successfully to external server', [
+                    'student_id' => $studentid,
+                    'external_id' => $result['external_id'],
+                    'url' => $result['url']
+                ]);
+
+                return redirect()->back()->with('success', 'Picture uploaded successfully to external server');
+            } else {
+                Log::error('Failed to upload student photo to external server', [
+                    'student_id' => $studentid,
+                    'error' => $result['error']
+                ]);
+
+                return redirect()->back()->with('error', 'Failed to upload picture: ' . $result['error']);
+            }
+
+        } catch (\Exception $exception) {
+            Log::error('Exception during student photo upload', [
+                'student_id' => $studentid ?? 'unknown',
+                'error' => $exception->getMessage(),
+                'trace' => $exception->getTraceAsString()
+            ]);
+
+            return redirect()->back()->with('error', 'Upload failed: ' . $exception->getMessage());
+        }
+    }
+
+    public static function checkPassportExists(string $matric_number): bool
+    {
+        try {
+            // Send a HEAD request to check if the image exists
+            $response = Http::timeout(5)->head(
+                "https://static.abu.edu.ng/uploads/student/photos/" . strtoupper($matric_number) . ".JPG"
+            );
+
+            // Check if the response is successful and content type is image/jpeg
+            return $response->successful() &&
+                in_array($response->header('Content-Type'), ['image/jpeg', 'image/jpg']);
+        } catch (\Exception $e) {
+            // Return false if any error occurs (e.g., network issue, invalid URL)
+            return false;
+        }
+    }
+}

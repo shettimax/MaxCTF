@@ -1,0 +1,968 @@
+<?php
+/**
+ * Created by PhpStorm.
+ * User: AD Umar
+ * Date: 22/06/2018
+ * Time: 22:42
+ */
+?>
+@extends('layout.student.master')
+
+@section('css')
+    <style type='text/css'>
+        .disableit{
+            opacity:0.3;
+        }
+        a > i.disableit:hover, a > i.disableit:link{
+            cursor: default;
+        }
+        #hedi{
+            font-size: 38px;
+        }
+        #refactions a{
+            margin-left: 3px;
+            margin-right: 3px;
+        }
+        @media print{
+            .main-nav, nav.navigation, ul.nav, #candformnav, div.bottom-footer, div.txnslipactions, div.right-side, img#remita-logo{display:none;}
+            h3#txnid{
+                text-align: right !important;
+            }
+            @page {
+                margin: 0cm;
+            }
+        }
+        @media print {
+
+            #cont {
+                background-color: white;
+                height: 100%;
+                width: 100%;
+                top: 0;
+                left: 0;
+                margin: auto auto;
+                padding: 15px;
+                font-size: 14px;
+                line-height: 18px;
+            }
+            .logo, #print{
+                display: none;
+            }
+
+            #inner{
+                width: 100%;
+            }
+
+            #footer-widget,header,footer, #sub-header,nav{
+                display:none;
+            }
+            .printX{
+                display: inline-block;
+            }
+            img{
+
+            }
+            #hedi{
+                font-size: 24px !important;
+                width: 100%;
+                color: #316f8f !important;
+            }
+            #main-features{
+                padding:0;
+            }
+            h4{
+                color: #316f8f !important;
+            }
+            .border{
+                border:1px solid #999;
+                width:16px;
+                height: 16px;
+                display: inline-block;
+            }
+            .box{
+                width:auto;
+                height: 16px;
+                display: inline-block;
+                margin-right: 4px;
+            }
+
+            .table{
+                font-size: 12px !important;
+            }
+            #fold{
+                display: block;
+                page-break-before: always;
+                page-break-after: always;
+                height: 100px;
+            }
+        }
+            .border{
+                border:1px solid #999;
+                width:16px;
+                height: 16px;
+                display: inline-block;
+                margin-right: 16px;
+            }
+        .box{
+            width:auto;
+            height: 16px;
+            display: inline-block;
+            margin-right: 4px;
+        }
+        #fold{
+            display: none;
+        }
+    </style>
+@endsection
+@section('content')
+    <?php $user = \Auth::user(); ?>
+    <?php $biodata = $user->biodata(); ?>
+    @if(strtoupper($user->modeofentry)!='PG')
+        @if(strtoupper($user->modeofentry)!='PT')
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="row">
+                        <aside class="col-md-12">
+                            <div class=" box_style_1 profile"  style="padding-bottom: 50px;font-size: 12px;">
+                                <table class="table">
+                                    <tr>
+                                        <td><p class="text-center printX"><img src="{{ asset('images/logo.png') }}" alt="Student:{{ $user->matricnumber }}" class="styled" width="120"></p></td>
+                                        <td width="60%"><h4 id="hedi" style="color: #316f8f;font-weight: bold;border:none;" class="text-center">NASARAWA STATE UNIVERSITY, KEFFI</h4><h4  style="color: #316f8f;border: none;" class="text-center">P.M.B 1022 KEFFI</h4></td>
+                                        <td><p class="text-center printX"><img src="{{ route('studentbiodata.photoupload',[time()]) }}" alt="Student:{{ $user->matricnumber }}" class="img-thumbnail styled" width="120"></p></td>
+                                    </tr>
+                                </table>
+                                @php
+                                    $nsukSession = $user->entrysession;
+                                    $registrar = \App\Models\Configuration::where(["name"=>"registrar"])->orderBy("created_at")->first();
+                                @endphp
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <h4 class="text-center text-capitalize" style="font-weight: bold;font-size: 18px;">SCREENING/CLEARANCE FORM</h4>
+                                        <p style="font-style: italic;text-align: center;">This form must be filled by all Admitted Students before full Registration</p>
+                                        <table class="table table-condensed">
+                                            <tr>
+                                                <th>1</th>
+                                                <th>ACADEMIC SESSION</th>
+                                                <td style="width:60%">:{{ $nsukSession }}/{{ $nsukSession+1 }}</td>
+                                            </tr>
+                                            <tr>
+                                                <th>2</th>
+                                                <th>MODE OF ADMISSION</th>
+                                                <td>:{{ \App\Models\ProgrammeType::where(["progtypecode"=>$user->modeofentry])->first()->progtypename }}</td>
+                                            </tr>
+                                            <tr>
+                                                <th>3</th>
+                                                <th>UTME/DE/PRELIM No</th>
+                                                <td>:{{ $user->applicationumber}}</td>
+                                            </tr>
+                                            <tr>
+                                                <th>4</th>
+                                                <th>FULL NAME</th>
+                                                <td>:{{ $user->getFullName()  }}</td>
+                                            </tr>
+                                            <tr>
+                                                <th>5</th>
+                                                <th>SEX</th>
+                                                <td>:{{ $user->gender  }}</td>
+                                            </tr>
+                                            <tr>
+                                                <th>6</th>
+                                                <th>MARITAL STATUS</th>
+                                                <td>:{{ $user->sessionReg()->first()->maritalstatus }}</td>
+                                            </tr>
+                                            <tr>
+                                                <th>7</th>
+                                                <th>STATE OF ORIGIN</th>
+                                                <td>:{{ ucwords($user->state()->statename)  }}</td>
+                                            </tr>
+                                            <tr>
+                                                <th>8</th>
+                                                <th>LGA</th>
+                                                <td>:{{ \App\Models\Lga::find($user->lga_id)->lganame  }}</td>
+                                            </tr>
+                                            <tr>
+                                                <th>9</th>
+                                                <th>PROGRAMME OF STUDY</th>
+                                                <td>:{{ ucwords($user->programme()->name)}}</td>
+                                            </tr>
+                                            <tr>
+                                                <th>10</th>
+                                                <th>DEPARTMENT</th>
+                                                <td>:{{ ucwords($user->department()->name) }}</td>
+                                            </tr>
+                                            <tr>
+                                                <th>11</th>
+                                                <th>FACULTY</th>
+                                                <td>:{{ ucwords($user->faculty()->name)  }}</td>
+                                            </tr>
+                                            <tr>
+                                                <th>12</th>
+                                                <th>DURATION OF COURSE</th>
+                                                <td>:{{ $user->programme()->duration*2  }} Semesters</td>
+                                            </tr>
+                                            <tr>
+                                                <th>13</th>
+                                                <th>A LEVEL</th>
+                                                <td>: <span class="box">ND </span><span class="border"></span> <span class="box">NCE </span><span class="border"></span> <span class="box">IJMB </span> <span class="border"></span></td>
+                                            </tr>
+                                            <tr>
+                                                <th>14</th>
+                                                <th>O LEVEL</th>
+                                                <td>: <span class="box">WASE </span><span class="border"></span> <span class="box">NABTEB </span><span class="border"></span> <span class="box">NECO </span> <span class="border"></span><span class="box">GCE </span> <span class="border"></span></td>
+                                            </tr>
+
+                                        </table>
+                                        <h4 style="margin-top: 15px;">SUBJECTS</h4>
+                                        <table class="table table-bordered table-condensed">
+                                            <tr>
+                                                <th>Subject</th>
+                                                <th>Grade</th>
+                                                <th>Year</th>
+                                                <th>Subject</th>
+                                                <th>Grade</th>
+                                                <th>Year</th>
+                                            </tr>
+                                            <tr>
+                                                <td>i. English Language</td>
+                                                <td></td>
+                                                <td></td>
+                                                <td>i. English Language</td>
+                                                <td></td>
+                                                <td></td>
+                                            </tr>
+                                            <tr>
+                                                <td>ii. Mathematics</td>
+                                                <td></td>
+                                                <td></td>
+                                                <td>ii. Mathematics</td>
+                                                <td></td>
+                                                <td></td>
+                                            </tr>
+                                            <tr>
+                                                <td>iii.&nbsp;</td>
+                                                <td> </td>
+                                                <td></td>
+                                                <td>iii. </td>
+                                                <td></td>
+                                                <td></td>
+                                            </tr>
+                                            <tr>
+                                                <td>iv.&nbsp;</td>
+                                                <td></td>
+                                                <td></td>
+                                                <td>iv. </td>
+                                                <td></td>
+                                                <td></td>
+                                            </tr>
+                                            <tr>
+                                                <td>v.&nbsp;</td>
+                                                <td></td>
+                                                <td></td>
+                                                <td>v. </td>
+                                                <td></td>
+                                                <td></td>
+                                            </tr>
+                                            <tr>
+                                                <td>vi.&nbsp;</td>
+                                                <td></td>
+                                                <td></td>
+                                                <td>vi. </td>
+                                                <td></td>
+                                                <td></td>
+                                            </tr>
+                                            @if(strtoupper($user->modeofentry) !='IJMB')
+                                            <tr>
+                                                <td>vii.&nbsp;</td>
+                                                <td></td>
+                                                <td></td>
+                                                <td>vii. </td>
+                                                <td></td>
+                                                <td></td>
+                                            </tr>
+                                            <tr>
+                                                <td>viii.&nbsp;</td>
+                                                <td></td>
+                                                <td></td>
+                                                <td>viii. </td>
+                                                <td></td>
+                                                <td></td>
+                                            </tr>
+                                            <tr>
+                                                <td>ix.&nbsp;</td>
+                                                <td></td>
+                                                <td></td>
+                                                <td>ix. </td>
+                                                <td></td>
+                                                <td></td>
+                                            </tr>
+                                            <tr>
+                                                <td>x.&nbsp;</td>
+                                                <td></td>
+                                                <td></td>
+                                                <td>x. </td>
+                                                <td></td>
+                                                <td></td>
+                                            </tr>
+                                                @endif
+                                        </table>
+                                        <p id="fold" style="margin-top: 120px;">&nbsp;.</p>
+                                        <table class="table">
+                                            <tr>
+                                                <th>15</th>
+                                                <td colspan="2"><strong>ATTESTATION:</strong> I CONFIRM THAT THE INFORMATION SUPPLIED ABOVE IS TO THE BEST OF MY KNOWLEDGE CORRECT AND I ACCEPT
+                                                    RESPONSIBILITY IF AT ANY TIME THE UNIVERSITY DISCOVERS ANY DISCREPANCY ON THE SUBMISSION.</td>
+                                            </tr>
+                                            <tr>
+                                                <th>16</th>
+                                                <td>
+                                                    Signature
+                                                    <p style="height: 60px;border: 1px solid #333;width:320px;"></p>
+                                                    {{ $user->applicationumber}}
+                                                </td>
+                                                <td>
+                                                    Date
+                                                    <p style="height: 40px;border: 1px solid #333;width:220px;"></p>
+                                                </td>
+                                            </tr>
+                                            @if(strtoupper($user->modeofentry) =='IJMB')
+                                            <tr>
+                                                <th colspan="3">
+                                                    <strong>Undertaking here</strong>
+                                                </th>
+                                            </tr>
+                                            <tr>
+                                                <th colspan="3">
+                                                    <p style="border: 1px dotted #666;height: 80px;">
+
+                                                    </p>
+                                                </th>
+                                            </tr>
+                                            @endif
+                                        </table>
+                                        <hr style="border:2px solid #AAA; ">
+                                        <h4>FOR OFFICIAL USE ONLY</h4>
+                                        <table class="table table-condensed">
+                                            <tr>
+                                                <th>IS STUDENT REGISTRABLE?</th>
+                                                <td><span class="box">YES </span><span class="border"></span> <span class="box">NO </span><span class="border"></span> </td>
+                                            </tr>
+                                            <tr>
+                                                <td>IF NO STATE REASON(S)</td>
+                                                <td style="border-bottom: 1px dotted #333;width:60%;"></td>
+                                            </tr>
+                                            <tr>
+                                                <th>IS STUDENT CLEARED?</th>
+                                                <td><span class="box">YES </span><span class="border"></span> <span class="box">NO </span><span class="border"></span> </td>
+                                            </tr>
+                                            <tr>
+                                                <td>IF NO STATE REASON(S)</td>
+                                                <td style="border-bottom: 1px dotted #333;width:60%;"></td>
+                                            </tr>
+                                        </table>
+                                        <p></p>
+                                        <table class="table-condensed" width="100%">
+                                            <tr>
+                                                <td width="40%" style="border-bottom: 1px solid #333;text-align: center;">&nbsp;</td>
+                                                <td></td>
+                                                <td width="40%" style="border-bottom: 1px solid #333;text-align: center;">&nbsp;</td>
+                                            </tr>
+                                            <tr>
+                                                <td class="text-center">Academic officer</td>
+                                                <td></td>
+                                                <td class="text-center">Head of department</td>
+                                            </tr>
+                                        </table>
+                                        <p></p>
+                                        <table class="table-condensed"  width="100%">
+                                            <tr>
+                                                <td></td>
+                                                <td width="65%" style="border-bottom: 1px solid #333;text-align: center;">&nbsp;</td>
+                                                <td></td>
+                                            </tr>
+                                            <tr>
+                                                <td></td>
+                                                <td class="text-center">Faculty officer</td>
+                                                <td></td>
+                                            </tr>
+                                        </table>
+                                    </div>
+                                    <div class="text-center ">
+                                        <a class="button_medium_outline" id="print">Print Screening Form</a>
+                                    </div>
+
+                                </div>
+                            </div><!-- End box-sidebar -->
+                        </aside><!-- End aside -->
+                    </div><!-- End row -->
+
+                </div>
+            </div><!-- End row-->
+        @else
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="row">
+                        <aside class="col-md-12">
+                            <div class=" box_style_1 profile"  style="padding-bottom: 50px;font-size: 12px;">
+                                <table class="table">
+                                    <tr>
+                                        <td><p class="text-center printX"><img src="{{ asset('images/logo.png') }}" alt="Student:{{ $user->matricnumber }}" class="styled" width="120"></p></td>
+                                        <td width="60%"><h4 id="hedi" style="color: #316f8f;font-weight: bold;border:none;" class="text-center">NASARAWA STATE UNIVERSITY, KEFFI</h4><h4  style="color: #316f8f;border: none;" class="text-center">P.M.B 1022 KEFFI</h4></td>
+                                        <td><p class="text-center printX"><img src="{{ route('studentbiodata.photoupload',[time()]) }}" alt="Student:{{ $user->matricnumber }}" class="img-thumbnail styled" width="120"></p></td>
+                                    </tr>
+                                </table>
+                                @php
+                                    $nsukSession = $user->entrysession;
+                                    $registrar = \App\Models\Configuration::where(["name"=>"registrar"])->orderBy("created_at")->first();
+                                @endphp
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <h4 class="text-center text-capitalize" style="font-weight: bold;font-size: 18px;">SCREENING/CLEARANCE FORM</h4>
+                                        <p style="font-style: italic;text-align: center;">This form must be filled by all Admitted Students before full Registration</p>
+                                        <table class="table table-condensed">
+                                            <tr>
+                                                <th>1</th>
+                                                <th>ACADEMIC SESSION</th>
+                                                <td style="width:60%">:{{ $nsukSession }}/{{ $nsukSession+1 }}</td>
+                                            </tr>
+                                            <tr>
+                                                <th>2</th>
+                                                <th>MODE OF ADMISSION</th>
+                                                <td>:{{ \App\Models\ProgrammeType::where(["progtypecode"=>$user->modeofentry])->first()->progtypename }}</td>
+                                            </tr>
+                                            <tr>
+                                                <th>3</th>
+                                                <th>UTME/DE/PRELIM No</th>
+                                                <td>:{{ $user->applicationumber}}</td>
+                                            </tr>
+                                            <tr>
+                                                <th>4</th>
+                                                <th>FULL NAME</th>
+                                                <td>:{{ $user->getFullName()  }}</td>
+                                            </tr>
+                                            <tr>
+                                                <th>5</th>
+                                                <th>SEX</th>
+                                                <td>:{{ $user->gender  }}</td>
+                                            </tr>
+                                            <tr>
+                                                <th>6</th>
+                                                <th>MARITAL STATUS</th>
+                                                <td>:{{ $user->sessionReg()->first()->maritalstatus }}</td>
+                                            </tr>
+                                            <tr>
+                                                <th>7</th>
+                                                <th>STATE OF ORIGIN</th>
+                                                <td>:{{ ucwords($user->state()->statename)  }}</td>
+                                            </tr>
+                                            <tr>
+                                                <th>8</th>
+                                                <th>LGA</th>
+                                                <td>:{{ \App\Models\Lga::find($user->lga_id)->lganame  }}</td>
+                                            </tr>
+                                            <tr>
+                                                <th>9</th>
+                                                <th>PROGRAMME OF STUDY</th>
+                                                <td>:{{ ucwords($user->programme()->name)}}</td>
+                                            </tr>
+                                            <tr>
+                                                <th>10</th>
+                                                <th>DEPARTMENT</th>
+                                                <td>:{{ ucwords($user->department()->name) }}</td>
+                                            </tr>
+                                            <tr>
+                                                <th>11</th>
+                                                <th>FACULTY</th>
+                                                <td>:{{ ucwords($user->faculty()->name)  }}</td>
+                                            </tr>
+                                            <tr>
+                                                <th>12</th>
+                                                <th>DURATION OF COURSE</th>
+                                                <td>:{{ $user->programme()->duration*2  }} Semesters</td>
+                                            </tr>
+                                            <tr>
+                                                <th>13</th>
+                                                <th>A LEVEL</th>
+                                                <td>: <span class="box">ND </span><span class="border"></span> <span class="box">NCE </span><span class="border"></span> <span class="box">IJMB </span> <span class="border"></span></td>
+                                            </tr>
+                                            <tr>
+                                                <th>14</th>
+                                                <th>O LEVEL</th>
+                                                <td>: <span class="box">WASE </span><span class="border"></span> <span class="box">NABTEB </span><span class="border"></span> <span class="box">NECO </span> <span class="border"></span><span class="box">GCE </span> <span class="border"></span></td>
+                                            </tr>
+
+                                        </table>
+                                        <h4 style="margin-top: 15px;">SUBJECTS</h4>
+                                        <table class="table table-bordered table-condensed">
+                                            <tr>
+                                                <th>Subject</th>
+                                                <th>Grade</th>
+                                                <th>Year</th>
+                                                <th>Subject</th>
+                                                <th>Grade</th>
+                                                <th>Year</th>
+                                            </tr>
+                                            <tr>
+                                                <td>i. English Language</td>
+                                                <td></td>
+                                                <td></td>
+                                                <td>i. English Language</td>
+                                                <td></td>
+                                                <td></td>
+                                            </tr>
+                                            <tr>
+                                                <td>ii. Mathematics</td>
+                                                <td></td>
+                                                <td></td>
+                                                <td>ii. Mathematics</td>
+                                                <td></td>
+                                                <td></td>
+                                            </tr>
+                                            <tr>
+                                                <td>iii.&nbsp;</td>
+                                                <td> </td>
+                                                <td></td>
+                                                <td>iii. </td>
+                                                <td></td>
+                                                <td></td>
+                                            </tr>
+                                            <tr>
+                                                <td>iv.&nbsp;</td>
+                                                <td></td>
+                                                <td></td>
+                                                <td>iv. </td>
+                                                <td></td>
+                                                <td></td>
+                                            </tr>
+                                            <tr>
+                                                <td>v.&nbsp;</td>
+                                                <td></td>
+                                                <td></td>
+                                                <td>v. </td>
+                                                <td></td>
+                                                <td></td>
+                                            </tr>
+                                            <tr>
+                                                <td>vi.&nbsp;</td>
+                                                <td></td>
+                                                <td></td>
+                                                <td>vi. </td>
+                                                <td></td>
+                                                <td></td>
+                                            </tr>
+                                            <tr>
+                                                <td>vii.&nbsp;</td>
+                                                <td></td>
+                                                <td></td>
+                                                <td>vii. </td>
+                                                <td></td>
+                                                <td></td>
+                                            </tr>
+                                            <tr>
+                                                <td>viii.&nbsp;</td>
+                                                <td></td>
+                                                <td></td>
+                                                <td>viii. </td>
+                                                <td></td>
+                                                <td></td>
+                                            </tr>
+                                            <tr>
+                                                <td>ix.&nbsp;</td>
+                                                <td></td>
+                                                <td></td>
+                                                <td>ix. </td>
+                                                <td></td>
+                                                <td></td>
+                                            </tr>
+                                            <tr>
+                                                <td>x.&nbsp;</td>
+                                                <td></td>
+                                                <td></td>
+                                                <td>x. </td>
+                                                <td></td>
+                                                <td></td>
+                                            </tr>
+                                        </table>
+                                        <p id="fold" style="margin-top: 120px;">&nbsp;.</p>
+                                        <table class="table">
+                                            <tr>
+                                                <th>15</th>
+                                                <td colspan="2"><strong>ATTESTATION:</strong> I CONFIRM THAT THE INFORMATION SUPPLIED ABOVE IS TO THE BEST OF MY KNOWLEDGE CORRECT AND I ACCEPT
+                                                    RESPONSIBILITY IF AT ANY TIME THE UNIVERSITY DISCOVERS ANY DISCREPANCY ON THE SUBMISSION.</td>
+                                            </tr>
+                                            <tr>
+                                                <th>16</th>
+                                                <td>
+                                                    Signature
+                                                    <p style="height: 60px;border: 1px solid #333;width:320px;"></p>
+                                                    {{ $user->applicationumber}}
+                                                </td>
+                                                <td>
+                                                    Date
+                                                    <p style="height: 40px;border: 1px solid #333;width:220px;"></p>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                        <hr style="border:2px solid #AAA; ">
+                                        <h4>FOR OFFICIAL USE ONLY</h4>
+                                        <table class="table table-condensed">
+                                            <tr>
+                                                <th>IS STUDENT REGISTRABLE?</th>
+                                                <td><span class="box">YES </span><span class="border"></span> <span class="box">NO </span><span class="border"></span> </td>
+                                            </tr>
+                                            <tr>
+                                                <td>IF NO STATE REASON(S)</td>
+                                                <td style="border-bottom: 1px dotted #333;width:60%;"></td>
+                                            </tr>
+                                            <tr>
+                                                <th>IS STUDENT CLEARED?</th>
+                                                <td><span class="box">YES </span><span class="border"></span> <span class="box">NO </span><span class="border"></span> </td>
+                                            </tr>
+                                            <tr>
+                                                <td>IF NO STATE REASON(S)</td>
+                                                <td style="border-bottom: 1px dotted #333;width:60%;"></td>
+                                            </tr>
+                                        </table>
+                                        <p></p>
+                                        <table class="table-condensed" width="100%">
+                                            <tr>
+                                                <td width="40%" style="border-bottom: 1px solid #333;text-align: center;">&nbsp;</td>
+                                                <td></td>
+                                                <td width="40%" style="border-bottom: 1px solid #333;text-align: center;">&nbsp;</td>
+                                            </tr>
+                                            <tr>
+                                                <td class="text-center">Coordinator</td>
+                                                <td></td>
+                                                <td class="text-center">Secretary, CCS</td>
+                                            </tr>
+                                        </table>
+                                        <p></p>
+                                        <table class="table-condensed"  width="100%">
+                                            <tr>
+                                                <td></td>
+                                                <td width="65%" style="border-bottom: 1px solid #333;text-align: center;">&nbsp;</td>
+                                                <td></td>
+                                            </tr>
+                                            <tr>
+                                                <td></td>
+                                                <td class="text-center">Academic Secretary</td>
+                                                <td></td>
+                                            </tr>
+                                        </table>
+                                    </div>
+                                    <div class="text-center ">
+                                        <a class="button_medium_outline" id="print">Print Screening Form</a>
+                                    </div>
+
+                                </div>
+                            </div><!-- End box-sidebar -->
+                        </aside><!-- End aside -->
+                    </div><!-- End row -->
+
+                </div>
+            </div><!-- End row-->
+        @endif
+    @else
+        <div class="row">
+            <div class="col-md-12">
+                <div class="row">
+                    <aside class="col-md-12">
+                        <div class=" box_style_1 profile"  style="padding-bottom: 50px;font-size: 12px;">
+                            <table class="table">
+                                <tr>
+                                    <td><p class="text-center printX"><img src="{{ asset('images/logo.png') }}" alt="Student:{{ $user->matricnumber }}" class="styled" width="120"></p></td>
+                                    <td width="60%">
+                                        <h4 id="hedi" style="color: #316f8f;font-weight: bold;border:none;" class="text-center">SCHOOL OF POSTGRADUATE STUDIES</h4>
+                                        <h4 id="hedi" style="color: #316f8f;font-weight: bold;border:none;" class="text-center">NASARAWA STATE UNIVERSITY, KEFFI</h4>
+                                        <h4  style="color: #316f8f;border: none;" class="text-center">P.M.B 1022 KEFFI</h4>
+                                    </td>
+                                    <td><p class="text-center printX"><img src="{{ route('studentbiodata.photoupload',[time()]) }}" alt="Student:{{ $user->matricnumber }}" class="img-thumbnail styled" width="120"></p></td>
+                                </tr>
+                            </table>
+                            @php
+                                $nsukSession = $user->entrysession;
+                                $registrar = \App\Models\Configuration::where(["name"=>"registrar"])->orderBy("created_at")->first();
+                                $sundryCharges = \App\Models\SundryTransaction::where(['payer_id'=>$user->id])->first();
+                                $invoice = $sundryCharges?$sundryCharges->transcode:"";
+                            @endphp
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <h4 class="text-center text-capitalize" style="font-weight: bold;font-size: 18px;">
+                                        PRE-REGISTRATION SCREENING FORM
+                                    </h4>
+                                    <p style="font-style: italic;text-align: center;">
+                                        SECTION A: To be completed in duplicate by all fresh students
+                                    </p>
+                                    <table class="table table-bordered">
+                                        <tr>
+                                            <th>FACULTY:</th>
+                                            <td>{{ucwords($user->faculty()->name) }}</td>
+                                            <th>DEPARTMENT:</th>
+                                            <td>{{ucwords($user->department()->name)}}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>ACADEMIC SESSION:</th>
+                                            <td>{{ $nsukSession }}/{{ $nsukSession+1 }}</td>
+                                            <th>PROGRAMME OF STUDY:</th>
+                                            <td>{{ ucwords($user->programme()->name)}}</td>
+                                        </tr>
+                                    </table>
+                                    <table class="table table-condensed">
+{{--                                        <tr>--}}
+{{--                                            <th>2</th>--}}
+{{--                                            <th>MODE OF ADMISSION</th>--}}
+{{--                                            <td>:{{ \App\Models\ProgrammeType::where(["progtypecode"=>$user->modeofentry])->first()->progtypename }}</td>--}}
+{{--                                        </tr>--}}
+
+                                        <tr>
+                                            <th>1</th>
+                                            <th>FULL NAME</th>
+                                            <td>:{{ $user->getFullName()  }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>2</th>
+                                            <th>SEX</th>
+                                            <td>:{{ strtoupper($user->gender)  }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>3</th>
+                                            <th>STATE OF ORIGIN</th>
+                                            <td>:{{ ucwords($user->state()->statename)  }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>4</th>
+                                            <th>LGA</th>
+                                            <td>:{{ \App\Models\Lga::find($user->lga_id)->lganame  }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>5</th>
+                                            <th>APPLICATION ID</th>
+                                            <td>:{{ $user->applicationnumber}}</td>
+                                        </tr>
+{{--                                        <tr>--}}
+{{--                                            <th>6</th>--}}
+{{--                                            <th>MARITAL STATUS</th>--}}
+{{--                                            <td>:{{ $user->sessionReg()->first()->maritalstatus }}</td>--}}
+{{--                                        </tr>--}}
+                                        <tr>
+                                            <th>6</th>
+                                            <th>RECEIPT NUMBER</th>
+                                            <td>{{$invoice}}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>7</th>
+                                            <th>State O Level Grades in grid below</th>
+                                        </tr>
+                                        <tr>
+                                            <td colspan="3">
+                                                <table class="table table-bordered">
+                                                    <tr>
+                                                        <td>ENGLISH</td>
+                                                        <td>MATH</td>
+                                                        <td>______</td>
+                                                        <td>______</td>
+                                                        <td>______</td>
+                                                        <td>______</td>
+                                                        <td>______</td>
+                                                        <td>______</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>______</td>
+                                                        <td>______</td>
+                                                        <td>______</td>
+                                                        <td>______</td>
+                                                        <td>______</td>
+                                                        <td>______</td>
+                                                        <td>______</td>
+                                                        <td>______</td>
+                                                    </tr>
+                                                </table>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <th>8</th>
+                                            <th colspan="2">State Tertiary Qualifications in Grid A, B or C below</th>
+                                        </tr>
+                                        <tr>
+                                            <td colspan="3">
+                                                <table class="table table-bordered">
+                                                    <tr>
+                                                        <td colspan="3">
+                                                            A. Diploma (E.g. OND, ND, HND)
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>Diploma</td>
+                                                        <td>Class of Diploma</td>
+                                                        <td>Area of Specialization</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td></td>
+                                                        <td></td>
+                                                        <td></td>
+                                                    </tr>
+                                                </table>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td colspan="3">
+                                                <table class="table table-bordered">
+                                                    <tr>
+                                                        <td colspan="3">
+                                                            B. First Degree (E.g. B.A, B.Sc, B.Ed, E.Tech)
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>First Degree</td>
+                                                        <td>Class of Degree</td>
+                                                        <td>CGPA</td>
+                                                        <td>Area of Specialization</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td></td>
+                                                        <td></td>
+                                                        <td></td>
+                                                        <td></td>
+                                                    </tr>
+                                                </table>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td colspan="3">
+                                                <table class="table table-bordered">
+                                                    <tr>
+                                                        <td colspan="3">
+                                                            C. Second Degree (E.g. M.A, M.Sc, M.Ed)
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>Second Degree</td>
+                                                        <td>CGPA</td>
+                                                        <td>Area of Specialization</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td></td>
+                                                        <td></td>
+                                                        <td></td>
+                                                    </tr>
+                                                </table>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td colspan="3">
+                                                <table class="table table-bordered">
+                                                    <tr>
+                                                        <td colspan="3">
+                                                            D. Professional Qualifications
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>S/N</td>
+                                                        <td>Qualifications</td>
+                                                        <td>Date</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>1</td>
+                                                        <td></td>
+                                                        <td></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>2</td>
+                                                        <td></td>
+                                                        <td></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>3</td>
+                                                        <td></td>
+                                                        <td></td>
+                                                    </tr>
+                                                </table>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                    <h4>FOR OFFICIAL USE ONLY</h4>
+                                    <table class="table table-condensed">
+                                        <tr>
+                                            <th>IS STUDENT REGISTRABLE?</th>
+                                            <td><span class="box">YES </span><span class="border"></span> <span class="box">NO </span><span class="border"></span> </td>
+                                        </tr>
+                                        <tr>
+                                            <td>IF NO STATE REASON(S)</td>
+                                            <td style="border-bottom: 1px dotted #333;width:60%;"></td>
+                                        </tr>
+                                        <tr>
+                                            <td></td>
+                                            <td></td>
+                                        </tr>
+                                        <tr>
+                                            <th>Name of Verification Officer/PG School Secretary</th>
+                                            <th></th>
+                                        </tr>
+                                        <tr>
+                                            <th>&nbsp;</th>
+                                            <th>&nbsp;</th>
+                                        </tr>
+                                        <tr>
+                                            <th>SIGNATURE</th>
+                                            <th>DATE</th>
+                                        </tr>
+                                        <tr>
+                                            <td></td>
+                                            <td></td>
+                                        </tr>
+                                        <tr>
+                                            <td>Name of Screening Officer/Departmental PG Coordinator</td>
+                                            <td></td>
+                                        </tr>
+                                        <tr>
+                                            <th>&nbsp;</th>
+                                            <th>&nbsp;</th>
+                                        </tr>
+                                        <tr>
+                                            <th>SIGNATURE</th>
+                                            <th>DATE</th>
+                                        </tr>
+                                        <tr>
+                                            <td></td>
+                                            <td></td>
+                                        </tr>
+                                        <tr>
+                                            <th>Dean of Faculty Clearance:</th>
+                                            <th></th>
+                                        </tr>
+                                        <tr>
+                                            <th>&nbsp;</th>
+                                            <th>&nbsp;</th>
+                                        </tr>
+                                        <tr>
+                                            <th>SIGNATURE</th>
+                                            <th>DATE</th>
+                                        </tr>
+
+                                    </table>
+                                </div>
+                                <div class="text-center ">
+                                    <a class="button_medium_outline" id="print">Print Screening Form</a>
+                                </div>
+
+                            </div>
+                        </div><!-- End box-sidebar -->
+                    </aside><!-- End aside -->
+                </div><!-- End row -->
+
+            </div>
+        </div><!-- End row-->
+    @endif
+
+
+@endsection
+
+@section('js')
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+    <script type='text/javascript'>
+        $('body').on('click','#print',function(){
+            window.print();
+        });
+    </script>
+@endsection

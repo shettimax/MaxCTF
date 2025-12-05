@@ -1,0 +1,422 @@
+@extends('layout.student.master')
+
+@section('content')
+    <?php
+    $user = \Auth::user();
+    $biodata = $user->biodata();
+    $programe = $user->biodata();
+    ?>
+
+    <section class="">
+        <div class="container pt-30 pb-30 pl-30 pr-30">
+            <div class="row">
+                <div class="col-md-9 pull-right flip sm-pull-none">
+                    <div class="blog-posts">
+                        <div class="col-md-12">
+                            <h3 class="widget-title" style="margin-bottom: 0">
+                                Biodata
+                            </h3>
+                            <div class="double-line-bottom-theme-colored-2"></div>
+                            <div class="mt-30"></div>
+
+                            @if ($errors->any())
+                                <div class="alert alert-warning" role="alert">
+
+                                    <ul>
+                                        @foreach($errors->all() as $error)
+                                            <li>{{$error}}</li>
+                                        @endforeach
+                                    </ul>
+                                </div>
+                            @endif
+                            <section class="bg-white-f7 pr-30 pl-30 pt-30 pb-30" style="border-left:2px solid #43B14B;">
+                                <form class="form-horizontal" action="{{route("studentbiodata.store")}}" method="post">
+                                    @csrf
+
+                                    <div class="form-group">
+                                        {{--<label for="name" class="col-sm-3 control-label">Name:</label>--}}
+                                        <div class="col-sm-4">
+                                            <span><b>Surname:</b></span>
+                                            <input type="text" name="surname" value="{{ $user->surname }}"
+                                                   class="form-control" id="surname" placeholder="Surname" readonly>
+                                        </div>
+                                        <div class="col-sm-4">
+                                            <span><b>Firstname:</b></span>
+                                            <input type="text" name="firstname" value="{{ $user->firstname }}"
+                                                   class="form-control" id="firstname" placeholder="Firstname" readonly>
+                                        </div>
+                                        <div class="col-sm-4">
+                                            <span><b>Othernames:</b></span>
+                                            <input type="text" name="othernames" value="{{ $user->other_names }}"
+                                                   class="form-control" id="othernames" placeholder="Othernames"
+                                                   readonly>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <div class="col-sm-5">
+                                            <span><b>Faculty:</b></span>
+                                            <input type="text" name="faculty"
+                                                   value="{{ ucwords($user->faculty()->name)}}" class="form-control"
+                                                   id="faculty" placeholder="Surname" readonly>
+                                        </div>
+                                        <div class="col-sm-7">
+                                            <span><b>Department:</b></span>
+                                            <input type="text" name="department"
+                                                   value="{{ ucwords($user->department()->name) }}" class="form-control"
+                                                   id="department" placeholder="Firstname" readonly>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <div class="col-sm-12">
+                                            <span><b>Programme:</b></span>
+                                            <input type="text" name="programme"
+                                                   value="{{ ucwords($user->programme()->name) }}" class="form-control"
+                                                   id="name" placeholder="programme" readonly>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <div class="col-sm-4">
+                                            <span><b>Nationality:</b></span>
+                                            <input type="text" name="natinality" value="{{$user->nationality()->name}}"
+                                                   class="form-control" id="natinality" placeholder="Nationality"
+                                                   readonly>
+                                        </div>
+                                        <div class="col-sm-4">
+                                            <span><b>State:</b></span>
+                                            <input type="text" name="state" value="{{ucwords($user->state()->name)}}"
+                                                   class="form-control" id="state" placeholder="State" readonly>
+                                        </div>
+                                        <div class="col-sm-4">
+                                            <span><b>LGA:</b></span>
+                                            <input type="text" name="lga" value="{{$user->lga()->name}}"
+                                                   class="form-control" id="lga" placeholder="LGA" readonly>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <div class="col-sm-5">
+                                            <span><b>Gender:</b></span>
+                                            <input type="text" name="gender" value="{{$user->gender}}"
+                                                   class="form-control" id="gender" placeholder="Gender" readonly>
+                                        </div>
+                                        <div class="col-sm-5">
+                                            <span><b>GSM:</b></span>
+                                            <input type="text" name="gsm"
+                                                   value="{{isset($studentbiodata->gsm)?$studentbiodata->gsm:""}}"
+                                                   class="form-control" id="name" placeholder="GSM">
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <div class="col-sm-6">
+                                            <span><b>Email:</b></span>
+                                            <input type="text" name="email"
+                                                   value="{{isset($studentbiodata->email)?$studentbiodata->email:""}}"
+                                                   class="form-control" id="name" placeholder="Email">
+                                        </div>
+                                        <div class="col-sm-6">
+                                            <span><b>ABU Email:</b></span>
+                                            <input type="text" name="abumail"
+                                                   value="{{isset($studentbiodata->abu_mail)?$studentbiodata->abu_mail:""}}"
+                                                   class="form-control" id="name" placeholder="ABU Email">
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <div class="col-sm-4">
+                                            <span><b>Marital Status:</b></span>
+                                            <select name="maritalstatus" id="maritalstatus" class="form-control">
+                                                <option value="">--Marital Status--</option>
+                                                <option
+                                                    {{ (isset($session_reg->marital_status) && $session_reg->marital_status=="Divorced")?"selected":""}} value="Divorced">
+                                                    Divorced
+                                                </option>
+                                                <option
+                                                    {{ (isset($session_reg->marital_status) && $session_reg->marital_status=="Married") ?"selected":""}} value="Married">
+                                                    Married
+                                                </option>
+                                                <option
+                                                    {{ (isset($session_reg->marital_status) && $session_reg->marital_status=="Single") ?"selected":""}} value="Single">
+                                                    Single
+                                                </option>
+                                                <option
+                                                    {{ (isset($session_reg->marital_status) && $session_reg->marital_status=="Widowed") ?"selected":""}} value="Widowed">
+                                                    Widowed
+                                                </option>
+                                            </select>
+                                        </div>
+                                        <div class="col-sm-4">
+                                            <span><b>DOB:</b></span>
+                                            <input type="text" name="dob"
+                                                   value="{{isset($student->dob)?$student->dob:""}}"
+                                                   class="form-control" id="datetimepicker1" placeholder="DOB" readonly>
+                                        </div>
+                                        <div class="col-sm-4">
+                                            <span><b>Place of Birth:</b></span>
+                                            <input type="text" name="placeofbirth"
+                                                   value="{{isset($studentbiodata->place_of_birth)?$studentbiodata->place_of_birth:""}}"
+                                                   class="form-control" id="name" placeholder="Place of Birth">
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <div class="col-sm-4">
+                                            <span><b>Religion:</b></span>
+                                            <select name="religion" id="religion" class="form-control" required>
+                                                <option value="">--Religion--</option>
+                                                <option
+                                                    {{isset($student->religion) && $student->religion=="I"?"Selected":""}} value="I">
+                                                    Islam
+                                                </option>
+                                                <option
+                                                    {{isset($student->religion) && $student->religion=="C"?"Selected":""}} value="C">
+                                                    Christianity
+                                                </option>
+                                                <option
+                                                    {{isset($student->religion) && $student->religion=="O"?"Selected":""}} value="O">
+                                                    Others
+                                                </option>
+                                            </select>
+                                        </div>
+                                        <div class="col-sm-4" style="display: none;" id="c_group">
+                                            <span><b>Christian Group:</b></span>
+                                            <select name="christian_group" id="christian_group" class="form-control">
+                                                <option value="">--Group--</option>
+                                                <option
+                                                    {{isset($student->christian_group) && $student->christian_group=="C"?"Selected":""}} value="C">
+                                                    FCS-Protestant
+                                                </option>
+                                                <option
+                                                    {{isset($student->christian_group) && $student->christian_group=="CC"?"Selected":""}} value="CC">
+                                                    NFCS-Catholic
+                                                </option>
+                                            </select>
+                                        </div>
+                                        <div class="col-sm-4">
+                                            <span><b>Health Record:</b></span>
+                                            <input type="text" name="healthrecord"
+                                                   value="{{isset($studentbiodata->health_record)?$studentbiodata->health_record:""}}"
+                                                   class="form-control" id="" placeholder="Health Record">
+                                        </div>
+                                        <div class="col-sm-4">
+                                            <span><b>Other Phone Number:</b></span>
+                                            <input type="text" name="otherphone"
+                                                   value="{{isset($studentbiodata->other_phone)?$studentbiodata->other_phone:""}}"
+                                                   class="form-control" id="" placeholder="Other Phone Number">
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <div class="col-sm-12">
+                                            <span><b>Contact Address:</b></span>
+                                            <textarea rows="2" name="contactaddress" id="contactaddress"
+                                                      class="form-control"
+                                                      placeholder="Contact Address">{{isset($studentbiodata->contact_address)?$studentbiodata->contact_address:""}}</textarea>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <div class="col-sm-12">
+                                            <span><b>Home Address:</b></span>
+                                            <textarea rows="2" name="homeaddress" id="homeaddress" class="form-control"
+                                                      placeholder="Home Address">{{isset($studentbiodata->home_address)?$studentbiodata->home_address:""}}</textarea>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <div class="col-sm-4">
+                                            <span><b>Home Town:</b></span>
+                                            <input type="text" name="hometown"
+                                                   value="{{isset($studentbiodata->home_town)?$studentbiodata->home_town:""}}"
+                                                   class="form-control" id="name" placeholder="Home Town">
+                                        </div>
+                                        <div class="col-sm-4">
+                                            <span><b>Next of Kin Name:</b></span>
+                                            <input type="text" name="nok"
+                                                   value="{{isset($studentbiodata->nok_name)?$studentbiodata->nok_name:""}}"
+                                                   class="form-control" id="name" placeholder="Next of Kin Name">
+                                        </div>
+                                        <div class="col-sm-4">
+                                            <span><b>Next of Kin GSM:</b></span>
+                                            <input type="text" name="nokgsm"
+                                                   value="{{isset($studentbiodata->nok_gsm)?$studentbiodata->nok_gsm:""}}"
+                                                   class="form-control" id="name" placeholder="Next of Kin GSM">
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <div class="col-sm-12">
+                                            <span><b>Next of Kin Address:</b></span>
+                                            <textarea rows="2" name="nokaddress" id="nokaddress" class="form-control"
+                                                      placeholder="Next of Kin Address">{{isset($studentbiodata->home_address)?$studentbiodata->home_address:""}}</textarea>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <div class="col-sm-4">
+                                            <span><b>Blood Group:</b></span>
+                                            <select name="bloodgroup" id="bloodgroup" class="form-control">
+                                                <option value="">--Blood Group--</option>
+                                                <option
+                                                    {{isset($studentbiodata->blood_group) && $studentbiodata->blood_group=="A"?"Selected":""}} value="A">
+                                                    A
+                                                </option>
+                                                <option
+                                                    {{isset($studentbiodata->blood_group) && $studentbiodata->blood_group=="B"?"Selected":""}} value="B">
+                                                    B
+                                                </option>
+                                                <option
+                                                    {{isset($studentbiodata->blood_group) && $studentbiodata->blood_group=="AB"?"Selected":""}} value="AB">
+                                                    AB
+                                                </option>
+                                                <option
+                                                    {{isset($studentbiodata->blood_group) && $studentbiodata->blood_group=="O"?"Selected":""}} value="O">
+                                                    O
+                                                </option>
+                                            </select>
+                                        </div>
+                                        <div class="col-sm-4">
+                                            <span><b>Genotype:</b></span>
+                                            <select name="genotype" id="genotype" class="form-control">
+                                                <option value="">--Genotype--</option>
+                                                <option
+                                                    {{isset($studentbiodata->genotype) && $studentbiodata->genotype=="AA"?"Selected":""}} value="AA">
+                                                    AA
+                                                </option>
+                                                <option
+                                                    {{isset($studentbiodata->genotype) && $studentbiodata->genotype=="AS"?"Selected":""}} value="AS">
+                                                    AS
+                                                </option>
+                                                <option
+                                                    {{isset($studentbiodata->genotype) && $studentbiodata->genotype=="SS"?"Selected":""}} value="SS">
+                                                    SS
+                                                </option>
+                                            </select>
+
+                                        </div>
+                                        <div class="col-sm-4">
+                                            <span><b>Disability:</b></span>
+                                            <input type="text" name="disability"
+                                                   value="{{isset($studentbiodata->disability)?$studentbiodata->disability:""}}"
+                                                   class="form-control" id="disability" placeholder="Disability">
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <div class="col-sm-4">
+                                            <span><b>Sponsor:</b></span>
+                                            <input type="text" name="sponsor"
+                                                   value="{{isset($studentbiodata->sponsor)?$studentbiodata->sponsor:""}}"
+                                                   class="form-control" id="sponsor" placeholder="Sponsor">
+                                        </div>
+                                        <div class="col-sm-4">
+                                            <span><b>Other Sponsor:</b></span>
+                                            <input type="text" name="othersponsor"
+                                                   value="{{isset($studentbiodata->other_sponsor)?$studentbiodata->other_sponsor:""}}"
+                                                   class="form-control" id="othersponsor" placeholder="Other Sponsor">
+                                        </div>
+                                        <div class="col-sm-4">
+                                            <span><b>Sports:</b></span>
+                                            <input type="text" name="sport"
+                                                   value="{{isset($studentbiodata->sport)?$studentbiodata->sport:""}}"
+                                                   class="form-control" id="sport" placeholder="Sports">
+                                        </div>
+                                    </div>
+
+                                    {{--<div class="form-group">
+                                        <div class="col-sm-6">
+                                            <span><b>Health Record:</b></span>
+                                            <input type="text" name="healthrecord" value="{{isset($studentbiodata->health_record)?$studentbiodata->health_record:""}}" class="form-control" id="" placeholder="Health Record">
+                                        </div>
+                                        <div class="col-sm-6">
+                                            <span><b>Other Phone Number:</b></span>
+                                            <input type="text" name="otherphone" value="{{isset($studentbiodata->other_phone)?$studentbiodata->other_phone:""}}" class="form-control" id="" placeholder="Other Phone Number">
+                                        </div>
+                                    </div>--}}
+                                    <div class="form-group mt-30">
+                                        <div class="col-sm-12 text-center">
+                                            <button type="submit" class="btn btn-success btn-theme-color btn-lg">Save
+                                            </button>
+                                        </div>
+                                    </div>
+                                </form>
+                            </section>
+
+
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="sidebar sidebar-right mt-sm-30">
+                        <div class="watermarked text-center">
+                            <img class="img img-thumbnail"
+                                 src="https://static.abu.edu.ng/uploads/student/photos/{{strtoupper($user->matric_number)}}.JPG"
+                                 width="150" alt="Passport"/>
+                            <p>
+                                <i>{{ $user->title }} {{ $user->firstname }}
+                                    , {{ $user->surname }} {{ $user->other_names }}</i>
+                            </p>
+                        </div>
+                        <div class="widget">
+                            <ul class="list-divider list-border list check">
+                                <li class="active"><a href="{{route("studentbiodata.index")}}">Biodata</a></li>
+                                {{--<li><a href="">A-level</a></li>--}}
+                                <li><a href="{{route("studentbiodata.studentolevel")}}">O-level</a></li>
+                                <li><a href="{{route("photoupload.applicant.index")}}">Upload Picture</a></li>
+                                <li><a href="{{route("signatureupload.index")}}">Upload Signature</a></li>
+                                <li><a href="{{route("studentbiodata.changepassword")}}">Change Password</a></li>
+                            </ul>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    <script>
+
+        $(function () {
+            $("body").on("change", "#country", function () {
+                var id = $(this).val();
+                $("#state").empty();
+                $("#state").append("<option value=''>Select State</option>");
+                $.getJSON("/misc/states/" + id, function (obj) {
+                    $.each(obj, function (key, value) {
+                        $("#state").append("<option value='" + value.id + "'>" + value.statename + "</option>");
+                    });
+                });
+            });
+
+            $("body").on("change", "#religion", function (e) {
+                if ($(this).val() == 'C') {
+                    $("#c_group").show();
+                    $("#christian_group").attr('required', true);
+                } else {
+                    $("#c_group").hide();
+                    $("#christian_group").attr('required', false);
+                }
+            });
+            $("body").on("change", "#state", function () {
+                var id = $(this).val();
+                $("#lga").empty();
+                $("#lga").append("<option value=''>Select LGA</option>");
+                $.getJSON("/misc/lgas/" + id, function (obj) {
+                    $.each(obj, function (key, value) {
+                        $("#lga").append("<option value='" + value.id + "'>" + value.lganame + "</option>");
+                    });
+                });
+            });
+        });
+    </script>
+    <script src="{{asset('/js/bootstrap-datetimepicker.min.js')}}"></script>
+
+    <script type="text/javascript">
+        $(function () {
+            $('#datetimepicker1').datetimepicker({format: 'YYYY-MM-DD'});
+            $('#datetimepicker2').datetimepicker({format: 'YYYY-MM-DD'});
+            $('#datetimepicker3').datetimepicker({format: 'YYYY-MM-DD'});
+        });
+    </script>
+@endsection

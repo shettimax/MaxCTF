@@ -1,0 +1,297 @@
+<?php
+
+namespace App\Http\Controllers\Staff;
+
+use App\Models\Course;
+use App\Models\CourseGroup;
+use App\Models\Employee;
+use App\Http\Controllers\Controller;
+use App\Models\SetPeriod;
+use App\Models\SetQuestion;
+use App\Models\SetQuestionCategory;
+use App\Models\SetResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+
+class SetController extends Controller
+{
+    public function __construct()
+    {
+        $this->middleware('auth:staff');
+    }
+
+    public function index()
+    {
+        if (!$this->access(Auth::user(), "dashboard"))
+            return view("pages.errors.nopermission");
+
+//        $questions = SetQuestion::all();
+        return view('pages.staff.set.index'
+//            , compact('questions')
+        );
+    }
+
+    public function questions()
+    {
+        if (!$this->access(Auth::user(), "dashboard"))
+            return view("pages.errors.nopermission");
+
+        $questions = SetQuestion::all();
+        return view('pages.staff.set.managequestions', compact('questions'));
+    }
+
+    public function store(Request $request)
+    {
+        try {
+            if (!$this->access(Auth::user(), "dashboard"))
+                return view("pages.errors.nopermission");
+
+            $rules = [
+                'question' => 'required',
+                'description' => 'required',
+                'category' => 'required|integer'
+            ];
+
+            $validator = $request->validate($rules);
+
+            if (!$validator) {
+                return redirect()->route('staff.set.questions.create')->withInput()->withErrors();
+            } else {
+                $question = new SetQuestion();
+                if ($request->question_id > 0)
+                    $question = SetQuestion::find($request->question_id);
+
+                $question->question = $request->question;
+                $question->questiondesc = $request->description;
+                $question->question_category_id = $request->category;
+                $question->save();
+
+                if ($request->question_id > 0)
+                    $request->session()->flash('flash_message', 'Question has been updated');
+                else
+                    $request->session()->flash('flash_message', 'Question has been added');
+                return redirect()->back()->withInput($request->all());
+            }
+        } catch (\Exception $e) {
+//            return $e->getMessage();
+            return view("pages.staff.error.technical");
+        }
+    }
+
+    public function deleteQuestion()
+    {
+        if (!$this->access(Auth::user(), "dashboard"))
+            return view("pages.errors.nopermission");
+        try {
+            $id = request('question_id');
+            $question = SetQuestion::find($id);
+            $question->delete();
+        } catch (\Exception $e) {
+//            return $e->getMessage();
+            return view("pages.staff.error.technical");
+        }
+    }
+
+    public function categories()
+    {
+        if (!$this->access(Auth::user(), "dashboard"))
+            return view("pages.errors.nopermission");
+
+        $categories = SetQuestionCategory::all();
+
+        return view('pages.staff.set.questioncategories', compact('categories'));
+    }
+
+    public function storeCategory(Request $request)
+    {
+        if (!$this->access(Auth::user(), "dashboard"))
+            return view("pages.errors.nopermission");
+        try {
+            $rules = [
+                'category' => 'required',
+                'description' => 'required'
+            ];
+
+            $validator = $request->validate($rules);
+            if (!$validator) {
+                return redirect()->route('staff.set.question.categories.retrieve')->withInput()->withErrors();
+            } else {
+                $category = new  SetQuestionCategory();
+                if ($request->category_id > 0)
+                    $category = SetQuestionCategory::find($request->category_id);
+
+                $category->category = $request->category;
+                $category->categorydesc = $request->description;
+                $category->save();
+
+                if ($request->category_id > 0)
+                    $request->session()->flash('flash_message', 'Question category has been updated');
+                else
+                    $request->session()->flash('flash_message', 'Question category has been added');
+                return redirect()->back()->withInput($request->all());
+            }
+        } catch (\Exception $e) {
+            return $e->getMessage();
+//            return view("pages.staff.error.technical");
+        }
+    }
+
+    public function deleteCategory()
+    {
+        if (!$this->access(Auth::user(), "dashboard"))
+            return view("pages.errors.nopermission");
+        try {
+            $id = request('category_id');
+            $category = SetQuestionCategory::find($id);
+            $category->delete();
+        } catch (\Exception $e) {
+//            return $e->getMessage();
+            return view("pages.staff.error.technical");
+        }
+    }
+
+    public function map()
+    {
+        if (!$this->access(Auth::user(), "dashboard"))
+            return view("pages.errors.nopermission");
+
+        return view('pages.staff.set.map_questions_and_evaluation');
+    }
+
+    public function period()
+    {
+        if (!$this->access(Auth::user(), "dashboard"))
+            return view("pages.errors.nopermission");
+
+        return view('pages.staff.set.periods');
+    }
+
+    public function storeTiming(Request $request)
+    {
+        if (!$this->access(Auth::user(), "dashboard"))
+            return view("pages.errors.nopermission");
+
+        $rules = [
+            'd_session' => 'required',
+            'semester' => 'required',
+            'startdate' => 'required',
+            'enddate' => 'required'
+        ];
+//        return $request;
+
+        $validator = $request->validate($rules);
+        if ($validator) {
+            $period = new SetPeriod();
+            if ($request->period_id > 0)
+                $period = SetPeriod::find($request->period_id);
+
+            $period->session = $request->d_session;
+            $period->semester = $request->semester;
+            $period->startdate = $request->startdate;
+            $period->enddate = $request->enddate;
+            $period->save();
+
+            if ($request->period_id > 0)
+                $request->session()->flash('flash_message', 'Evaluation time has been updated');
+            else
+                $request->session()->flash('flash_message', 'Evaluation time has been added');
+
+            return redirect()->back()->withInput($request->all());
+
+        }
+        return $request;
+    }
+
+    public function success()
+    {
+        if (!$this->access(Auth::user(), "dashboard"))
+            return view("pages.errors.nopermission");
+
+//        $categories = SetQuestionCategory::all();
+
+        return view('pages.staff.set.response_summary');
+//            , compact('categories'));
+    }
+
+    public function courses()
+    {
+//        return "We're here";
+        $session = \request('session');
+        $semester = \request('semester');
+        $department = \request('department');
+
+
+        return Course::select(['course_groups.id', 'courses.coursecode', 'courses.coursetitle', 'course_groups.grouptype',
+            'course_groups.groupno'])
+            ->join('course_groups', 'courses.id', '=', 'course_groups.course_id')
+            ->where(['department_id' => $department, 'course_groups.session' => $session, 'coursesemester' => $semester])
+            ->orderby('coursecode', 'ASC')->orderby('coursetitle', 'ASC')->get();
+    }
+
+    public function lecturers()
+    {
+//        $session = \request('session');
+        $course_group_id = \request('course_group_id');
+        $employee = Employee::selectRaw('CONCAT(employees.title," ",employees.surname," ",employees.firstname," ",
+            employees.othernames) as fullname, employees.id')->join('course_lecturers', 'course_lecturers.employee_id', '=', 'employees.id')
+            ->join('course_groups', 'course_groups.id', '=', 'course_lecturers.course_group_id')
+            ->where(['course_groups.id' => $course_group_id])->get();
+
+        return $employee;
+    }
+
+    public function summaries()
+    {
+        $course_group_id = \request('course_group_id');
+        $course_lecturer_id = \request('course_lecturer_id');
+        $query = DB::table("set_responses")
+            ->selectRaw("set_responses.question_id, set_questions.question,SUM( IF(responsecode=5,1,0) ) as five,SUM( IF(responsecode=4,1,0) ) as four,SUM( IF(responsecode=3,1,0) ) as three,SUM( IF(responsecode=2,1,0) ) as two,SUM( IF(responsecode=1,1,0) ) as one")
+            ->join('set_questions', 'set_questions.id', '=', 'set_responses.question_id')
+            ->groupBy('set_responses.question_id')
+            ->where('set_responses.course_group_id', '=', $course_group_id);
+        if ($course_lecturer_id != 'all')
+            $query->where('set_responses.course_lecturer_id', '=', $course_lecturer_id);
+
+        $summary = $query->get();
+        $summaries = [];
+        foreach ($summary as $sum) {
+            $sum->mean = ($sum->five * 5) + ($sum->four * 4) + ($sum->three * 3) + ($sum->two * 2) + ($sum->one * 1);
+            $sum->mean = $sum->mean / ($sum->five + $sum->four + $sum->three + $sum->two + $sum->one);
+            $summaries[] = $sum;
+        }
+        $query = Employee::selectRaw('CONCAT(employees.title," ",employees.surname," ",employees.firstname," ",
+            employees.othernames) as fullname')->join('course_lecturers', 'course_lecturers.employee_id', '=', 'employees.id')
+            ->join('course_groups', 'course_groups.id', '=', 'course_lecturers.course_group_id')
+            ->where(['course_groups.id' => $course_group_id]);
+        if ($course_lecturer_id != 'all')
+            $query->where('employees.id', '=', $course_lecturer_id);
+
+        $employees = $query->get();
+
+        return compact("employees", "summary");
+    }
+
+    public function comments($group, $question)
+    {
+        if (!$this->access(Auth::user(), "dashboard"))
+            return view("pages.errors.nopermission");
+
+        $coursegroup = CourseGroup::find($group);
+        $employees = Employee::selectRaw('CONCAT(employees.title," ",employees.surname," ",employees.firstname," ",
+            employees.othernames) as fullname')
+            ->join('course_lecturers', 'course_lecturers.employee_id', '=', 'employees.id')
+            ->join('course_groups', 'course_groups.id', '=', 'course_lecturers.course_group_id')
+            ->where(['course_groups.id' => $group])
+            ->get();
+
+        $comments = SetResponse::select('comment')
+            ->where(['course_group_id' => $group, 'question_id' => $question])
+            ->whereNotNull('comment')
+            ->whereRaw('comment <> ""')
+            ->get();
+
+
+        return view('pages.staff.set.comments', compact('question', 'coursegroup', 'employees', 'comments'));
+    }
+}

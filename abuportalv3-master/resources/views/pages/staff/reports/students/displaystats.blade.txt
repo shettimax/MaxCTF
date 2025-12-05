@@ -1,0 +1,489 @@
+<!-- resources/views/statistics/index.blade.php -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>Programme Statistics</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+    <style>
+        .card {
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .card-header {
+            background-color: #f8f9fa;
+            border-bottom: 1px solid rgba(0,0,0,0.125);
+            padding: 15px 20px;
+        }
+        .filter-section {
+            padding: 20px;
+            background-color: #f9fbfd;
+            border-radius: 8px;
+        }
+        .results-section {
+            margin-top: 30px;
+        }
+        .btn-primary {
+            background-color: #3490dc;
+            border-color: #3490dc;
+        }
+        .btn-primary:hover {
+            background-color: #2779bd;
+            border-color: #2779bd;
+        }
+        .stats-card {
+            transition: all 0.3s;
+        }
+        .stats-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.12);
+        }
+        .loader {
+            display: none;
+            border: 5px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 5px solid #3498db;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container py-5">
+        <h1 class="mb-4 text-center">Programme Application and Admission Statistics</h1>
+        
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Filter Criteria</h5>
+            </div>
+            <div class="card-body filter-section">
+                <form id="filterForm">
+                    <div class="row g-3">
+                        <div class="col-md-6 mb-3">
+                            <label for="faculty" class="form-label">Faculty</label>
+                            <select class="form-select" id="faculty" name="faculty_id" required>
+                                <option value="">Select Faculty</option>
+                                @foreach($faculties as $faculty)
+                                    <option value="{{ $faculty->id }}">{{ $faculty->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="department" class="form-label">Department</label>
+                            <select class="form-select" id="department" name="department_id" disabled>
+                                <option value="">Select Department</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="programmeType" class="form-label">Programme Type</label>
+                            <select class="form-select" id="programmeType" name="programme_type_id" disabled>
+                                <option value="">Select Programme Type</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="programme" class="form-label">Programme</label>
+                            <select class="form-select" id="programme" name="programme_id" disabled>
+                                <option value="">Select Programme</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="session" class="form-label">Session</label>
+                            <select class="form-select" id="session" name="session">
+                                <option value="">All Sessions</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="level" class="form-label">Entry Level</label>
+                            <select class="form-select" id="level" name="level_id">
+                                <option value="">All Levels</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-12 text-center">
+                            <button type="submit" class="btn btn-primary px-4" id="fetchButton">
+                                <span>Fetch Statistics</span>
+                            </button>
+                            <div class="loader mt-2" id="loader"></div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <div class="results-section d-none" id="results">
+            <div class="row mb-4">
+                <div class="col-md-4">
+                    <div class="card stats-card bg-primary text-white">
+                        <div class="card-body text-center">
+                            <h5 class="card-title">Total Applications</h5>
+                            <h2 id="totalApplications">0</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card stats-card bg-success text-white">
+                        <div class="card-body text-center">
+                            <h5 class="card-title">Total Admissions</h5>
+                            <h2 id="totalAdmissions">0</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card stats-card bg-info text-white">
+                        <div class="card-body text-center">
+                            <h5 class="card-title">Total Enrolled</h5>
+                            <h2 id="totalEnrolled">0</h2>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Detailed Statistics</h5>
+                    <button class="btn btn-sm btn-outline-secondary" id="exportButton">
+                        Export CSV
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped" id="statisticsTable">
+                            <thead>
+                                <tr>
+                                    <th>Programme</th>
+                                    <th>Department</th>
+                                    <th>Programme Type</th>
+                                    <th>Applications</th>
+                                    <th>Admissions</th>
+                                    <th>Enrollment</th>
+                                    <th>Admission Rate</th>
+                                    <th>Enrollment Rate</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Data will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            // Set up CSRF token for AJAX requests
+            $.ajaxSetup({
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                }
+            });
+            
+            // Initialize DataTable
+            let dataTable = null;
+            
+            // Load sessions and levels on page load
+            loadSessions();
+            loadEntryLevels();
+            
+            // Faculty change event
+            $('#faculty').change(function() {
+                const facultyId = $(this).val();
+                if (facultyId) {
+                    loadDepartments(facultyId);
+                    $('#department').prop('disabled', false);
+                } else {
+                    resetDropdown('#department');
+                    resetDropdown('#programmeType');
+                    resetDropdown('#programme');
+                }
+            });
+            
+            // Department change event
+            $('#department').change(function() {
+                const departmentId = $(this).val();
+                if (departmentId) {
+                    loadProgrammeTypes(departmentId);
+                    $('#programmeType').prop('disabled', false);
+                } else {
+                    resetDropdown('#programmeType');
+                    resetDropdown('#programme');
+                }
+            });
+            
+            // Programme Type change event
+            $('#programmeType').change(function() {
+                const departmentId = $('#department').val();
+                const programmeTypeId = $(this).val();
+                if (programmeTypeId) {
+                    loadProgrammes(departmentId, programmeTypeId);
+                    $('#programme').prop('disabled', false);
+                } else {
+                    resetDropdown('#programme');
+                }
+            });
+            
+            // Form submission
+            $('#filterForm').submit(function(e) {
+                e.preventDefault();
+                fetchStatistics();
+            });
+            
+            // Export button click
+            $('#exportButton').click(function() {
+                exportToCSV();
+            });
+            
+            // Load departments based on faculty
+            function loadDepartments(facultyId) {
+                $.ajax({
+                    url: "{{ route('get.departments') }}",
+                    type: 'GET',
+                    data: { faculty_id: facultyId },
+                    success: function(data) {
+                        populateDropdown('#department', data);
+                    },
+                    error: function(xhr) {
+                        console.error('Error loading departments:', xhr);
+                    }
+                });
+            }
+            
+            // Load programme types based on department
+            function loadProgrammeTypes(departmentId) {
+                $.ajax({
+                    url: "{{ route('get.programme.types') }}",
+                    type: 'GET',
+                    data: { department_id: departmentId },
+                    success: function(data) {
+                        populateDropdown('#programmeType', data, 'prog_type_name');
+                    },
+                    error: function(xhr) {
+                        console.error('Error loading programme types:', xhr);
+                    }
+                });
+            }
+            
+            // Load programmes based on department and programme type
+            function loadProgrammes(departmentId, programmeTypeId) {
+                $.ajax({
+                    url: "{{ route('get.programmes') }}",
+                    type: 'GET',
+                    data: { 
+                        department_id: departmentId,
+                        programme_type_id: programmeTypeId
+                    },
+                    success: function(data) {
+                        populateDropdown('#programme', data);
+                    },
+                    error: function(xhr) {
+                        console.error('Error loading programmes:', xhr);
+                    }
+                });
+            }
+            
+            // Load entry levels
+            function loadEntryLevels() {
+                $.ajax({
+                    url: "{{ route('get.entry.levels') }}",
+                    type: 'GET',
+                    success: function(data) {
+                        populateDropdown('#level', data);
+                    },
+                    error: function(xhr) {
+                        console.error('Error loading entry levels:', xhr);
+                    }
+                });
+            }
+            
+            // Load sessions
+            function loadSessions() {
+                $.ajax({
+                    url: "{{ route('get.sessions') }}",
+                    type: 'GET',
+                    success: function(data) {
+                        populateDropdown('#session', data);
+                    },
+                    error: function(xhr) {
+                        console.error('Error loading sessions:', xhr);
+                    }
+                });
+            }
+            
+            // Fetch statistics based on filters
+            function fetchStatistics() {
+                $('#loader').show();
+                $('#fetchButton span').text('Loading...');
+                
+                const formData = {
+                    faculty_id: $('#faculty').val(),
+                    department_id: $('#department').val(),
+                    programme_type_id: $('#programmeType').val(),
+                    programme_id: $('#programme').val(),
+                    session: $('#session').val(),
+                    level_id: $('#level').val()
+                };
+                
+                $.ajax({
+                    url: "{{ route('reports.students.programmestats') }}",
+                    type: 'GET',
+                    data: formData,
+                    success: function(data) {
+                        displayStatistics(data);
+                        $('#loader').hide();
+                        $('#fetchButton span').text('Fetch Statistics');
+                    },
+                    error: function(xhr) {
+                        console.error('Error fetching statistics:', xhr);
+                        $('#loader').hide();
+                        $('#fetchButton span').text('Fetch Statistics');
+                        alert('Error fetching statistics. Please try again.');
+                    }
+                });
+            }
+            
+            // Display statistics in the table
+            function displayStatistics(data) {
+                $('#results').removeClass('d-none');
+                
+                // Calculate totals
+                let totalApplications = 0;
+                let totalAdmissions = 0;
+                let totalEnrolled = 0;
+                
+                // Process data for DataTable
+                const tableData = data.map(item => {
+                    totalApplications += parseInt(item.total_applications);
+                    totalAdmissions += parseInt(item.total_admissions);
+                    totalEnrolled += parseInt(item.total_enrolled);
+                    
+                    const admissionRate = item.total_applications > 0 
+                        ? ((item.total_admissions / item.total_applications) * 100).toFixed(2) + '%' 
+                        : '0%';
+                    
+                    const enrollmentRate = item.total_admissions > 0 
+                        ? ((item.total_enrolled / item.total_admissions) * 100).toFixed(2) + '%' 
+                        : '0%';
+                    
+                    return [
+                        item.programme_name,
+                        item.department_name,
+                        item.prog_type_name,
+                        item.total_applications,
+                        item.total_admissions,
+                        item.total_enrolled,
+                        admissionRate,
+                        enrollmentRate
+                    ];
+                });
+                
+                // Update summary cards
+                $('#totalApplications').text(totalApplications);
+                $('#totalAdmissions').text(totalAdmissions);
+                $('#totalEnrolled').text(totalEnrolled);
+                
+                // Initialize or refresh DataTable
+                if (dataTable) {
+                    dataTable.clear().rows.add(tableData).draw();
+                } else {
+                    dataTable = $('#statisticsTable').DataTable({
+                        data: tableData,
+                        responsive: true,
+                        lengthMenu: [[10, 25, 50, -1], [10, 25, 50, "All"]],
+                        order: [[3, 'desc']] // Sort by applications count by default
+                    });
+                }
+            }
+            
+            // Helper function to populate dropdowns
+            function populateDropdown(selector, data, nameField = 'name') {
+                const dropdown = $(selector);
+                const currentValue = dropdown.val();
+                
+                // Keep the first option and remove the rest
+                dropdown.find('option:not(:first)').remove();
+                
+                // Add new options
+                $.each(data, function(index, item) {
+                    dropdown.append($('<option></option>')
+                        .attr('value', item.id)
+                        .text(item[nameField])
+                    );
+                });
+                
+                // If there was a previously selected value, try to reselect it
+                if (currentValue) {
+                    dropdown.val(currentValue);
+                }
+                
+                // Enable the dropdown
+                dropdown.prop('disabled', false);
+            }
+            
+            // Helper function to reset a dropdown
+            function resetDropdown(selector) {
+                const dropdown = $(selector);
+                dropdown.find('option:not(:first)').remove();
+                dropdown.val('');
+                dropdown.prop('disabled', true);
+            }
+            
+            // Function to export table data to CSV
+            function exportToCSV() {
+                if (!dataTable) return;
+                
+                const headers = ['Programme', 'Department', 'Programme Type', 'Applications', 'Admissions', 'Enrollment', 'Admission Rate', 'Enrollment Rate'];
+                let csvContent = headers.join(',') + '\n';
+                
+                // Get data from DataTable
+                dataTable.rows().data().each(function(row) {
+                    // Quote each field and join with commas
+                    const csvRow = row.map(field => `"${field}"`).join(',');
+                    csvContent += csvRow + '\n';
+                });
+                
+                // Create CSV file and download
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                const url = URL.createObjectURL(blob);
+                
+                const filterDetails = [
+                    $('#faculty option:selected').text(),
+                    $('#department option:selected').text(),
+                    $('#programmeType option:selected').text(),
+                    $('#programme option:selected').text(),
+                    $('#session option:selected').text(),
+                    $('#level option:selected').text()
+                ].filter(item => item && !item.includes('Select')).join('_');
+                
+                const filename = `programme_statistics_${filterDetails || 'all'}_${new Date().toISOString().slice(0,10)}.csv`;
+                
+                link.href = url;
+                link.setAttribute('download', filename);
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+        });
+    </script>
+</body>
+</html>

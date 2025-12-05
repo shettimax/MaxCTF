@@ -1,0 +1,157 @@
+@extends("layout.staff.master")
+@section("css")
+    <link rel="stylesheet" href="{{ asset('js/datatables/jquery.dataTables.min.css')}}"/>
+    {{--<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">--}}
+    {{--<link rel="stylesheet" href="https://cdn.datatables.net/1.10.23/css/dataTables.bootstrap5.min.css">--}}
+    {{--<link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.2.7/css/responsive.bootstrap.min.css">--}}
+    <style>
+        label {
+            width: 100%;
+            color: #0f1824;
+            text-align: left;
+        }
+        .form-control, .form-control-lg, .form-control-static {
+            -webkit-box-shadow: 0px 0px 34px 0px rgba(230,230,230,1);
+            -moz-box-shadow: 0px 0px 34px 0px rgba(230,230,230,1);
+            box-shadow: 0px 0px 34px 0px rgba(230,230,230,1);
+        }
+    </style>
+@endsection
+@section("pageTitle")
+    Registered Students Per Course
+@endsection
+@section("content")
+    <section>
+        <div class="main-section">
+            <div class="container pb-30 pl-30 pr-30">
+                <section class="bg-white-f7 pt-20 pr-40 pl-40 pb-40" style="border-left:2px solid #43B14B;border-right:2px solid #43B14B;">
+                    <div class="row">
+                        <div class="form-group col-md-6">
+                            <select
+                                    class="form-control {{ $errors->has('faculty')?'is-invalid':'is-valid' }}"
+                                    id="faculty" name="faculty" required>
+                                <option value=""> -- Faculty -- </option>
+                                @foreach($faculties as $faculty)
+                                    <option value="{{ $faculty->id }}">{{ $faculty->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="form-group col-md-6">
+                            <select
+                                    class="form-control {{ $errors->has('department')?'is-invalid':'is-valid' }}"
+                                    id="department" name="department" required>
+                                <option value=""> -- Department -- </option>
+                            </select>
+                        </div>
+                        <div class="form-group col-md-3">
+                            <select id="coursecode" name="coursecode"
+                                    class="form-control {{ $errors->has('coursecode')?'is-invalid':'is-valid' }}">
+                                <option value="">-- Course --</option>
+                            </select>
+                        </div>
+                        <div class="form-group col-md-2">
+                            <select
+                                    class="form-control {{ $errors->has('semester')?'is-invalid':'is-valid' }}"
+                                    id="semester" name="semester" required>
+                                <option value=""> -- Semester -- </option>
+                                <option value="1"> First</option>
+                                <option value="2"> Second </option>
+                            </select>
+                        </div>
+                        <div class="form-group col-md-2">
+                            <select
+                                    class="form-control {{ $errors->has('session')?'is-invalid':'is-valid' }}"
+                                    name="session" id="session"
+                                    required>
+                                <option value="0">-- Session --</option>
+                                @foreach($sessions as $session)
+                                    <option>{{$session->session}}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="form-group col-md-5">
+                            <input
+                                    class="form-control {{ $errors->has('matric')?'is-invalid':'is-valid' }}"
+                                    name="matric" id="matric" placeholder="Matric Number"
+                                    required>
+                        </div>
+                        <div class="form-group col-md-12 text-right">
+                            <button id="fetchBtn" class="btn btn-flat btn-success">
+                                 Fetch
+                            </button>
+                        </div>
+                    </div>
+                    <div id="student-list" class="text-center">
+
+                    </div>
+                </section>
+
+            </div>
+        </div>
+    </section>
+@endsection
+
+@section("js")
+    <script src="{{asset('js/datatables/jquery.dataTables.min.js')}}"></script>
+    <script>
+        $(document).on("change", "#faculty", function () {
+            $("#department").html("<option value=''>Loading...</option>");
+
+            $.ajax({
+                url: '{{route("filter.department.by.faculty")}}',
+                type: 'GET',
+                data: {
+                    {{--permission: '{{Route::currentRouteName()}}',--}}
+                    faculty_id: $("#faculty").val()
+                }
+            }).done(function (reponse) {
+                $("#department").html("<option value=''>--select--</option>" + reponse);
+                $("#coursecode").html("<option value=''>--select--</option>");
+            });
+        });
+
+        $(document).on("change", "#department", function () {
+            $("#coursecode").html("<option value=''>Loading...</option>");
+            $.ajax({
+                url: '{{route("filter.courses.by.department")}}',
+                type: 'GET',
+                data: {
+                    department_id: $("#department").val()
+                }
+            }).done(function (msg) {
+                $("#coursecode").html("<option value=''>-- select --</option>" + msg);
+            });
+        });
+
+        $('#fetchBtn').click(function () {
+            let coursecode = $('#coursecode').val();
+            let semester = $('#semester').val();
+            let session = $('#session').val();
+            let matric = $('#matric').val();
+            let loader = `<img src="{{ asset('images/loader.gif') }}" width="80" />`;
+            let url = "{{ route('course.registered.student.show') }}";
+            $.ajax({
+                url: "{{route('course.registered.student.show')}}",
+                type: "POST",
+                data: {
+                    _token:"{{ csrf_token()  }}",
+                    course_id: coursecode,
+                    semester: semester,
+                    session: session,
+                    matric: matric
+                },
+                beforeSend: function() {
+                    $('#student-list').html(loader);
+                },
+                success: function(data){
+                    $('#student-list').html(data)
+                    $('#student-table').DataTable()
+                },
+                error: function(jqXHR, status){
+                    $('#student-list').html(status)
+                }
+            })
+        });
+
+    </script>
+@endsection

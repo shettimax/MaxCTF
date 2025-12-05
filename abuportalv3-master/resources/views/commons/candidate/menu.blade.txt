@@ -1,0 +1,56 @@
+@auth("candidate")
+    @php
+        $candidate = Auth::user()
+    @endphp
+
+    <ul class="menuzord-menu" style="position: absolute;margin-top:-75px;right:0;">
+        <li>
+            <a href="javascript:;">
+                <img src="{{ route("candidate.profile.image",[time()]) }}" alt="Picture"
+                     class="img img-thumbnail img-circle" width="40">
+                {{ucfirst($candidate->getFullname())}}
+
+            </a>
+        </li>
+        <span class="pull-right" style="padding:22px;">
+            <a href="{{ route("form.logout") }}"
+               class="btn btn-dark btn-theme-colored btn-xs">Logout</a>
+        </span>
+    </ul>
+    <ul class="menuzord-menu">
+
+        <li>
+            <a href="{{ route("forms.dashboard")}}">Dashboard</a>
+        </li>
+        <li>
+            <a>Profile</a>
+            <ul class="dropdown" style="right: auto; display: none;">
+                <li><a href=" {{route('forms.profile.biodata')}}">Biodata</a></li>
+                <li><a href=" {{route('form.profile.contact')}}">Contact</a></li>
+                <li><a href="{{route("candidate.addolevel")}}">O-Level</a></li>
+                <li><a href="{{route("alevel.show")}}">A-Level</a></li>
+                <li><a href="{{route("photoupload.index")}}">Picture</a></li>
+                <li><a href="{{route("candidate.ugmatric")}}">UGMatric</a></li>
+                @if($candidate->admitted())
+                    <li><a href="{{ route('candidate.docs') }}">Documents Upload</a></li>
+                @endif
+                <li><a href="{{route("candidate.changepassword")}}">Change Password</a></li>
+            </ul>
+        </li>
+
+        <li>
+            @php
+                $candidate = auth()->user();
+                $isUTME = $candidate->getUtme();
+            @endphp
+            @if(!$isUTME)
+                <a href="{{ route("form.buy.index") }}">Buy Forms</a>
+            @else
+                <a href="{{ route("forms.dashboard") }}">Make Payment</a>
+            @endif
+        </li>
+        <li>
+            <a href="{{ route("form.notification") }}">Notification</a>
+        </li>
+    </ul>
+@endauth

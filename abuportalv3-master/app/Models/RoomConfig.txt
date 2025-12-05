@@ -1,0 +1,36 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class RoomConfig extends Model {
+
+    //
+    protected $table = 'room_configs';
+
+    /**
+     * Get the reservations for the roomconfig.
+     */
+    public function reservations() {
+        return $this->hasMany('App\Models\Reservation', 'room_config_id');
+    }
+
+    public function room() {
+        return $this->belongsTo('App\Models\Room', 'room_id', 'id');
+    }
+
+    public function getPaidOccupants() {
+        $regnos = $this->occupants;
+        $regnoarr = explode(',', $regnos);
+        $occupants = array();
+        foreach ($regnoarr as $regno) {
+            $std = Student::fromMatricNumber($regno);
+            if ($std) {
+                $occupants[] = $std;
+            }
+        }
+        return $occupants;
+    }
+
+}

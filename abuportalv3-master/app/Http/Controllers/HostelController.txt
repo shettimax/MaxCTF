@@ -1,0 +1,180 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use App\Models\Student;;
+use App\Models\Hostel;;
+use App\Models\Block;;
+use App\Models\Accommodation;;
+
+class AllHostelController extends Controller {
+
+    /**
+     * Display a listing of the resource.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function index(Request $request) {
+        $hostels = Hostel::all();
+        return view("pages.staff.accommodation.hostel.index", array("hostels" => $hostels));
+    }
+
+    /**
+     * Show the form for creating a new resource.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function create(Request $request) {
+        //
+        return view("pages.staff.accommodation.hostel.create");
+    }
+
+    /**
+     * Store a newly created resource in storage.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function store(Request $request) {
+        //
+        $validatedData = $request->validate([
+            'hostelname' => 'required|unique:hostel,name',
+            'hostelshortname' => 'required|unique:hostel,shortname',
+            'gender' => 'required|in:male,female,combined',
+            'hostelfee' => 'required|numeric|min:0',
+            'studtype' => 'required|array'
+        ]);
+
+        $studtype = $request->request->get('studtype');
+        $progcode = Accommodation::getStudTypeSpec($studtype);
+        //var_dump($progcode); exit();
+        $hostel = new Hostel();
+        $hostel->name = $request->request->get('hostelname');
+        $hostel->short_name = $request->request->get('hostelshortname');
+        $hostel->gender = $request->request->get('gender');
+        $hostel->studtype = $progcode;
+        $hostel->status = $request->request->get('status');
+        $hostel->campus = $request->request->get('campus');
+        $hostel->fee = $request->request->get('hostelfee');
+        $hostel->save();
+        return redirect()->route('accommodation.admin.hostel.show', array('id' => $hostel->id));
+    }
+
+    /**
+     * Display the specified resource.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function show(Request $request, $id) {
+        $hostel = Hostel::findOrFail($id);
+        return view("pages.staff.accommodation.hostel.view", array("hostel" => $hostel, "backurl" => url()->previous()));
+        //
+    }
+
+    /**
+     * Show the form for editing the specified resource.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function edit(Request $request, $id) {
+        $hostel = Hostel::findOrFail($id);
+        return view("pages.staff.accommodation.hostel.edit", array("hostel" => $hostel));
+        //
+    }
+
+    /**
+     * Update the specified resource in storage.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function update(Request $request) {
+        //
+        $hid = $request->request->get('hostelid');
+        $validatedData = $request->validate([
+            'hostelname' => 'required|unique:hostel,name,'.$hid.',id',
+            'hostelshortname' => 'required|unique:hostel,shortname,'.$hid.',id',
+            'gender' => 'required|in:male,female,combined',
+            'hostelfee' => 'required|numeric|min:0',
+            'studtype' => 'required|array'
+        ]);
+
+        $hostel = Hostel::findOrFail($request->request->get('hostelid'));
+        $hostel->name = $request->request->get('hostelname');
+        $hostel->short_name = $request->request->get('hostelshortname');
+        $hostel->gender = $request->request->get('gender');
+        $studtype = $request->request->get('studtype');
+        $progcode = Accommodation::getStudTypeSpec($studtype);
+        $hostel->studtype = $progcode;
+        $hostel->status = $request->request->get('status');
+        $hostel->campus = $request->request->get('campus');
+        $hostel->fee = $request->request->get('hostelfee');
+        $hostel->save();
+        return redirect()->route('accommodation.admin.hostel.show', array('id' => $hostel->id));
+    }
+
+    /**
+     * Toggle the status of the hostel
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function toggleStatus($id) {
+        $hostel = Hostel::findOrFail($id);
+        if ($hostel->status == '1') {
+            $hostel->status = '0';
+        } else {
+            $hostel->status = '1';
+        }
+        $hostel->save();
+        return back();
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function destroy($id) {
+        //
+    }
+
+    public function getReservableBlockOptions(Request $request) {
+        $hostelid = ($request->query('hostelid')) ? ($request->query('hostelid')) : (null);
+        $isadmin = ($request->query->get('isadmin') == '1' ? (true) : (false));
+        $blocks = array();
+        if (!(null === $hostelid || $hostelid == "")) {
+            $hostel = Hostel::where([['id', $hostelid]])->first();
+            if ($hostel) {
+                if ($isadmin) {
+                    $studentid = $request->query->get('studentid');
+                    $student = Student::findOrFail($studentid);
+                } else {
+                    $student = Auth::user();
+                }
+                $blocks = $hostel->getReservableBlock($student, $isadmin);
+            }
+            /**
+              $genderopt = ['gender', strtolower(Auth::user()->gender)];
+              $hostelopt = ['hostel_id', $hostelid];
+              $options = [$hostelopt, ['status', '1'], $genderopt];
+              $options = array_filter($options);
+              //print_r($options);exit();
+              $blocks = Block::where($options)->orderBy('name', 'asc')->get();
+             */
+        }
+
+        if ($isadmin) {
+            return view("partialpages.hostel.blockoptions", array("blocks" => $blocks));
+        } else {
+            return view("partialpages.hostel.blockoptions", array("blocks" => $blocks));
+        }
+    }
+
+}

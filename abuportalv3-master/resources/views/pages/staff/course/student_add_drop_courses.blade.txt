@@ -1,0 +1,188 @@
+@extends("layout.staff.master")
+@section("css")
+
+@endsection
+@section("pageTitle")
+    Add/Drop Courses for Student
+@endsection
+@section("content")
+    <div class="main-section">
+        <div class="container">
+            <div class="row justify-content-center">
+                    <input type="text" id="matricnumber" placeholder="Enter Matric Number" class="form-control">
+                    <select id="session" class="form-control">
+                        @php
+                        $startYear = 2019;
+                        $currentYear = date("Y");
+                        @endphp
+                        <option value="">--select course registration Session--</option>
+                        @for ($year = $startYear; $year <= $currentYear; $year++):
+                        <option value="{{ $year}}">{{$year}}/{{ $year + 1 }}</option>
+                        @endfor
+                    </select>
+                    <button id="loadCoursesButton" class="btn btn-info">Load Courses</button>
+
+                <div id="coursesContainer"></div>
+                <div id="addCourseContainer" style="display: none;">
+                    <h3>Add Course</h3>
+                    <input type="text" id="coursecode" placeholder="Enter Course Code" class="form-control">
+                    <select id="semester" name='semester' class="form-control">
+                        <option value="">--Select Semester--</option>
+                        <option value="1">First Semester</option>
+                        <option value="2">Second Semester</option>
+                    </select>
+                    <select id="ltGroup" class="form-control">
+                        <option value="">Select LT Group</option>
+                    </select>
+                    <select id="lbGroup" class="form-control">
+                        <option value="">Select LB Group</option>
+                    </select>
+                    <button id="addCourseButton" style='color:blue;'>Add Course</button>
+                </div>
+            </div>
+        </div>
+    </div>
+@endsection
+@section('script')
+
+            <script type="text/javascript">
+                $('#loadCoursesButton').on('click', function() {
+                    var matricnumber = $('#matricnumber').val();
+                    var session = $('#session').val();
+
+                    $.ajax({
+                        url: '{{ route("courses.load") }}',
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}' // CSRF token in headers
+                        },
+                        data: JSON.stringify({ matricnumber: matricnumber, session: session }),
+                        contentType: 'application/json',
+                        success: function(data) {
+                            $('#coursesContainer').html(data);
+                            $('#addCourseContainer').show();
+                        },
+                        error: function(xhr, status, error) {
+                            console.error('Error:', error);
+                        }
+                    });
+                });
+                document.getElementById('loadCoursesButton').addEventListener('click', function() {
+                    var matricnumber = document.getElementById('matricnumber').value;
+                    var session = document.getElementById('session').value;
+
+                    fetch('{{ route("courses.load") }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}' // CSRF token added here in headers
+                        },
+                        body: JSON.stringify({ matricnumber: matricnumber, session: session })
+                    })
+                        .then(response => response.text())
+                        .then(data => {
+                            document.getElementById('coursesContainer').innerHTML = data;
+                            document.getElementById('addCourseContainer').style.display = 'block';
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                        });
+                });
+                document.addEventListener('submit', function(event) {
+                    if (event.target && event.target.id === 'deleteCoursesForm') {
+                        event.preventDefault();
+
+                        var form = event.target;
+                        var formData = new FormData(form);
+                        var matricnumber = document.getElementById('matricnumber').value;
+                        var session = document.getElementById('session').value;
+
+                        formData.append('matricnumber', matricnumber);
+                        formData.append('session', session);
+
+                        fetch('{{ route("courses.delete") }}', {
+                            method: 'POST',
+                            body: formData
+                        })
+                            .then(response => response.text())
+                            .then(data => {
+                                alert('Course/Courses deleted successfully.');
+                                document.getElementById('loadCoursesButton').click();
+                            })
+                            .catch(error => {
+                                console.error('Error:', error);
+                            });
+                    }
+                });
+
+                document.getElementById('addCourseButton').addEventListener('click', function() {
+                    var coursecode = document.getElementById('coursecode').value;
+                    var ltGroup = document.getElementById('ltGroup').value;
+                    var lbGroup = document.getElementById('lbGroup').value;
+                    var matricnumber = document.getElementById('matricnumber').value;
+                    var session = document.getElementById('session').value;
+                    var semester = document.getElementById('semester').value;
+
+                    fetch('{{ route("courses.add") }}', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ coursecode: coursecode, ltGroup: ltGroup, lbGroup: lbGroup, matricnumber: matricnumber, session: session, semester: semester, _token: '{{ csrf_token() }}' })
+                    })
+                        .then(response => response.text())
+                        .then(data => {
+                            alert('Course added successfully.');
+                            document.getElementById('loadCoursesButton').click();
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                        });
+                });
+
+                document.getElementById('coursecode').addEventListener('input', function() {
+                    loadCourseGroups();
+                });
+
+                document.getElementById('semester').addEventListener('change', function() {
+                    loadCourseGroups();
+                });
+
+                function loadCourseGroups() {
+                    var coursecode = document.getElementById('coursecode').value;
+                    var semester = document.getElementById('semester').value;
+                    var session = document.getElementById('session').value;
+
+                    if (coursecode && semester) {
+                        fetch('{{ route("courses.groups") }}', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ coursecode: coursecode, semester: semester, session: session, _token: '{{ csrf_token() }}' })
+                        })
+                            .then(response => response.json())
+                            .then(data => {
+                                var ltGroupSelect = document.getElementById('ltGroup');
+                                var lbGroupSelect = document.getElementById('lbGroup');
+
+                                ltGroupSelect.innerHTML = '<option value="">Select LT Group</option>';
+                                lbGroupSelect.innerHTML = '<option value="">Select LB Group</option>';
+
+                                data.ltGroups.forEach(group => {
+                                    var option = document.createElement('option');
+                                    option.value = group.id;
+                                    option.textContent = group.groupno;
+                                    ltGroupSelect.appendChild(option);
+                                });
+
+                                data.lbGroups.forEach(group => {
+                                    var option = document.createElement('option');
+                                    option.value = group.id;
+                                    option.textContent = group.groupno;
+                                    lbGroupSelect.appendChild(option);
+                                });
+                            })
+                            .catch(error => {
+                                console.error('Error:', error);
+                            });
+                    }
+                }
+            </script>
+@endsection

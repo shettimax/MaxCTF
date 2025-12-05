@@ -1,0 +1,171 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\CourseRegistration;
+use App\Models\FeeManager;
+use App\Models\ResitConfiguration;
+use App\Models\ResitCourse;
+use App\Models\Transaction;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+
+class ResitController extends Controller
+{
+    //
+    public function __construct()
+    {
+        $this->middleware(["auth:student", "mmode"]);
+//        $this->middleware("acceptance")->except("acceptance","paySundry","clearance","screeningform");//
+    }
+
+    public function index()
+    {
+        $student = Auth::user();
+        // Old code (hardcoded to 2023 - commented out):
+        // if($rConfig = $student->hasPrivateResit(2023)){
+        $latestSession = $student->sessionReg()->orderBy('session', 'DESC')->first();
+        if($latestSession && $rConfig = $student->hasPrivateResit($latestSession->session)){
+             $rConfig = ResitConfiguration::find($rConfig->resit_id);
+        }elseif (!$rConfig = $student->canResit()) {
+            return view("pages.student.resit.error", compact('student'));
+        }
+//        $resitSessions = $student->resitSession($rConfig->session);
+//        if(count($resitSessions)){
+//            return redirect(route('resit.view',[$rConfig->session]));
+//        }
+        $session = $rConfig?$rConfig->session:$latestSession->session;
+        $resits = $student->resits($session)->pluck('course_id')->toArray();
+        $courses = CourseRegistration::where(['course_registrations.student_id' => $student->id])
+            ->join('course_groups', "course_registrations.course_group_id", "=", "course_groups.id")
+            ->join('courses', "courses.id", "=", "course_groups.course_id")
+            ->orderBy('course_groups.session', 'DESC')
+            ->groupBy('courses.id')
+            ->select(["course_registrations.*","courses.*"])
+            ->get();
+
+        return view("pages.student.resit.index", compact('student', 'courses', 'session', 'rConfig','resits','latestSession'));
+    }
+
+    public function store(Request $request)
+    {
+        $student = Auth::user();
+        // Old code (hardcoded to 2023 - commented out):
+        // if($rConfig = $student->hasPrivateResit(2023)){
+        $latestSession = $student->sessionReg()->orderBy('session', 'DESC')->first();
+        $rConfig = null;
+        if($latestSession && $rConfig = $student->hasPrivateResit($latestSession->session)){
+                $rConfig = ResitConfiguration::find($rConfig->resit_id);
+        }elseif (!$rConfig = $student->canResit()) {
+            return view("pages.student.resit.error", compact('student'));
+        }
+        $unitCount = 0;
+        $courseCount = 0;
+        $totalAmount = 0;
+        if(!count($request->courses)){
+            return back()->withErrors(['error'=>"You must choose at least one course."]);
+        }
+//        return $request->courses;
+        $courses = CourseRegistration::where(['course_registrations.student_id' => $student->id])
+            ->join('course_groups', "course_registrations.course_group_id", "=", "course_groups.id")
+            ->join('courses', "courses.id", "=", "course_groups.course_id")
+            ->orderBy('course_groups.session', 'DESC')
+            ->groupBy('courses.id')
+            ->whereIn('courses.id', $request->courses)
+            ->get();
+        if($rConfig)
+            ResitCourse::where(['student_id'=>$student->id,'session'=>$rConfig->session])->delete();
+
+        if($rConfig){
+            foreach ($courses as $course) {
+                //            if ($rConfig->max_credit_unit!=0 && $unitCount + $course->courseunit > $rConfig->max_credit_unit) {
+                //                continue;
+                //            }
+                //            if ($rConfig->max_courses!= 0 && $courseCount + 1 > $rConfig->max_courses) {
+                //                break;
+                //            }
+                            // Check if resit course already exists (shouldn't after delete, but check anyway)
+                            $rCourse = ResitCourse::where(['student_id'=>$student->id,'session'=>$rConfig->session,'course_id'=>$course->id])->first();
+
+                            if (!$rCourse) {
+                                $rCourse = new ResitCourse();
+                                $rCourse->student_id = $student->id;
+                                $rCourse->session = $rConfig->session;
+                                $rCourse->course_id = $course->id;
+                                $rCourse->code_title = $course->coursecode." |  ".$course->coursetitle;
+                                $rCourse->course_unit = $course->courseunit;
+                            }
+
+                            $rCourse->amount = $rConfig->per_course_amount;
+                            $totalAmount += $rConfig->per_course_amount;
+
+                            try {
+                                if ($rCourse->save()) {
+                                    $unitCount += $course->courseunit;
+                                    $courseCount++;
+                                } else {
+                                    Log::error('Failed to save resit course', [
+                                        'student_id' => $student->id,
+                                        'course_id' => $course->id,
+                                        'session' => $rConfig->session
+                                    ]);
+                                }
+                            } catch (\Exception $exception) {
+                                Log::error('Exception saving resit course', [
+                                    'student_id' => $student->id,
+                                    'course_id' => $course->id,
+                                    'session' => $rConfig->session,
+                                    'error' => $exception->getMessage(),
+                                    'trace' => $exception->getTraceAsString()
+                                ]);
+                            }
+                        }
+                        if($rConfig && $rConfig->registration_amount && $courseCount){
+                            $rCourse = new ResitCourse();
+                            $rCourse->student_id = $student->id;
+                            $rCourse->session = $rConfig->session;
+                            $rCourse->course_id = 0;
+                            $rCourse->code_title = "Registration";
+                            $rCourse->amount = $rConfig->registration_amount;
+                            $rCourse->course_unit = 0;
+                            $rCourse->save();
+                            $totalAmount += $rCourse->amount;
+                        }
+                        $paidAmount = Transaction::where(['student_id'=>$student->id,'session'=>$rConfig->session,'code'=>'RST','payment_status'=>'Paid'])->sum('transaction_amount');
+                        $amount = $totalAmount - $paidAmount;
+                        $amount = $amount < 0 ? 0 : $amount;
+
+                        if($rConfig && $amount){
+                            $genAmount = Transaction::where(['student_id'=>$student->id,'session'=>$rConfig->session,'code'=>'RST','payment_status'=>'Not Paid'])->sum('transaction_amount');
+                            if( $genAmount != $amount){
+                                Transaction::where(['student_id'=>$student->id,'session'=>$rConfig->session,'code'=>'RST','payment_status'=>'Not Paid'])->delete();
+                            }
+                            $code = FeeManager::generateTransactionCode($student->id, "RST", $rConfig->session,isset($student->mode_of_entry[0]) ? $student->mode_of_entry[0] . "RST" : "RST", $amount);
+                        }elseif($rConfig){
+                            Transaction::where(['student_id'=>$student->id,'session'=>$rConfig->session,'code'=>'RST','payment_status'=>'Not Paid'])->delete();
+                            $code = FeeManager::generateTransactionCode($student->id, "RST", $rConfig->session, isset($student->mode_of_entry[0]) ? $student->mode_of_entry[0] . "RST" : "RST", $amount);
+                        }
+        }
+
+
+
+
+        return redirect(route('resit.view',[$rConfig?$rConfig->session:$latestSession->session]));;
+    }
+
+    public function view(Request $request,$session)
+    {
+
+        $student = Auth::user();
+        $resitSessions = $student->resitSession($session);
+        $resits = $student->resits($session)->get();
+        $transactions = $student->resitTransaction($session);
+        // $session = $resitSessions->session;
+        $amountPaid = $student->__resitTransaction($session)->where('payment_status','Paid')->sum("transaction_amount");
+        Transaction::where(['student_id'=>$student->id,'session'=>$session,'code'=>'RST','transaction_amount'=>0])->delete();
+//        return compact('resitSessions','resits','transaction');
+        return view("pages.student.resit.view",compact('resitSessions','resits','transactions','session','student','amountPaid'));
+    }
+}

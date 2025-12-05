@@ -1,0 +1,41 @@
+<form action="{{route('sessional.fee.update')}}" method="post" id="Editform" >
+    @csrf
+    <div class="form-group">
+        <lable>Session</lable>
+        <select name="session" class="form-control form-control-sm">
+            @for($session = date('Y');$session>2018;$session--)
+                <option value="{{$session}}" @if($session == $feesSetting->session) selected @endif>{{$session."/".($session+1)}}</option>
+            @endfor
+        </select>
+    </div>
+
+    <div class="form-group">
+        <lable>Programme Name</lable>
+        <select name="programmetypes" class="form-control form-control-sm" >
+            @foreach($programmes as $programme)
+                <option value="{{$programme['prog_type_code']}}" @if($programme['prog_type_code']==$feesSetting->programme_type)  selected @endif > {{$programme['prog_type_code']}} </option>
+            @endforeach
+        </select>
+    </div>
+
+    <div class="form-group">
+        <lable>Fee Type</lable>
+        <select name="feecategory" class="form-control form-control-sm">
+            <option value="REG" @if('REG'== $feesSetting->fee_type) selected @endif>REG</option>
+            <option value="ACC" @if('ACC'== $feesSetting->fee_type) selected @endif>ACC</option>
+            <option value="FRM" @if('FRM'== $feesSetting->fee_type) selected @endif>FRM</option>
+        </select>
+    </div>
+
+    <div class="form-group"><lable>Fee Session</lable>
+        <select name="sessionfee" class="form-control form-control-sm">
+            @foreach($sessionfees as $sessionfee)
+                <option value="{{$sessionfee['fee_session']}}" @if($sessionfee['fee_session'] == $feesSetting->fee_session) selected @endif>{{$sessionfee['fee_session']."/".($sessionfee['fee_session']+1)}}</option>
+            @endforeach
+        </select>
+
+    </div>
+
+    <button type="submit" class="btn btn-primary mb-2">Save Record</button>
+    <input type="hidden" name="sessionId" id="sessionId" value="{{$feesSetting->id}}">
+</form>

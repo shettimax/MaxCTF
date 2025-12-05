@@ -1,0 +1,489 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Http\CuteBanker\SchoolCollection;
+use Illuminate\Http\Request;
+use App\Models\FeeManager;;
+use App\Models\Transaction;;
+use App\Models\Student;;
+use App\Models\Reservation;;
+use App\Models\Programme;;
+use App\Models\SessionReg;;
+use App\Models\PaymentLog;;
+/*use App\{
+    FormSetting,
+    CandidateForm,
+    CandidateBiodata,
+    CandidateContact
+};*/
+use Illuminate\Support\Facades\DB;
+use Auth;
+
+class TransactionController extends Controller {
+
+    public function __construct() {
+        $this->middleware('auth')->except(["remitaAccommodationWebHook", "commitAccommodationTransaction", "remitaFeesWebHook", "commitFeesTransaction", "response"]);
+    }
+
+    public function generateFeesRRR(Request $request, $transactionid, $backurl = null) {
+        $user = Auth::user();
+        //$biodatarec = StudentBiodata::where("studentid", Auth::user()->id)->get();
+        $transaction = Transaction::find($transactionid);
+        if ($transaction) {
+            $responseurl = "https://spgs.abu.edu.ng/portal/transaction/fees/verify_rrr";
+            $concatString = Transaction::MERCHANTID . Transaction::FEESERVICETYPEID . $transaction->transcode . intval($transaction->transamount) . $responseurl . Transaction::APIKEY;
+            $hash = hash('sha512', $concatString);
+            return view("pages.student.transaction.fees.generaterrr", array("user" => $user, "responseurl" => $responseurl, "hash" => $hash, "transaction" => $transaction, "url" => $backurl));
+        }
+    }
+
+    public function verifyFeesRRR(Request $request) {
+
+
+        if ($request->orderID) {
+            $orderid = $request->orderID;
+            $transaction = Transaction::where("transaction_code", $orderid)->first();
+            $transaction->verify();
+            if ($transaction->payment_status=="Paid" /* $response['status'] == '021' */) {
+                return redirect(route('fees.session',$transaction->session));
+//                return redirect(route("fees.session",[$transaction->session]));
+            }
+            return redirect(route('transaction.fees.failpay', array("id" => $transaction->id)));
+        }
+//        return $request;
+        if($request->statuscode){
+            $found = 0;
+            if($request->orderId){
+                $trans = Transaction::where(["transaction_code"=>$request->orderId])->first();
+            }else if($request->RRR){
+                $trans = Transaction::where(["invoice_number"=>str_replace("_","",$request->RRR)])->first();
+            }
+
+            if($trans){
+                $trans->verify();
+                return redirect(route('fees.session',$trans->session));//fees.index
+
+            }
+
+        }
+        return redirect(route('transaction.fees.failpay', array("id" => 1)));
+    }
+
+    public function generateAccRRR($transactionid) {
+        try{
+            $user = Auth::user();
+            $biodata = $user->biodata();
+            $trans = Transaction::where("id","=",$transactionid)->first();
+            $student=$trans->student_id;
+            /* //$biodatarec = StudentBiodata::where("studentid", Auth::user()->id)->get();
+             $transaction = Transaction::findOrFail($transactionid);
+             $responseurl = url("transaction/accommodation/verify_rrr");
+             /*$concatString = Transaction::MERCHANTID . Transaction::SERVICETYPEID . $transaction->transaction_code . $transaction->transaction_amount . $responseurl . Transaction::APIKEY;
+             $hash = hash('sha512', $concatString);*/
+            //$concatString = Transaction::MERCHANTID . Transaction::SERVICETYPEID . $transaction->transaction_code . intval($transaction->transaction_amount).Transaction::APIKEY;
+            //$hash = hash('sha512', $concatString);
+
+            if( $trans->invoice_number==""){
+
+                $mert =  Transaction::MERCHANTID;
+                $api_key =  Transaction::APIKEY;
+                $responseurl="https://spgs.abu.edu.ng/portal/transaction/fees/response";$hash="";
+                $concatString = Transaction::MERCHANTID . Transaction::SERVICETYPEID . $trans->transaction_code . intval($trans->transaction_amount).Transaction::APIKEY;
+                $hash = hash('sha512', $concatString);
+                $data = [
+                    "serviceTypeId"=>Transaction::SERVICETYPEID,
+                    "amount"=>intval($trans->transaction_amount),
+                    "payerName"=>$user->getFullName(),
+                    "description"=>"ABU Zaria School Fees",
+                    "payerEmail"=>$biodata->email,
+                    "payerPhone"=>$biodata->gsm,
+                    "orderId"=>$trans->transaction_code
+                ];
+                $data_string = json_encode($data);
+                $ch = curl_init("https://remitademo.net/remita/exapp/api/v1/send/api/echannelsvc/merchant/api/paymentinit");
+                curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
+                curl_setopt($ch, CURLOPT_POSTFIELDS, $data_string);
+                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+//            curl_setopt($ch, CURLOPT_HEADER, true);
+                curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+                    "Authorization: remitaConsumerKey=$mert,remitaConsumerToken=$hash",
+                    'Content-Type: application/json',
+                    'Content-Length: ' . strlen($data_string)
+                ));
+                $response = curl_exec($ch);
+                curl_close($ch);
+//            foreach ($response as )
+                $response = substr($response,7);
+                $response = substr($response,0,-1);
+                $response = json_decode($response);
+//            return($response->statuscode);
+                if($response->statuscode=="025"){
+                    $trans->invoice_number = $response->RRR;
+                    $trans->save();
+                    return true;
+                }else{
+                    return false;
+                }
+
+
+            }
+        }catch (\Exception $e){
+            return false;
+        }
+    }
+
+    public function verifyAccRRR(Request $request) {
+        $orderid = $request->orderID;
+        $transaction = Transaction::where("transaction_code", $orderid)->first();
+        $response = $transaction->verify();
+
+        if ($transaction->payment_status) {
+            return redirect(route('transaction.accommodation.pay', array("id" => $transaction->student_id)));
+        }
+        return redirect(route('transaction.accommodation.failpay', array("id" => $transaction->student_id)));
+    }
+
+    public function remitaAccommodationWebHook() {
+        $json = file_get_contents('php://input');
+        $arr = json_decode($json, true);
+        try {
+            if ($arr != null) {
+                foreach ($arr as $key => $value) {
+                    $orderRef = $value['orderRef'];
+                    $this->commitAccommodationTransaction($orderRef);
+                }
+                http_response_code(200);
+                exit('OK');
+            }
+        } catch (Exception $e) {
+            exit('Not OK');
+        }
+    }
+
+    public function remitaFeesWebHook() {
+        $json = file_get_contents('php://input');
+        $arr = json_decode($json, true);
+        try {
+            if ($arr != null) {
+                foreach ($arr as $key => $value) {
+                    $orderRef = $value['orderRef'];
+                    $this->commitFeesTransaction($orderRef);
+                }
+                http_response_code(200);
+                exit('OK');
+            }
+        } catch (Exception $e) {
+            exit('Not OK');
+        }
+    }
+
+    public function response(Request $request) {
+        $transaction = Transaction::where(["invoice_number" => $request->RRR])->first();
+        if ($request->statuscode == "00" || $request->statuscode == "01" || $request->statuscode == "027" && $transaction->paymentstatus != "Paid") {
+            $transaction->paymentstatus = "Paid";
+            $transaction->branchid = 999;
+            $transaction->save();
+            $student = Student::find($transaction->student_id);
+            $transxns = DB::table("transactions")->selectRaw("transactions.id,studentid,SUM(`transamount`) AS amount_paid,matricnumber,transactions.session,amount AS amount_payable,((SUM(`transamount`)/amount)*100) AS percentage")
+                            ->join("students", "students.id", "=", "transactions.studentid")
+                            ->join("programme_fees", "programme_fees.programme_id", "=", "students.programme_id")
+                            ->where(["transactions.session" => $transaction->session, "paymentstatus" => "Paid", "code" => "REG", "studentid" => $student->id])->groupBy(["studentid", "id", "transactions.session", "amount"])->first();
+            $paymentlogs = PaymentLog::where(["studentid" => $transaction->studentid, "session" => $transaction->session])->get();
+            if (count($paymentlogs) == 0 && $transxns) {
+                $fff = $student->sessionFees($transaction->session)["fees"];
+                PaymentLog::where(["session" => $transaction->session, "studentid" => $student->id])->delete();
+                foreach ($fff as $items) {
+                    $paymentlog = new PaymentLog();
+                    $paymentlog->student_id = $transaction->student_id;
+                    $paymentlog->session = $transaction->session;
+                    $paymentlog->feeitemid = $items->feeid;
+                    $paymentlog->percentage = $transxns->percentage;
+                    $paymentlog->amount = ($transxns->percentage / 100) * $items->amount;
+                    $paymentlog->payment_status = 1;
+                    $paymentlog->save();
+                }
+            }
+            return redirect(route('fees.session', [$transaction->session]));
+        }
+        return view("pages.student.errors.paymenterror");
+    }
+
+    public function payFees(Request $request, $id = NULL) {
+
+        $transaction = Transaction::find($id);
+//        if (!isset($transaction->rrr)) {
+//            return redirect(route('transaction.accommodation.generaterrr', array('transactionid' => $transaction->id)));
+//        }
+        $responseurl = "https://spgs.abu.edu.ng/portal/transaction/fees/response";
+        $concatString = Transaction::MERCHANTID . $transaction->invoice_number . Transaction::APIKEY;
+        $hash = hash('sha512', $concatString);
+        return view("pages.student.transaction.fees.pay", compact("transaction", "responseurl", "hash", "amount"));
+    }
+
+    public function payAccommodation(Request $request, $id = NULL) {
+        $student = null;
+        $reservation = null;
+        $transaction = null;
+        if ($id != null) {
+            $reservation = Reservation::findOrFail($id);
+            $student = $reservation->student;
+        }
+        if (!$student) {
+            $student = Auth::user();
+        }
+
+        if (!in_array(AccommodationController::checkEligibility($student, ((Auth::user() instanceof Student) ? (false) : (true))), ['reserved', 'paid', 'claimed', 'waived'])) {
+            return redirect(route('accommodation.index'));
+        }
+        if (AccommodationController::checkEligibility($student, ((Auth::user() instanceof Student) ? (false) : (true))) == 'waived') {
+            $reservation = Reservation::findOrFail($id);
+            return view("pages.staff.accommodation.transaction.waivedtransactionpage", array("reservation" => $reservation, "user" => $student));
+        }
+        $orderid = null;
+        if ($request->has('orderID')) {//Coming From Remita
+            $orderid = $request->query('orderID');
+        }
+
+        if (null !== $orderid) {//Coming from Remita
+            $this->commitAccommodationTransaction($orderid);
+            $trans = Transaction::where([["transaction_code", $orderid], ['code', 'ACC']])->first();
+            $id = $trans->student_id;
+            $reservation = Reservation::findOrFail($id);
+        } else {
+            //Fetch all transactions related to this reservation and verify from Remita
+            $transactions = Transaction::where([["student_id", $reservation->id], ['code', 'ACC'], ['session', $reservation->session]])->orderBy("updated_at", "ASC")->get();
+
+            foreach ($transactions as $tran) {//For each transaction verify payment from remita and update our local records
+                if (isset($tran->invoice_number) && $tran->invoice_number != "") {
+                    $this->commitAccommodationTransaction($tran->transaction_code);
+                }
+            }
+        }
+        //in case new transaction is created in the process of verification from remita
+        $transactions = Transaction::where([["student_id", $reservation->id], ['code', 'ACC'], ['session', $reservation->session]])->orderBy("updated_at", "ASC")->get();
+        FeeManager::generateTransactionCode($reservation->id, "ACC", $reservation->session, "UA");
+        if (!$transaction) {
+            if ($reservation->isPaid()) {
+                $transaction = Transaction::where([["student_id", $reservation->id], ["code", "ACC"], ["session", $reservation->session]])->orderBy("updated_at", "DESC")->first();
+                $transcode = $transaction->transaction_code;
+            } else {
+                $transcode = FeeManager::generateTransactionCode($reservation->id, "ACC", $reservation->session, "UA");
+                $transaction = Transaction::where('transaction_code', $transcode)->first();
+            }
+        } else {
+            $transcode = $transaction->transaction_code;
+        }
+
+//        return $transaction;
+        if ( Auth::user() instanceof Student) {
+//            $this->generateAccRRR($transaction->id);
+            $biodata = $student->biodata();
+            if ($transaction->invoice_number == "") {
+
+                try{
+                    $mert = Transaction::MERCHANTID;
+                    $api_key = Transaction::APIKEY;
+                    $responseurl = "https://spgs.abu.edu.ng/portal/transaction/fees/response";
+                    $hash = "";
+                    $concatString = Transaction::MERCHANTID . Transaction::ACCSERVICETYPEID . $transaction->transaction_code . intval($transaction->transaction_amount) . Transaction::APIKEY;
+                    $hash = hash('sha512', $concatString);
+                    $data = [
+                        "serviceTypeId" => Transaction::ACCSERVICETYPEID,
+                        "amount" => intval($transaction->transaction_amount),
+                        "payerName" => $student->getFullName(),
+                        "description" => "Accommodation Charges",
+                        "payerEmail" => $biodata->email,
+                        "payerPhone" => $biodata->gsm,
+                        "orderId" => $transaction->transaction_code,
+                        "customFields" => [
+                            ["name" => "Matric No", "value" => $student->matric_number, "type" => "All"],
+                            ["name" => "Session", "value" => $transaction->session, "type" => "All"],
+                            ["name" => "Transaction Code", "value" => $transaction->transaction_code, "type" => "All"],
+                        ]
+                    ];
+                    $data_string = json_encode($data);
+                    $ch = curl_init("https://login.remita.net/remita/exapp/api/v1/send/api/echannelsvc/merchant/api/paymentinit");
+                    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
+                    curl_setopt($ch, CURLOPT_POSTFIELDS, $data_string);
+                    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                    curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+                        "Authorization: remitaConsumerKey=$mert,remitaConsumerToken=$hash",
+                        'Content-Type: application/json',
+                        'Content-Length: ' . strlen($data_string)
+                    ));
+                    $response = curl_exec($ch);
+                    curl_close($ch);
+                    $response = substr($response, 7);
+                    $response = substr($response, 0, -1);
+                    $response = json_decode($response);
+                    if ($response->statuscode == "025") {
+                        $transaction->invoice_number = $response->RRR;
+                        $transaction->save();
+                    } else {
+                        $message = "Failed to generate RRR please try again later.";
+                    }
+                }catch(\Exception $e){
+                    $message = "Failed to generate RRR please try again later.";
+                }
+
+            }
+        }
+        $responseurl = route("transaction.accommodation.pay");
+        $concatString = Transaction::MERCHANTID . $transaction->invoice_number . Transaction::APIKEY;
+        $hash = hash('sha512', $concatString);
+
+        if (Auth::user() instanceof Student) {
+            return view("pages.student.transaction.accommodation.transactionpage", array("reservation" => $reservation, "user" => $student, "responseurl" => $responseurl, "hash" => $hash, "transaction" => $transaction, "transactions" => $transactions));
+        } else {
+            return view("pages.staff.accommodation.transaction.transactionpage", array("reservation" => $reservation, "user" => $student, "responseurl" => $responseurl, "hash" => $hash, "transaction" => $transaction, "transactions" => $transactions));
+        }
+    }
+
+    /**
+     * Pay for accommodation applied.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function failAccPay(Request $request, $id) {
+        $reservation = Reservation::findOrFail($id);
+        return view("pages.student.transaction.accommodation.rrrfail", array("reservation" => $reservation, "user" => Auth::user()));
+    }
+
+    public function failFeesPay(Request $request, $id) {
+
+        $reservation = Transaction::findOrFail($id);
+        return view("pages.student.transaction.accommodation.rrrfail", array("reservation" => $reservation, "user" => Auth::user()));
+    }
+
+    private function commitFeesTransaction($transcode) {
+        $transaction = Transaction::where("transaction_code", $transcode)->first();
+        if (null === $transaction) {//if transaction does not exist
+            return;
+        }
+        $id = $transaction->student_id;
+
+        //verify transaction from remita and take necessary action
+        $response = $transaction->remita_transaction_details();
+        $response_code = $response['status'];
+        $rrr = $response['RRR'];
+        $response_reason = $response['message'];
+        $orderId = $response['orderId'];
+        $datepaid = isset($response['transactiontime']) ? (new \DateTime($response['transactiontime'])) : (null);
+
+        if ($response['status'] == '00' || $response['status'] == '01') {
+            $transaction->paymentstatus = "Paid";
+            $transaction->transamount = $response['amount'];
+            $transaction->updated_at = $datepaid;
+            $transaction->branchid = 999;
+            $transaction->save();
+            $fees = Auth::user()->sessionFees($transaction->session);
+            if ($fees["total"] < $fees["amountpaid"]) {
+                $newTransaction = FeeManager::generateTransactionCode(Auth::id(), "REG", $transaction->session, "UG");
+                $transaction = $newTransaction;
+            }
+        }
+    }
+
+    public function waivePayment(Request $request, $reservationid) {
+        if (Auth::user() instanceof Student) {
+            throw new \InvalidArgumentException("Invalid Operation!");
+        }
+        $reservation = Reservation::findOrFail($reservationid);
+        $student = $reservation->student;
+        if (!in_array(AccommodationController::checkEligibility($student, true), ['reserved'])) {
+            return redirect(route('accommodation.admin.backendreservation', ['student_id' => $student->id]));
+        }
+
+        if (AccommodationController::checkEligibility($student, true) == 'waived') {
+            return redirect(route('accommodation.admin.backendreservation', ['student_id' => $student->id]));
+        }
+        //$f = $reservation->getFee();
+        //var_dump($f); exit();
+        if ($reservation->getAmountPaid() < $reservation->getFee()) {
+            $newTransaction = FeeManager::generateTransactionCode($reservation->id, "ACC", $reservation->session, "UA");
+        }
+        $reservation->waiveReservation();
+
+        return redirect(route('accommodation.admin.backendreservation', ['studentid' => $student->id]));
+    }
+
+    private function commitAccommodationTransaction($transcode) {
+        $transaction = Transaction::where("transaction_code", $transcode)->first();
+        $transaction->verify();
+    }
+
+    public function commitFormTransaction2($transcode) {
+        $transaction = \App\Models\Transaction::where("transaction_code", $transcode)->first();
+        $id = $transaction->student_id;
+        $candform = Student::findorfail($id);
+        $output = [];
+        $session = $student->sessionFees($transaction->session);
+
+        //verify transaction
+        $response = $transaction->remita_transaction_details();
+        $response_code = isset($response['status']) ? $response['status'] : "";
+        $rrr = isset($response['RRR']) ? $response['RRR'] : '';
+        $response_reason = isset($response['message']) ? $response['message'] : "";
+        $orderId = isset($response['orderId']) ? $response['orderId'] : "";
+        $datepaid = isset($response['transactiontime']) ? (new \DateTime($response['transactiontime'])) : (null);
+        if ($response['status'] == '00' || $response['status'] == '01') {
+            $transaction->payment_status = "Paid";
+            $transaction->transaction_amount = $response['amount'];
+            $transaction->updated_at = $datepaid;
+            $transaction->branch_id = 999;
+            $transaction->save();
+
+            if ($candform->getAmountPaid() < $candform->formsetting->getFormPrice() && !$candform->isPaid()) {
+                $newTransaction = \App\Models\FeeManager::generateTransactionCode($candform->id, "FRM", $candform->formsetting->session, "PG");
+                $output = ["code" => $transaction->transcode, "rrr" => $transaction->rrr, "status" => "PAID-PART", "newcode" => $newTransaction->transcode, "id" => $transaction->id];
+                $transaction = $newTransaction;
+            } else {
+                $candform->paymentstatus = "Paid";
+                $output = ["code" => $transaction->transaction_code, "rrr" => $transaction->rrr, "status" => "PAID", "id" => $transaction->id];
+            }
+            $candform->save();
+            //$transaction->save();
+        } else {
+            $output = ["code" => $transaction->transaction_code, "rrr" => $transaction->rrr, "status" => "NOT-PAID", "id" => $transaction->id];
+        }
+        return $output;
+    }
+
+    public function test(Request $request)
+    {
+
+        $session = $request->input('session');
+        $progLvls = Programme::join("levels",function($join){
+            $join->on("programmes.programme_type_id","=","levels.programme_type_id");
+        })->select(["levels.id AS level_id","programmes.id AS programme_id"])->get();
+        $countArrs = [];
+
+        foreach($progLvls as $progLvl){
+            // ['session'=>$session,'session_regs.programme_id'=>$progLvl->programme_id,'level_id'=>$progLvl->level_id];
+            $student1 = Student::join("session_regs","students.id","=","session_regs.student_id")->where("students.religion","I")->where(['session'=>$session,'session_regs.programme_id'=>$progLvl->programme_id,'level_id'=>$progLvl->level_id])->select('students.*')->first();
+            $student2 = Student::join("session_regs","students.id","=","session_regs.student_id")->where("students.religion","C")->where(['session'=>$session,'session_regs.programme_id'=>$progLvl->programme_id,'level_id'=>$progLvl->level_id])->select('students.*')->first();
+            if($student1){
+                $student1->recordFees();
+                $countArrs[]= $student1->id;
+            }
+            if($student2){
+                $student2->recordFees();
+                $countArrs[]= $student2->id;
+            }
+        }
+
+        return $countArrs;
+        // if($request->mode=="student_fees"){
+        //     $student = Student::where("matric_number",$request->matric)->first();
+        //     $feeman = new FeeManager();
+        //     return $student->currentSession();
+        //     return $feeman->computeFee($student,$request->session);
+        // }
+        // $trans = Transaction::find($request->id);
+        // $schl = new SchoolCollection();
+        // return $schl->checkStatus($trans);
+
+    }
+
+}

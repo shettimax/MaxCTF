@@ -1,0 +1,26 @@
+<?php
+
+namespace App\Http\Middleware;
+
+use Closure;
+use Illuminate\Support\Facades\Auth;
+
+class CheckAge
+{
+    /**
+     * Handle an incoming request.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \Closure  $next
+     * @return mixed
+     */
+    public function handle($request, Closure $next)
+    {
+
+        $candidate = Auth::user();
+        if (strpos($candidate->email,"@")===false || !$candidate->nin ) {
+            return redirect()->route("candidate.fill.email");
+        }
+        return $next($request);
+    }
+}

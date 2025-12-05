@@ -1,0 +1,30 @@
+<!--  begin delete Modal -->
+<div id="deleteSundry" class="modal fade" role="dialog">
+    <div class="modal-dialog">
+        <!-- Modal content-->
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Delete Student Sundry Transaction details</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+
+            <form id="deleteFormID" action="{{route('student.sundrytrans.destroy')}}" method="post">
+                @csrf
+                <input type="hidden" id="delestudentSundry"  name="transaction_code" />
+                <div class="modal-body" >
+                    <p style="color: #0a0a0a">Are you sure you want to <strong>Delete</strong> Sundry Details ?</p>
+
+                </div>
+                <div class="modal-footer" >
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Delete record</button>
+                </div>
+            </form>
+
+        </div>
+
+    </div>
+</div>
+<!--  end delete Modal -->

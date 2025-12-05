@@ -1,0 +1,1561 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Http\HandShake\Portal;
+use App\Models\AllowOverStay;
+use App\Models\CandidateForm;
+use App\Models\Configuration;
+use App\Models\CourseRegistration;
+use App\Models\Discipline;
+use App\Models\AccommodationBlacklist;
+use App\Models\FeeManager;
+use App\Models\Level;
+use App\Models\ResitStudent;
+use App\Models\Lga;
+use App\Models\Programme;
+use App\Models\Publication;
+use App\Models\SessionReg;
+use App\Models\State;
+use App\Models\Student;
+use App\Models\StudentLevel;
+use App\Models\SundryTransaction;
+use App\Models\Transaction;
+use App\Services\ExternalFileService;
+use App\Services\FileStorageMigrationService;
+use Carbon\Carbon;
+use Endroid\QrCode\Color\Color;
+use Endroid\QrCode\Encoding\Encoding;
+use Endroid\QrCode\ErrorCorrectionLevel\ErrorCorrectionLevelLow;
+use Endroid\QrCode\QrCode;
+use Endroid\QrCode\RoundBlockSizeMode\RoundBlockSizeModeMargin;
+use Endroid\QrCode\Writer\PngWriter;
+use Excel;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Response;
+use setasign\Fpdi\Fpdi;
+use Yajra\DataTables\Facades\DataTables;
+
+;;;;;;;;;;;;;;;
+
+class StudentController extends Controller
+{
+    protected $externalFileService;
+    protected FileStorageMigrationService $migrationService;
+
+    public function __construct(ExternalFileService $externalFileService, FileStorageMigrationService $migrationService)
+    {
+        $this->middleware(['auth:staff', 'mmode']);
+        $this->externalFileService = $externalFileService;
+        $this->migrationService = $migrationService;
+    }
+
+    /**
+     * Display a listing of the resource.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function search()
+    {
+        //
+        $user = Auth::user();
+        $permission = "student.search";
+        if (!$this->access($user, $permission))
+            return view("pages.errors.nopermission", array("message" => "You have no permission to view this page"));
+
+        return view("pages.staff.student.search.index");
+    }
+
+    /**
+     * Display a listing of the resource.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function admissionLetter(Request $request)
+    {
+        //
+        $user = Auth::user();
+        $permission = "student.admission.print";
+        $students = Student::where('entry_session', ">=", 2018)
+            ->where('mode_of_entry', 'PG')
+            ->leftJoin('student_admission_collections', 'student_admission_collections.student_id', '=', 'students.id')
+            ->whereNull('student_admission_collections.id')
+            ->whereRaw("LENGTH(students.matric_number) = 11") // Check length
+            ->whereRaw("UPPER( SUBSTRING(students.matric_number, 1, 1) )= 'P'") // Check first character
+            ->whereRaw("SUBSTRING(students.matric_number, 2, 2) REGEXP '^[0-9]{2}$'") // Check next two numbers
+            ->whereRaw("SUBSTRING(students.matric_number, 4, 4) REGEXP '^[a-zA-Z]{4}$'") // Check next four letters
+            ->whereRaw("SUBSTRING(students.matric_number, 8, 4) REGEXP '^[9|8|7][0-9]{3}$'") // Check next four numbers starting with 9, 8, or 7
+            ->select(["students.*", "student_admission_collections.status AS print_status"])
+            ->get();
+        if (!$this->access($user, $permission))
+            return view("pages.errors.nopermission", array("message" => "You have no permission to view this page"));
+
+        return view("pages.staff.student.admission.letter", compact('students', 'user'));
+    }
+
+
+    public function admissionLetterPdf(Request $request, $id)
+    {
+        $user = Auth::user();
+        $student = Student::find($id);
+        try {
+            $fileName = str_replace("/", "_", strtoupper($student->id));
+            $file = public_path() . '/candidatepics/' . $fileName . '.JPG';
+            $filePng = public_path() . '/candidatepics/' . $fileName . '.PNG';
+            $pathToFile = public_path() . "/studentpics/user.png";
+            $today = Carbon::today()->format();
+            $app_no = str_pad($student->matric_number, 10, " ", STR_PAD_LEFT);
+            $fullName = $student->getFullName();
+            $programme = $student->programme();
+            $admissionPath = "admissions/";
+            $config = $programme->getConfig(Configuration::ADMISSION_LETTER);
+            $secretary_sign = $config->signature;
+            $signature = $secretary_sign[0] == '/' ? substr($secretary_sign, 1) : $secretary_sign;;
+            $signatory = strtoupper($config->config);
+            $signatoryPst = $config->position;
+            $session = $student->entry_session;
+            $sessionName = "$session/" . ($session + 1);
+            $faculty = $student->faculty();
+            $facultyName = $faculty->name;
+            $progName = $programme->name;
+            $duration = ($programme->duration * 12) . " Months";
+            $admissionTemplate = $admissionPath . "stf_adm_pg.pdf";
+            $pdf = new Fpdi('P', 'mm', 'A4');
+            // add a page
+            $pdf->AddPage();
+            // set the source file
+            $pdf->setSourceFile($admissionTemplate);
+            // import page 1
+            $tplId = $pdf->importPage(1);
+            // use the imported page and place it at point 0,0 with a width of 210 mm
+            $pdf->useTemplate($tplId, 0, 0, 210, null, 1);
+            $pdf->SetFont('Courier', '', 11);
+            $pdf->SetTextColor(60, 60, 60);
+            $x = 60;
+            $y = 108;
+            $h = 0;
+            //student picture
+//            $pdf->Image($pathToFile, 176, 3, 22);
+            //serial number
+            $pdf->SetXY(172, 40);
+            $pdf->Write($h, $app_no);
+            $pdf->SetFont('Helvetica', '', 10);
+            $pdf->SetXY(30, 43);
+            $pdf->Write($h, $fullName);
+            $pdf->SetFont('Courier', 'BI', strlen($progName) > 30 ? 8 : 9);
+            $pdf->SetXY(37, 73);
+            $pdf->Write($h, $progName);
+            $pdf->SetFont('Courier', 'B', 9);
+            $pdf->SetXY(108, 84.8);
+            $pdf->Write($h, $sessionName);
+            $pdf->SetFont('Courier', 'B', 9);
+            $pdf->SetXY(96, 78.8);
+            $pdf->Write($h, $facultyName);
+            $pdf->SetXY(155, 79);
+            $pdf->Write($h, $duration);
+            $pdf->SetXY(76, 95.5);
+            $pdf->Write($h, $app_no);
+
+            $writer = new PngWriter();
+            // Create QR code
+            $qrCode = QrCode::create(trim($app_no))
+                ->setEncoding(new Encoding('UTF-8'))
+                ->setErrorCorrectionLevel(new ErrorCorrectionLevelLow())
+                ->setSize(300)
+                ->setRoundBlockSizeMode(new RoundBlockSizeModeMargin())
+                ->setForegroundColor(new Color(0, 136, 34, 0));
+            $output_file = 'candidate_noa/' . trim($app_no) . '.png';
+            $result = $writer->write($qrCode);
+            $dataUri = $result->getDataUri();
+            $result->saveToFile($output_file);
+            $base64 = explode(",", $dataUri);
+            $encodedImg = $base64[1];
+            $pdf->Image($output_file, 169, 198, 25);
+            $pdf->Image($signature, 51, 197, 26);
+            $pdf->SetFont('Courier', 'B', 12);
+            $pdf->SetXY(42, 214);
+            $pdf->Write($h, $signatory);
+            $pdf->SetFont('Courier', '', 12);
+            $pdf->SetXY(42, 221);
+            $pdf->Write($h, $signatoryPst);
+
+            // use the imported page and place it at point 0,0 with a width of 210 mm
+//            $pdf->useTemplate($tplId, 0, 0, 210, null, 1);
+            $pdf->Output();
+        } catch (\Exception $exception) {
+            return $exception->getMessage();
+        }
+    }
+
+    /**
+     * Show the form for creating a new resource.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function changeMatric(Request $request)
+    {
+        //
+        try {
+            $student = Student::find(decrypt($request->student_id));
+            if ($student) {
+                $d = $student->generateMatric();
+                if ($d) {
+                    return redirect(route("student.search.view", [$student->matric_number]))->withErrors(["message" => "Matric Re-generated successfully"]);
+                }
+                return redirect(route("student.search.view", [$student->matric_number]))->withErrors(["message" => "Failed to Re-generated Matric successfully"]);
+            }
+
+            return back()->withErrors(["message" => "Invalid Student"]);
+        } catch (\Exception $e) {
+            return $e->getMessage();
+        }
+
+
+    }
+
+    /**
+     * Store a newly created resource in storage.
+     *
+     * @param \Illuminate\Http\Request $request
+     * @return \Illuminate\Http\Response
+     */
+    public function store(Request $request)
+    {
+        //
+    }
+
+    /**
+     * Display the specified resource.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function show(Request $request, $matric_number)
+    {
+        //
+        $user = Auth::user();
+        $permission = "student.view";
+        $matric_number = str_replace('-', '/', $matric_number);
+        if (!$this->access($user, $permission))
+            return view("pages.errors.nopermission", array("message" => "You have no permission to do this operation"));
+
+        $student = Student::where("matric_number", "=", $matric_number)->first();
+
+
+        if (!$user->canAccess($permission, $student))
+            return view("pages.errors.noscope", ["message" => "This student is not in your scope."]);
+
+        $student = Student::where(["matric_number" => $matric_number])->first();
+        $blackLists = $student->accommodationBlacklist();
+        return view("pages.staff.student.search.view", compact("student", "user","blackLists"));
+    }
+
+    public function blacklist(Request $request,){
+        // return $request;
+        $user = Auth::user();
+        $permission = "staff.student.accommodation.blacklist";
+        if (!$this->access($user, $permission))
+            return view("pages.errors.nopermission", array("message" => "You have no permission to do this operation"));
+
+        $student_id = decrypt($request->student_id);
+
+        $student = Student::find($student_id);
+
+        if (!$user->canAccess($permission, $student))
+            return view("pages.errors.noscope", ["message" => "This student is not in your scope."]);
+
+        $blacklist = new AccommodationBlacklist();
+        $blacklist->student_id = $student->id;
+        $blacklist->matric_number = $student->matric_number;
+        $blacklist->type = $request->type;
+        $blacklist->start_session = $request->start_session;
+        $blacklist->start_semester = $request->start_semester;
+        $blacklist->end_session = $request->type=="Forever"?"Never":$request->end_session;
+        $blacklist->end_semester = $request->type=="Forever"?"Never":$request->end_semester;
+        $blacklist->remark = $request->remark;
+        $blacklist->message_to_student = $request->message_to_student?$request->message_to_student:"";
+        $blacklist->actors = json_encode([["username"=>$user->username,"user_id"=>$user->id,"action"=>"-blacklisting","boss"=>$student->id]]);
+        $blacklist->save();
+
+
+         session()->flash('success', 'Students Blacklisted');
+
+        return back();
+
+    }
+
+    /**
+     * Show the form for editing the specified resource.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function edit(Student $student)
+    {
+        //
+    }
+
+    /**
+     * Update the specified resource in storage.
+     *
+     * @param \Illuminate\Http\Request $request
+     * @return \Illuminate\Http\Response
+     */
+    public function updateStudentRecord(Request $request)
+    {
+
+        try {
+
+            $permission = "student.edit";
+            $user = Auth::user();
+            if (!$this->access($user, $permission))
+                return response()->json(["status" => 401, "message" => "You have no permission to do this operation"]);
+
+            $student = Student::find(decrypt($request->student_id));
+
+            if (!$user->canAccess($permission, $student)) {
+                return response()->json(["status" => 401, "message" => "This student is not in your scope."]);
+            }
+            if ($student) {
+
+                // $stud = new Student();
+                $student->matric_number = $request->matric_number;
+                $student->application_number = $request->application_number;
+                $student->jamb_number = $request->jamb_number;
+                $student->programme_id = $request->programme;
+                $student->firstname = $request->firstname;
+                $student->surname = $request->surname;
+                $student->other_names = $request->other_names;
+                $student->gender = $request->gender;
+                $student->dob = $request->dob;
+                $student->lga_id = $request->lgaid;
+                $student->residency = $request->residency;
+                $student->matric_gen = $request->matric_gen;
+                $student->status = $request->status;
+                $student->country_id = $request->countryid;
+                $student->enabled = $request->enabled;
+                $student->entry_level_id = $request->entrylevel;
+                $student->entry_session = $request->entrysession;
+                $student->mode_of_entry = $request->mode;
+                $student->save();
+            }
+
+
+            return response()->json(["status" => 1, "message" => "Student record successfully updated.", "matric_number" => $student->matric_number]);
+
+        } catch (\Exception $e) {
+            $message = $e->getMessage();
+            return response()->json(["status" => 0, "message" => "Something went horribly wrong.(" . $message . ")."]);;
+        }
+
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     *
+     * @param \App\Models\Student $student
+     * @return \Illuminate\Http\Response
+     */
+    public function deleteSessReg(Request $request)
+    {
+        //
+//        return $request;
+        $sessReg = SessionReg::find($request->id);
+        $student = Student::find($sessReg->student_id);
+        $hasRegCourse = count(CourseRegistration::getCourseRegisteredByStudent($student, $sessReg->session));
+        $hasPaidFees = $student->feesClearedForSession($sessReg->session);
+        if (!$hasPaidFees && !$hasRegCourse) {
+            $sessReg->delete();
+        }
+        return back();
+
+    }
+
+    public function searchStudent(Request $request)
+    {
+        try {
+            $permission = "student.search";
+            $user = Auth::user();
+            $by = "matric_number";
+            switch ($request->by) {
+                case 'surname':
+                    $by = "surname";
+                    break;
+                case 'firstName':
+                    $by = "firstname";
+                    break;
+                case 'phoneNumber':
+                    $by = "gsm";
+                    break;
+                case 'email':
+                    $by = "email";
+                    break;
+                case 'matric_number':
+                    $by = "matric_number";
+                    $pt = new Portal;
+                    if (str_starts_with(strtolower($request->detail), 'p')) {
+                        $pt->fetchPGStudent($request->detail);
+                    }
+                    break;
+            }
+//        return [$by,$request->detail];
+            $students = DB::table("students")
+                ->select(["students.id", 'students.application_number', 'students.matric_number', 'students.surname',
+                    'students.firstname', 'students.other_names', 'student_biodatas.gsm', 'student_biodatas.email',
+                    'programmes.name AS programme'])
+                ->leftJoin("student_biodatas", "student_biodatas.student_id", "=", "students.id")
+                ->leftJoin("programmes", "programmes.id", "=", "students.programme_id")
+                ->whereRaw("$by LIKE '%" . $request->detail . "%'");
+//            ->where(["students.entrysession"=>2019]);
+
+//        DataTables::
+            return DataTables::of($students)
+                ->addIndexColumn()
+                ->addColumn('operations', function ($student) use ($user, $permission) {
+                    $st = Student::find($student->id);
+                    if ($user->canAccess($permission, $st)) {
+                        return $st->matric_number;
+                    }
+                    return "";
+                })
+                ->make(true);
+        } catch (\Exception $e) {
+            return $e;
+        }
+    }
+
+    public function profilepicture($student_id)
+    {
+        //
+        $student = Student::find($student_id);
+        $matric = str_replace("/", "_", strtoupper($student->matric_number));
+        if (file_exists(public_path() . '/studentpics/' . $matric . '.JPG')) {
+            $pathToFile = public_path() . "/studentpics/" . $matric . ".JPG";
+        } else {
+            $pathToFile = public_path() . "/studentpics/user.png";
+        }
+
+        return response()->file($pathToFile);
+    }
+
+    public function signature($student_id)
+    {
+        $student = Student::find($student_id);
+        if (!$student) {
+            $pathToFile = public_path("studentsigns/user.png");
+            if (!file_exists($pathToFile)) {
+                $pathToFile = public_path("signature.png");
+            }
+            if (file_exists($pathToFile)) {
+                return response()->file($pathToFile);
+            }
+            abort(404, 'Signature not found');
+        }
+
+        $matricNumber = $student->matric_number;
+        $fileName = str_replace("/", "_", strtoupper($matricNumber)) . ".JPG";
+
+        // First, check if file exists locally
+        $localPath = public_path("studentsigns/{$fileName}");
+        if (file_exists($localPath)) {
+            return response()->file($localPath)
+                ->header('Cache-Control', 'public, max-age=3600')
+                ->header('Content-Type', 'image/jpeg');
+        }
+
+        // Get signature URL using migration service (with fallback)
+        try {
+            $signatureUrl = $this->migrationService->getStudentSignatureUrl($matricNumber);
+
+            // Only process if we got a valid URL
+            if (!empty($signatureUrl)) {
+                // If it's an external URL (different host), redirect to it
+                if (filter_var($signatureUrl, FILTER_VALIDATE_URL) && !str_contains($signatureUrl, request()->getHost())) {
+                    return redirect($signatureUrl);
+                }
+
+                // If migration service returned a local asset URL, try to extract and serve the file
+                // Asset URLs are like: http://domain/studentsigns/FILE.JPG or /studentsigns/FILE.JPG
+                if (filter_var($signatureUrl, FILTER_VALIDATE_URL) || str_starts_with($signatureUrl, '/')) {
+                    $parsedUrl = parse_url($signatureUrl);
+                    $path = isset($parsedUrl['path']) ? $parsedUrl['path'] : $signatureUrl;
+                    $path = ltrim($path, '/');
+                    $filePath = public_path($path);
+                    if (file_exists($filePath)) {
+                        $contentType = pathinfo($filePath, PATHINFO_EXTENSION) === 'png' ? 'image/png' : 'image/jpeg';
+                        return response()->file($filePath)
+                            ->header('Cache-Control', 'public, max-age=3600')
+                            ->header('Content-Type', $contentType);
+                    }
+                }
+            }
+        } catch (\Exception $e) {
+            // If migration service fails, continue to fallback
+            Log::warning('Error getting signature from migration service', [
+                'student_id' => $student_id,
+                'matric' => $matricNumber,
+                'error' => $e->getMessage()
+            ]);
+        }
+
+        // Check static.abu.edu.ng directly (same pattern as photos)
+        // Pattern: https://static.abu.edu.ng/uploads/student/signatures/{MATRIC}.JPG
+        // Same as photos: https://static.abu.edu.ng/uploads/student/photos/{MATRIC}.JPG
+        $staticUrl = "https://static.abu.edu.ng/uploads/student/signatures/{$fileName}";
+        // Redirect to static server - browser will handle the image load
+        return redirect($staticUrl);
+
+        // Get signature URL using migration service (with fallback)
+        // Note: This code below won't execute due to redirect above, but kept for reference
+        try {
+            $signatureUrl = $this->migrationService->getStudentSignatureUrl($matricNumber);
+
+            // Only process if we got a valid URL
+            if (!empty($signatureUrl)) {
+                // If it's an external URL (different host), redirect to it
+                if (filter_var($signatureUrl, FILTER_VALIDATE_URL) && !str_contains($signatureUrl, request()->getHost())) {
+                    return redirect($signatureUrl);
+                }
+
+                // If migration service returned a local asset URL, try to extract and serve the file
+                // Asset URLs are like: http://domain/studentsigns/FILE.JPG or /studentsigns/FILE.JPG
+                if (filter_var($signatureUrl, FILTER_VALIDATE_URL) || str_starts_with($signatureUrl, '/')) {
+                    $parsedUrl = parse_url($signatureUrl);
+                    $path = isset($parsedUrl['path']) ? $parsedUrl['path'] : $signatureUrl;
+                    $path = ltrim($path, '/');
+                    $filePath = public_path($path);
+                    if (file_exists($filePath)) {
+                        $contentType = pathinfo($filePath, PATHINFO_EXTENSION) === 'png' ? 'image/png' : 'image/jpeg';
+                        return response()->file($filePath)
+                            ->header('Cache-Control', 'public, max-age=3600')
+                            ->header('Content-Type', $contentType);
+                    }
+                }
+            }
+        } catch (\Exception $e) {
+            // If migration service fails, continue to fallback
+            Log::warning('Error getting signature from migration service', [
+                'student_id' => $student_id,
+                'matric' => $matricNumber,
+                'error' => $e->getMessage()
+            ]);
+        }
+
+        // Check for default signature image
+        $defaultPath = public_path("studentsigns/user.png");
+        if (file_exists($defaultPath)) {
+            return response()->file($defaultPath)
+                ->header('Cache-Control', 'public, max-age=3600')
+                ->header('Content-Type', 'image/png');
+        }
+
+        // Final fallback
+        $fallbackPath = public_path("signature.png");
+        if (file_exists($fallbackPath)) {
+            return response()->file($fallbackPath)
+                ->header('Cache-Control', 'public, max-age=3600')
+                ->header('Content-Type', 'image/png');
+        }
+
+        // If nothing exists, return a 1x1 transparent PNG
+        $transparentPng = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==');
+        return response($transparentPng, 200)
+            ->header('Content-Type', 'image/png')
+            ->header('Cache-Control', 'no-cache');
+    }
+
+    public function add_disciplinaryCase(Request $request)
+    {
+        try {
+            $permission = "student.search.disciplinaryadd";
+            $user = Auth::user();
+            if (!$this->access($user, $permission))
+                return response()->json(["status" => 401, "message" => "You have no permission to do this operation"]);
+
+            $student_id = decrypt($request->student_id);
+            $student = Student::find($student_id);
+
+
+            if (!$user->canAccess($permission, $student)) {
+                return response()->json(["status" => 401, "message" => "This student is not in your scope."]);
+            }
+            //return Route::currentRouteName();
+            $semester = $request->semester + ($request->duration % 2);
+            $semester = $semester % 2 == 0 ? 2 : 1;
+            $session = $request->input('session') + intval($request->duration / 2);
+
+            $discipline = new Discipline();
+            $discipline->student_id = $student->id;
+            $discipline->session = $request->input('session');
+            $discipline->semester = $request->semester;
+            $discipline->duration = $request->duration;
+            $discipline->reason = $request->reason;
+            $discipline->nature = $request->nature;
+            $discipline->end_session = $session;
+            $discipline->end_semester = $semester;
+            $discipline->save();
+            $pos = ["Zero", "First", "Second"];
+
+            return response()->json(["status" => 1, "message" => "Student disciplinary case added. This will expire {$pos[$semester]} Semester of $session/" . ($session + 1) . " session."]);
+
+
+        } catch (\Exception $e) {
+            $message = $e->getMessage();
+            return response()->json(["status" => 0, "message" => "Something went horribly wrong.(" . $message . ")."]);;
+        }
+    }
+
+    public function showChangePrograme($matric_number)
+    {
+        $student = Student::where(["matric_number" => $matric_number])->first();
+//        return $student;
+        return view("pages.staff.student.changeprogramme", compact('student'));
+    }
+
+    public function changeProgramme(Request $request)
+    {
+        return SessionReg::where(["student_id" => $request->studentid, "session" => $request->input('session')])
+            ->join("programmes", "session_regs.programme_id", "programmes.id")
+            ->join("departments", "departments.id", "programmes.department_id")
+            ->select(["session_regs.*", "departments.faculty_id", "departments.id as department_id"])
+            ->first();
+
+    }
+
+    public function add_changedProgramme(Request $request)
+    {
+        try {
+            $permission = "student.edit";
+            $user = Auth::user();
+            if (!$this->access($user, $permission))
+                return response()->json(["status" => 401, "message" => "You have no permission to do this operation"]);
+
+            $student_id = decrypt($request->student_id);
+            $student = Student::find($student_id);
+
+
+            if (!$user->canAccess($permission, $student)) {
+                return response()->json(["status" => 401, "message" => "This student is not in your scope."]);
+            }
+//            return $request;
+            $student->programme_id = $request->programme2;
+            $student->save();
+
+            $sReg = $student->sessionReg()->where(["session" => $request->input('session')])->first();
+
+            if ($sReg) {
+                $sReg->programme_id = $request->programme2;
+                $sReg->save();
+            }
+
+            if ($request->updateSessionRecord == "yes") {
+                $studnewprogramme = SessionReg::where(["student_id" => $student->id, "session" => $request->input('session')])->first();
+
+                if (!$studnewprogramme) {
+
+                    $studnewprogramme = new SessionReg();
+                    $studnewprogramme->student_id = $student->id;
+                }
+                $studnewprogramme->session = $request->input('newsession');
+                $studnewprogramme->matric_number = $request->matricno;
+                $studnewprogramme->programme_id = $request->programme2;
+                $studnewprogramme->level_id = $request->level;
+                $studnewprogramme->marital_status = $request->marital_status;
+                $studnewprogramme->graduation_status = $request->gradstatus;
+
+                $studnewprogramme->save();
+            }
+
+
+            return response()->json(["status" => 1, "message" => "The Student programme has been changed succesfully."]);
+
+
+        } catch (\Exception $e) {
+            $message = $e->getMessage();
+            return response()->json(["status" => 0, "message" => "Something went horribly wrong.(" . $message . ")."]);;
+        }
+    }
+
+    public function changePassword()
+    {
+        if (!$this->access(Auth::user(), "student.password.change"))
+            return view("pages.errors.nopermission");
+        return view("pages.staff.student.changepassword");
+    }
+
+    public function updatePassword(Request $request)
+    {
+        $this->validate($request, [
+            "matricnumber" => "required",
+            "password" => "required|min:3|confirmed"
+        ]);
+        $student = Student::where(['matric_number' => $request->matricnumber])->first();
+        if ($student) {
+            $student->password = bcrypt($request->password);
+            $student->save();
+            return redirect()->back()->withErrors(['message' => "<span><span><strong>Password Reset </strong></span><span> for {$request->matricnumber} to </span><br/><span><strong> {$request->password}</strong></span></span>"]);
+        }
+        return redirect()->back()->withInput(Input::all())->withErrors(["error" => "Invalid Matric Number"]);
+    }
+
+    public function studentUpload()
+    {
+        if (!$this->access(Auth::user(), "student.upload"))
+            return view("pages.errors.nopermission");
+        return view('pages.staff.student.uploadstudents');
+    }
+
+    public function waive(Request $request)
+    {
+        $user = Auth::user();
+        if (!$this->access($user, "student.fees.waive"))
+            return view("pages.errors.nopermission");
+        $student = Student::find($request->zxszada);
+        $session = $request->input("session");
+        $percentage = $request->input("perc");
+
+        if ($student->nextPayableSession() == $session) {
+            $fees = $student->sessionFees($session);
+            $total = $fees['total'];
+            $percentagePaid = $fees['percentage'];
+            if ($percentage + $percentagePaid <= 100) {
+                $amountToWaive = round($total * ($percentage / 100), -1);
+                $trnsCode = FeeManager::generateTransactionCode($student->id, "REG", $session, "PR", $amountToWaive,);
+                $transaction = Transaction::where('transaction_code', $trnsCode)->first();
+                $transaction->waived_by = $user->id;
+                $transaction->payment_date = now();
+                $transaction->branch_id = $request->p_no;
+                $transaction->payment_status = 'Waived';
+                $transaction->save();
+            }
+        }
+        return back();
+    }
+
+    public function uploadStudent()
+    {
+        try {
+            $file = request()->file('form_attachment');
+
+            // Upload Excel file to external server first
+            $fileName = 'student_upload_' . time() . '.' . $file->getClientOriginalExtension();
+            $excelPath = "excel/student_uploads/{$fileName}";
+
+            $uploadResult = $this->externalFileService->uploadWithRetry($file, $excelPath, [
+                'category' => 'student_excel_upload',
+                'uploaded_by' => Auth::id(),
+                'original_name' => $file->getClientOriginalName(),
+                'size' => $file->getSize(),
+                'mime_type' => $file->getMimeType()
+            ]);
+
+            if (!$uploadResult['success']) {
+                Log::error('Failed to upload Excel file to external server', [
+                    'uploaded_by' => Auth::id(),
+                    'error' => $uploadResult['error']
+                ]);
+                return redirect()->back()->with('error', 'Failed to upload Excel file: ' . $uploadResult['error']);
+            }
+
+            // Process Excel data
+            $excel = Excel::toCollection(null, $file);
+            $excel = $excel[0];
+            $students = [];
+            $i = 0;
+
+            foreach ($excel as $row) {
+                if ($i == 0) {
+                    $i++;
+                    continue;
+                }
+                $programme = Programme::whereRaw("name='{$row[7]}'")->first();
+                $level = Level::whereRaw("short_name='{$row[8]}'")->first();
+                $state = State::whereRaw("name='{$row[5]}'")->first();
+                $state = $state ? $state : State::find(1);
+                $lga = Lga::where(["name" => $row[6], "state_id" => $state->id])->first();
+                $lga = $lga ? $lga : Lga::where(["name" => $row[6]])->first();
+                $lga = $lga ? $lga : Lga::find(1);
+                $students [] = [
+                    "jamb_number" => $row[0],
+                    "matric_number" => $row[0],
+                    "surname" => $row[1],
+                    "firstname" => $row[2],
+                    "other_names" => $row[3],
+                    "gender" => $row[4],
+                    "lga_id" => $lga->id,
+                    "programme_id" => $programme->id,
+                    "entry_level_id" => $level->id,
+                    "entry_session" => $row[9],
+                    "mode_of_entry" => $row[10],
+                    "residency" => 1,
+                    "country_id" => 156,
+                    "application_number" => "",
+                    "degree_plan_id" => "",
+                    "dob" => "",
+                    "password" => $row[5],
+                    "matric_gen" => "no",
+                    "religion" => "",
+                    "christian_group" => "",
+                    "nin" => "",
+                    "remember_token" => "",
+                    "api_token" => "",
+                    "status" => "not cleared",
+                    "enabled" => "Yes",
+                    "wallet_number" => "",
+                ];
+            }
+
+            $save = Student::insertOrIgnore($students);
+
+            if ($save) {
+                Log::info('Students uploaded successfully', [
+                    'uploaded_by' => Auth::id(),
+                    'count' => count($students),
+                    'excel_file' => $excelPath,
+                    'external_id' => $uploadResult['external_id']
+                ]);
+
+                session()->flash('success', 'Students Successfully Uploaded');
+            }
+
+            return redirect()->back();
+
+        } catch (\Exception $e) {
+            Log::error('Exception during student upload', [
+                'uploaded_by' => Auth::id(),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return redirect()->back()->with('error', 'Upload failed: ' . $e->getMessage());
+        }
+    }
+
+    public function trnseferStd()
+    {
+        if (!$this->access(Auth::user(), "student.upload"))
+            return view("pages.errors.nopermission");
+        return view("pages.staff.student.uploadinterfaculty");
+    }
+
+    public function uploadTransferStudent()
+    {
+        try {
+            $file = request()->file('form_attachment');
+
+            // Upload Excel file to external server first
+            $fileName = 'transfer_student_upload_' . time() . '.' . $file->getClientOriginalExtension();
+            $excelPath = "excel/transfer_student_uploads/{$fileName}";
+
+            $uploadResult = $this->externalFileService->uploadWithRetry($file, $excelPath, [
+                'category' => 'transfer_student_excel_upload',
+                'uploaded_by' => Auth::id(),
+                'original_name' => $file->getClientOriginalName(),
+                'size' => $file->getSize(),
+                'mime_type' => $file->getMimeType()
+            ]);
+
+            if (!$uploadResult['success']) {
+                Log::error('Failed to upload transfer student Excel file to external server', [
+                    'uploaded_by' => Auth::id(),
+                    'error' => $uploadResult['error']
+                ]);
+                return redirect()->back()->with('error', 'Failed to upload Excel file: ' . $uploadResult['error']);
+            }
+
+            // Process Excel data
+            $excel = Excel::toCollection(null, $file);
+            $excel = $excel[0];
+            $students = [];
+            $i = 0;
+
+            foreach ($excel as $row) {
+                if ($i == 0) {
+                    $i++;
+                    continue;
+                }
+                $programme = Programme::whereRaw("name='{$row[2]}'")->first();
+                $level = Level::whereRaw("short_name='{$row[3]}'")->first();
+                $student_id = Student::whereRaw("matric_number='{$row[1]}'")->first();
+                $student1 = $row[1];
+                if ($student_id) {
+                    $save = Student::where("id", $student_id->id)->update(array(
+                        "application_number" => $row[0],
+                        "programme_id" => $programme->id,
+                        "matric_number" => $row[0],
+                        "entry_level_id" => $level->id,
+                        "entry_session" => $row[4],
+                        "matric_gen" => "no",
+                        "status" => "cleared",
+                        "enabled" => "Yes"
+                    ));
+                }
+                $i++;
+            }
+
+            Log::info('Transfer students processed successfully', [
+                'uploaded_by' => Auth::id(),
+                'excel_file' => $excelPath,
+                'external_id' => $uploadResult['external_id']
+            ]);
+
+            session()->flash('success', 'Transfer Students Successfully Processed');
+            return redirect()->back();
+
+        } catch (\Exception $e) {
+            Log::error('Exception during transfer student upload', [
+                'uploaded_by' => Auth::id(),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return redirect()->back()->with('error', 'Upload failed: ' . $e->getMessage());
+        }
+    }
+
+    public function searchpix()
+    {
+        if ($this->access(Auth::user(), "student.search.picture"))
+            // return view("pages.errors.nopermission");
+            return view('pages.staff.student.searchstudentpicture');
+    }
+
+    public function searchstudentpix(Request $request)
+    {
+        $matricnumber = $request->matricnumber;
+        $studentDatas = Student::where("matric_number", "=", $matricnumber)->first();
+        $studentid = $studentDatas->matric_number;
+
+        if (file_exists(public_path() . '/studentpics/' . $studentid . '.JPG')) {
+            $url = 'studentpics/' . $studentid . '.JPG';
+        } else {
+            $url = 'studentpics/user.png';
+        }
+
+        return view("pages.staff.student.searchstudentpicture", compact('studentDatas', 'url'));
+
+    }
+
+    public function destroyPhoto(Request $request)
+    {
+        $user = Auth::user();
+        $data = $request->stdmatricno;
+        $student = Student::where("matric_number", "=", $data)->first();
+        if (!$user->canAccess("student.search.picture", $student)) {
+            return redirect('', 403);
+        }
+        $stdmatricno = $student->matric_number;
+
+        $deletedFromExternal = false;
+        $errors = [];
+
+        // Delete from external file server
+        try {
+            $externalFileService = app(\App\Services\ExternalFileService::class);
+            if ($externalFileService->isConfigured()) {
+                if ($externalFileService->deleteStudentPhoto($stdmatricno)) {
+                    $deletedFromExternal = true;
+                    \Log::info("Student photo deleted from external server", ['matric_number' => $stdmatricno]);
+                } else {
+                    $errors[] = "Failed to delete photo from external server";
+                    \Log::warning("Failed to delete student photo from external server", ['matric_number' => $stdmatricno]);
+                }
+            } else {
+                \Log::warning("External file service not configured, skipping external deletion", ['matric_number' => $stdmatricno]);
+            }
+        } catch (\Exception $e) {
+            $errors[] = "Error deleting photo from external server: " . $e->getMessage();
+            \Log::error("Exception deleting student photo from external server", [
+                'matric_number' => $stdmatricno,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+        }
+
+        // Set appropriate success/error messages
+        if ($deletedFromExternal) {
+            if (empty($errors)) {
+                session()->flash('success', 'Student photo deleted successfully!');
+            } else {
+                session()->flash('success', 'Student photo deleted with some warnings: ' . implode(', ', $errors));
+            }
+        } else {
+            // Check if external service is configured
+            $externalFileService = app(\App\Services\ExternalFileService::class);
+            if (!$externalFileService->isConfigured()) {
+                session()->flash('error', 'External file service is not configured. Cannot delete photo.');
+            } else if (empty($errors)) {
+                session()->flash('error', 'Photo not found in external storage.');
+            } else {
+                session()->flash('error', 'Failed to delete photo: ' . implode(', ', $errors));
+            }
+        }
+
+        return redirect()->back();
+    }
+
+    public function searchsignaturepix()
+    {
+        if ($this->access(Auth::user(), "student.search.signature"))
+            return view('pages.staff.student.searchstudentsignature');
+    }
+
+    public function studentsignaturepix(Request $request)
+    {
+        $matricnumber = $request->matricnumber;
+        $studentDatas = Student::where("matric_number", "=", $matricnumber)->first();
+        $studentid = $studentDatas->matric_number;
+
+        if (file_exists(public_path() . '/studentsigns/' . $studentid . '.JPG')) {
+            $url = 'studentsigns/' . $studentid . '.JPG';
+        } else {
+            $url = 'studentsigns/user.png';
+        }
+
+        return view("pages.staff.student.searchstudentsignature", compact('studentDatas', 'url'));
+
+    }
+
+    public function destroySignaturePix(Request $request)
+    {
+        $user = Auth::user();
+        $data = $request->stdmatricno;
+        $student = Student::where("matric_number", "=", $data)->first();
+        if (!$user->canAccess("student.search.picture", $student)) {
+            return redirect('', 403);
+        }
+        $stdmatricno = $student->matric_number;
+
+        $image_path = public_path() . '/studentsigns/' . $stdmatricno . '.JPG';
+        if (file_exists($image_path)) {
+            unlink($image_path);
+
+            if ($stdmatricno) {
+                session()->flash('success', 'Student Signature deleted successfully!');
+
+            } else {
+                session()->flash('error', 'Something is wrong while deleting Signature!');
+            }
+        }
+        return redirect()->back();
+
+    }
+
+    public function searchSesRec()
+    {
+        return view('pages.staff.student.student_sessional_records');
+    }
+
+    public function searchSessionRec(Request $request)
+    {
+        $matricnumber = $request->matricnumber;
+        $studentDatas = SessionReg::where("matric_number", "=", $matricnumber)->first();
+//        $studentid = $studentDatas->matric_number;
+
+        return view("pages.staff.student.student_sessional_records", compact('studentDatas'));
+
+    }
+
+
+    public function fee(Request $request, $session, $matric_number)
+    {
+        $student = Student::where(['matric_number' => $matric_number])->first();
+        $records = $student->sessionFees($session);
+        $sessions = $student->payableSessions()->all();// show Oops invalid session if session not in list
+        $fees = $records["fees"];
+        $waived = $records["waived"];
+        $transactions = $records["transaction"];
+        $total = $records["total"];
+        $percentage = $records["percentage"];
+        $amountpaid = $records["amountpaid"];
+        $balance = $total - $amountpaid;
+        $biodata = $student->biodata();
+
+        return view("pages.student.fees.viewtransaction", compact("session", "fees", "waived", "transactions", "percentage", "balance", 'student'));
+    }
+
+    public function markSundryPaid(Request $request)
+    {
+        try {
+            $sundryTransaction = SundryTransaction::find($request->id);
+            $sundryTransaction->payment_status = 'Paid';
+            $sundryTransaction->transaction_amount = $request->transaction_amount;
+            $sundryTransaction->collected_by = Auth::user()->id;
+            $sundryTransaction->save();
+        } catch (\Exception $e) {
+        }
+
+        return back();
+    }
+
+    public function markSundryWaived(Request $request)
+    {
+        try {
+            $sundryTransaction = SundryTransaction::find($request->id);
+            $sundryTransaction->payment_status = 'Waived';
+            $sundryTransaction->waived_by = Auth::user()->id;
+            $sundryTransaction->save();
+        } catch (\Exception $e) {
+        }
+
+        return back();
+    }
+
+    public function markCollected(Student $student)
+    {
+        $publication = Publication::where(['student_id' => $student->id])->first();
+        if (is_null($publication))
+            $publication = new Publication();
+
+        if ($publication->epublication == 'Collected')
+            return back()->with('error', 'This Student has already collected his/her e-Publication on: ' . Carbon::parse($publication->created_at)->format('d M Y'));
+        else {
+            $publication->student_id = $student->id;
+            $publication->epublication = 'Collected';
+            $publication->session = $student->entry_session;
+            $publication->save();
+
+            return back()->with('success', 'This student\'s e-Publication status is marked collected successfully');
+        }
+    }
+
+    public function examsResult(Request $request)
+    {
+        return view('pages.staff.examslogic.examsresult');
+    }
+
+    public function uploadExamsResult(Request $request)
+    {
+
+        $excel = Excel::toCollection(null, request()->file('filename'));
+        $excel = $excel[0];// ;
+        $enrolmentInserted = false;
+        $enrolmentUpdated = false;
+        $cgpaUpdated = false;
+        $cgpaInserted = false;
+        foreach ($excel as $row) {
+            $student = Student::where("matric_number", "=", $row[0])->first();
+            $sess = explode("/", $row[2]);
+            $session = trim($sess[0]);
+            $semester = ($row[3] == 'First') ? 1 : 2;
+            $programme = Programme::find($row[19]);
+            $progtype = 2;//$programme->programmetype;
+
+            $result = DB::table('tblenrolment')->where([
+                ["matricnumber", "=", $row[0]],
+                ["coursecode", "=", $row[1]],
+                ["session", "=", $session],
+                ["semester", "=", $semester],
+            ])->first();
+
+            if ($result) {
+                $Updated = DB::table('tblenrolment')->where([
+                    ["matricnumber", "=", $row[0]],
+                    ["coursecode", "=", $row[1]],
+                    ["session", "=", $session],
+                    ["semester", "=", $semester],
+                ])
+                    ->update([
+                        "ca" => "",
+                        "exam" => "",
+                        "total" => $row[4],
+                        "grade" => $row[5],
+                        "point" => $row[6]
+                    ]);
+                if ($Updated > 0)
+                    $enrolmentUpdated = true;
+            } else {
+                $Inserted = DB::table('tblenrolment')->insertOrIgnore([
+                    "matricnumber" => $row[0],
+                    "coursecode" => $row[1],
+                    "session" => $session,
+                    "semester" => $semester,
+                    "ca" => "",
+                    "exam" => "",
+                    "total" => $row[4],
+                    "grade" => $row[5],
+                    "point" => $row[6]
+                ]);
+                if ($Inserted)
+                    $enrolmentInserted = true;
+            }
+
+            if ($enrolmentUpdated || $enrolmentInserted) {
+                $result = DB::table('student_levels')->where([
+                    ['student_id', $student->id],
+                    ['session', $session],
+                    ['semester', $semester]
+                ])->first();
+
+                if ($result) {
+                    $cUpdated = DB::table('student_levels')
+                        ->where([
+                            ['student_id', $student->id],
+                            ['session', $session],
+                            ['semester', $semester]
+                        ])
+                        ->update([
+                            "ptcue" => $row[13],
+                            "ptcur" => $row[14],
+                            "ptcp" => $row[15],
+                            "tcur" => $row[11],
+                            "tcue" => $row[10],
+                            "tcp" => $row[12],
+                            "gpa" => $row[16],
+                            "cgpa" => $row[17],
+                            "carry_over" => $row[9],
+                            "remark" => $row[8]
+                        ]);
+                    if ($cUpdated > 0)
+                        $cgpaUpdated = true;
+                } else {
+                    $lev = trim($row[7]) . " Level";
+                    if ($progtype->id == 2)
+                        $level = Level::where('name', $lev)->select('id')->first();
+                    else
+                        $level = Level::where('name', $row[7])->select('id')->first();
+                    $cInserted = DB::table('student_levels')->insertOrIgnore([
+                        "student_id" => $student->id,
+                        "session" => $session,
+                        "semester" => $semester,
+                        "level_id" => $level->id,
+                        "programme_id" => $row[19],
+                        "ptcue" => $row[13],
+                        "ptcur" => $row[14],
+                        "ptcp" => $row[15],
+                        "tcur" => $row[11],
+                        "tcue" => $row[10],
+                        "tcp" => $row[12],
+                        "gpa" => $row[16],
+                        "cgpa" => $row[17],
+                        "carry_over" => $row[9],
+                        "remark" => $row[8]
+                    ]);
+                    if ($cInserted)
+                        $cgpaInserted = true;
+                }
+            }
+        }
+
+        if ($cgpaUpdated || $cgpaInserted) {
+            session()->flash('success', 'Results Successfully Uploaded');
+        } else {
+            session()->flash('success', 'No update made');
+        }
+
+        return redirect()->back();
+
+    }
+
+
+    public function manageExamsResult(Request $request)
+    {
+        try {
+            $students = array();
+            if ($request->faculty) {
+                $facultyid = $request->query->get('faculty');
+                $departmentid = $request->query->get('department');
+                $programmetypeid = $request->query->get('progtype');
+                $programmeid = $request->query->get('programme');
+                $session = $request->query->get('session');
+                $semester = $request->query->get('semester');
+                $level = $request->query->get('level');
+
+                $arropts = [
+                    ['transactions.payment_status', "=", "Paid"],
+                    ['transactions.code', "=", "REG"],
+                ];
+
+                if ($facultyid != '%') {
+                    $arropts[] = ["faculties.id", "=", $facultyid];
+                }
+                if ($departmentid != '%') {
+                    $arropts[] = ["departments.id", "=", $departmentid];
+                }
+                if ($programmetypeid != '%') {
+                    $arropts[] = ["programme_types.id", "=", $programmetypeid];
+                }
+                if ($programmeid != '%') {
+                    $arropts[] = ["programmes.id", "=", $programmeid];
+                }
+                if ($level != '%') {
+                    $arropts[] = ["student_levels.level_id", "=", $level];
+                }
+                $arropts[] = ["student_levels.session", "=", $session];
+                $arropts[] = ["student_levels.semester", "=", $semester];
+
+                $students = DB::table("student_biodatas")
+                    ->leftjoin("students", "student_biodatas.student_id", "=", "students.id")
+                    ->leftjoin("student_levels", "students.id", "=", "student_levels.student_id")
+                    ->leftjoin("programmes", "students.programme_id", "=", "programmes.id")
+                    ->leftjoin("programme_types", "programmes.programme_type_id", "=", "programme_types.id")
+                    ->leftjoin("departments", "programmes.department_id", "=", "departments.id")
+                    ->leftjoin("faculties", "departments.faculty_id", "=", "faculties.id")
+                    ->leftJoin("transactions", "students.id", "=", "transactions.student_id")
+                    ->select([
+                        "students.id as id", "students.matric_number", "surname", "firstname", "other_names",
+                        "faculties.name as faculty", "departments.name as department", "programmes.name as programme", "result_status"
+                    ])
+                    ->groupBy('students.id')
+                    ->where($arropts)
+                    ->orderBy("faculties.name")
+                    ->orderBy("departments.name")
+                    ->orderBy("programme_types.prog_type_name")
+                    ->orderBy("programmes.name")
+                    ->orderBy("surname")
+                    ->get();
+
+                return view('pages.staff.examslogic.load_manageexamsresult_data', compact('students', 'session', 'semester'))->render();
+            }
+
+            return view('pages.staff.examslogic.manageexamsresult', compact('students'));
+        } catch (\Exception $e) {
+            return $e->getMessage() . '=====' . $e->getTraceAsString();
+        }
+    }
+
+    public function changeResultStatus(Request $request)
+    {
+        $user = Auth::user();
+        $session = $request->input('session');
+        $semester = $request->input('semester');
+        $level = $request->input('level');
+        $programme = $request->input('programme_id');
+        $where = [
+            ['session', $session],
+            ['semester', $semester]
+        ];
+        if ($level != "%") {
+            $where[] = ['level_id', $level];
+        }
+
+        //  exit;
+        if (!empty($request->arrstudentid)) {
+
+
+            if ($programme != "%") {
+                $where[] = ['programme_id', $programme];
+                StudentLevel::where($where)
+                    ->update(['result_status' => 0]);
+            } else {
+                StudentLevel::where($where)->whereIn("programme_id", $user->accessibleProgrammes("staff.student.manageexamsresult")->pluck('id'))
+                    ->update(['result_status' => 0]);
+            }
+            StudentLevel::whereIn('student_id', $request->arrstudentid)
+                ->where($where)
+                ->update(['result_status' => 1]);
+        } else {
+
+            if ($programme != "%") {
+                $where[] = ['programme_id', $programme];
+                StudentLevel::where($where)
+                    ->update(['result_status' => 0]);
+            } else {
+                StudentLevel::where($where)->whereIn("programme_id", $user->accessibleProgrammes("staff.student.manageexamsresult")->pluck('id'))
+                    ->update(['result_status' => 0]);
+            }
+        }
+
+        //  session()->flash('success','Results Successfully Uploaded');
+        return Response::json(['type' => 'success', 'message' => "<div class='alert alert-success'>Successfully Save</div>"]);
+
+    }
+
+    //delete transaction for a student
+    public function searchTrans()
+    {
+        // if (!$this->access(Auth::user(), "staff.student.search.trans"))
+        //  return view("pages.errors.nopermission");
+        return view('pages.staff.student.search.searchtrans');
+    }
+
+
+    public function searchStudTrans(Request $request)
+    {
+        $transcode = $request->transaction_code;
+        $studentDatas = Transaction::where("transaction_code", "=", $transcode)->where("payment_status", "=", "Not Paid")->first();
+        if ($studentDatas) {
+            return view("pages.staff.student.search.searchtrans", compact('studentDatas'));
+        } else {
+            session()->flash('error', 'Such record does not exist!');
+            return redirect()->route('student.search.trans');
+        }
+
+    }
+
+
+    public function destroyTrans(Request $request)
+    {
+        $data = $request->transaction_code;
+
+        if ($data) {
+            $done = Transaction::where("transaction_code", "=", $data)->where("payment_status", "=", "Not Paid")->delete();
+            session()->flash('success', 'Student transaction details deleted successfully!');
+            return redirect()->back();
+        } else {
+            session()->flash('error', 'Something is wrong while deleting details!');
+        }
+    }
+
+    public function changePyamentOption(Request $request)
+    {
+//        payment_option
+        if (!$this->access(Auth::user(), "payment.option.index"))
+            return view("pages.errors.nopermission");
+
+        $sessReg = SessionReg::find($request->sess_reg_);
+        if ($sessReg) {
+            $sessReg->payment_option = $request->payment_option == 0 ? null : $request->payment_option;
+            $sessReg->save();
+        }
+
+        return back();
+    }
+
+    public function changeResitOption(Request $request)
+    {
+        // return $request;
+//        payment_option
+        if (!$this->access(Auth::user(), "payment.option.index"))
+            return view("pages.errors.nopermission");
+
+        $resStudent = new ResitStudent();
+        $resStudent->student_id = $request->student_id;
+        $resStudent->resit_id = $request->resit_option;
+        $resStudent->save();
+
+        return back();
+    }
+
+
+    public function doReadmission(Request $request)
+    {
+        if (!$this->access(Auth::user(), "student.re_admission"))
+            return view("pages.errors.nopermission");
+
+//        student_id,matric_number,entry_session,candidate_form_id
+        $student = Student::find(decrypt($request->student_id));
+        $initEntrySession = $student->entry_session;
+        if ($student) {
+            $canFormId = CandidateForm::find($request->candidate_form_id);
+            $stud2 = Student::where('application_number',$request->candidate_form_id)->first();
+            if($stud2){
+                if ($canFormId) {
+                    $transaction = Transaction::where(["student_id" => $canFormId->id, "payment_status" => "Paid", "code" => "FRM"])->first();
+                    if ($transaction) {
+                        $student->matric_number = $request->matric_number;
+                        $student->entry_session = $request->entry_session;
+                        $student->application_number = $request->candidate_form_id;
+                        $student->save();
+                        foreach($student->programmeActiveSessionBetween($initEntrySession,$request->entry_session) as $sess){
+                            $sessReg = SessionReg::where(["student_id" => $student->id])
+                            ->where("session", "=", $sess)->first();
+                            if (!$sessReg) {
+                                $sessReg = new SessionReg;
+                                $sessReg->student_id = $student->id;
+                                $sessReg->matric_number = $request->matric_number;
+                                $sessReg->programme_id = $student->programme_id;
+                                $sessReg->session = $sess;
+                                $sessReg->level_id = $student->entry_level_id;
+                                $sessReg->graduation_status = "Not Graduated";
+                                $sessReg->marital_status = "Single";
+                                $sessReg->study_mode = "Full Time";
+                                $sessReg->study_type = "Academic";
+                                $sessReg->save();
+                            }
+                            $records = $student->sessionFees($sess);
+                            $totalAmount = $records["total"];
+                            $code = FeeManager::generateTransactionCode($student->id, "REG", $request->input('session'), $student->mode_of_entry[0] . "R", $totalAmount);
+
+                        }
+
+                        SessionReg::where(["student_id" => $student->id])
+                            ->where("session", ">=", $student->entry_session)
+                            ->update(['matric_number' => $student->matric_number]);
+
+                    } else {
+                        session()->flash('error', 'Advice Candidate to pay for form.');
+                    }
+                } else {
+                    session()->flash('error', 'Invalid Form Number.');
+                }
+            }else{
+                session()->flash('error', 'Application Number taken by another user.');
+            }
+
+
+        } else {
+            session()->flash('error', 'Invalid Students');
+        }
+
+        return redirect(route('student.search.view', [$student->matric_number]));
+    }
+
+
+    public function allowOverstay(Request $request)
+    {
+        if (!$this->access(Auth::user(), "student.allow.overstay"))
+            return view("pages.errors.nopermission");
+        $student = Student::find(decrypt($request->student_id));
+        $session = $request->input('session');
+        if ($student) {
+            $alOvSt = AllowOverStay::where(["student_id" => $student->id, 'session' => $session])->first();
+            if (!$alOvSt) {
+                $alOvSt = new AllowOverStay;
+                $alOvSt->student_id = $student->id;
+                $alOvSt->session = $session;
+                $alOvSt->save();
+            }
+        }
+        return back();
+    }
+
+    public function resultsViewStaff($student_id, $session, $semester)
+    {
+        $student = Student::find($student_id);
+        $resultstatus = DB::table("student_levels")->where(["session" => $session, "semester" => $semester, "student_id" => $student->id, "result_status" => 1])->first();
+        $results = [];
+        if ($resultstatus) {
+            $resultsx = DB::table("tblenrolment AS e")
+                ->select("e.coursecode AS coursecode", "c.coursetitle AS coursetitle", "c.courseunit AS units", "e.grade AS grade", "e.total", "point", "e.session", "e.semester")
+                ->join("courses AS c", "c.coursecode", "=", "e.coursecode")
+                ->join("students AS t", "e.matricnumber", "=", "t.matric_number")
+                ->join("student_levels AS s", "s.student_id", "=", "t.id")
+                ->where(["e.matricnumber" => $student->matric_number, "e.session" => $session, "e.semester" => $semester, "s.semester" => $semester])
+                ->groupBy(["e.session", "e.semester", "e.grade", "c.coursecode", "coursetitle", "courseunit"])
+                ->get();
+
+            foreach ($resultsx as $result) {
+                $results[$result->session]["data"][] = $result;
+                $results[$result->session]["semester"] = $result->semester;
+                $results[$result->session]["studentlevel"][$result->semester] = StudentLevel::where(["session" => $result->session, "semester" => $result->semester, "student_id" => $student->id])->first();
+            }
+        }
+
+        return view("pages.student.gradebook.resultslip", compact("results", 'session', 'semester', 'student'));
+    }
+
+
+    public function destroySundryTrans(Request $request)
+    {
+//        return $request;
+        $data = $request->transaction_code;
+
+        if ($data) {
+            $done = SundryTransaction::where("transaction_code", "=", $data)->where("payment_status", "=", "Not Paid")->delete();
+            session()->flash('success', 'Student transaction details deleted successfully!');
+            return redirect()->back();
+        } else {
+            session()->flash('error', 'Something is wrong while deleting details!');
+        }
+    }
+
+    public function accShowStudent($id)
+    {
+        $student = Student::findOrFail($id);
+
+        return view('pages.staff.accommodation.report.show_student', compact('student'));
+    }
+}
+

@@ -1,0 +1,269 @@
+<?php
+
+namespace App\Http\Controllers\Staff;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
+use App\Models\PaymentForWhat;
+use App\Models\FeeSettings;
+use App\Models\FeeItem;
+use App\Models\Faculty;
+use App\Models\Department;
+use App\Models\Programme;
+use App\Models\Level;
+use DB;
+use Illuminate\Support\Facades\Session;
+
+class PaymentForWhatController extends Controller
+{
+    public function __construct()
+    {
+        $this->middleware('auth:staff');
+
+    }
+
+    public function index()
+    {
+        return view('pages.staff.settings.paymentforwhat');
+    }
+
+    public function store(Request $request)
+    {
+        try {
+//            return $request;
+            /*if (!$this->access(Auth::user(), 'settings.fees.student.settings')) {
+                return view("pages.errors.access");
+            }*/
+            // $this->validate(request(), PaymentForWhat::$rules);
+            $feeid = $request->itemname;
+            $residency = $request->residency;
+            $newreturning = $request->newreturning;
+            $facultyid = $request->faculty;
+            $departmentid = $request->department;
+            $programmeid = $request->programme;
+            $level = $request->level;
+            $artsscience = $request->artsscience;
+            $progtype = $request->progtype;
+            $progmode = $request->progmode;
+            $staff = $request->staff;
+            $amount = $request->amount;
+            $effectivedate = $request->effective;
+            $religion = $request->religion;
+            $status = false;
+            // Adding
+            if ($request->has('add')) {
+                $db = new PaymentForWhat();
+                $db2 = new FeeSettings();
+                try {
+                    DB::beginTransaction();
+
+                    $db->fee_item_id = $feeid;
+                    $db->residency = $residency;
+                    $db->new_returning = $newreturning;
+                    $db->faculty_id = $facultyid;
+                    $db->department_id = $departmentid;
+                    $db->programme_id = $programmeid;
+                    $db->level_id = $level;
+                    $db->art_science = $artsscience;
+                    $db->prog_type = $progtype;
+                    $db->programme_mode = $progmode;
+                    $db->staff = $staff;
+                    $db->religion = $religion;
+//                    return $db;
+                    $status = $db->save();
+                    $payforwhatid = $db->id;
+
+                    $db2->payment_for_what_id = $payforwhatid;
+                    $db2->amount = $amount;
+                    $db2->effective_session = $effectivedate;
+                    //return $db2;
+                    $status = $db2->save();
+                    DB::commit();
+                } catch (\Exception $e) {
+                    DB::rollback();
+                }
+                if ($status) {
+                    Session::flash('status', 'Record successfully saved!');
+                    Session::flash('alert-class', 'alert-info');
+                } else {
+                    Session::flash('status', 'Failed to Save!');
+                    Session::flash('alert-class', 'alert-alert');
+                }
+            }
+            //Editing
+            if ($request->has('update')) {
+                try {
+                    DB::beginTransaction();
+                    PaymentForWhat::where(['id' => $request->payforwhatid])
+                        ->update([
+                            'fee_item_id' => $feeid,
+                            'residency' => $residency,
+                            'new_returning' => $newreturning,
+                            'faculty_id' => $facultyid,
+                            'department_id' => $departmentid,
+                            'programme_id' => $programmeid,
+                            'level_id' => $level,
+                            'art_science' => $artsscience,
+                            'prog_type' => $progtype,
+                            'programme_mode' => $progmode,
+                            'staff' => $staff,
+                            'religion' => $religion,
+                        ]);
+                    $status = FeeSettings::where(['payment_for_what_id' => $request->payforwhatid])
+                        ->update(['amount' => $amount, 'effective_session' => $effectivedate]);
+                    DB::commit();
+                } catch (\Exception $e) {
+                    DB::rollback();
+                    $message = $e;
+                    return view("pages.errors.failed", compact('message'));
+
+                }
+                if ($status) {
+                    Session::flash('status', 'Record successfully updated!');
+                    Session::flash('alert-class', 'alert-info');
+                } else {
+                    Session::flash('status', 'Failed to update!');
+                    Session::flash('alert-class', 'alert-alert');
+                }
+            }
+            return redirect()->route($request->page == 'PG' ? 'spgs.paymentprofile' : 'paymentforwhat');//->back();
+        } catch (\Exception $e) {
+            $message = $e;
+            return view("pages.errors.failed", compact('message'));
+        }
+    }
+
+    public function edit($id)
+    {
+        $feesetting = FeeSettings::find($id);
+        $paymentfor = PaymentForWhat::find($feesetting->payment_for_what_id);
+        return view('pages.staff.settings.paymentforwhat')->with(['fee' => $feesetting, 'paymentfor' => $paymentfor]);
+    }
+
+    public function inherit()
+    {
+        $sessions = FeeSettings::select('effective_session')->distinct()->get();
+        return view('pages.staff.settings.inheritfees', compact('sessions'));
+    }
+
+    public function inheritPost(Request $request)
+    {
+        $recordsets = PaymentForWhat::where('effective_session', 'LIKE', $request->psession)
+            ->where('new_returning', 'LIKE', $request->nature)
+            ->where('prog_type', 'LIKE', $request->type)
+            ->where('programme_mode', 'LIKE', $request->mode)
+            ->join('fee_settings', 'fee_settings.payment_for_what_id', 'payment_for_whats.id')->get();
+        //return $recordsets;
+        foreach ($recordsets as $recordset) {
+            try {
+                $payforwhatid = $recordset->payment_for_what_id;
+                $st = FeeSettings::firstOrNew(array('payment_for_what_id' => $payforwhatid, 'amount' => $recordset->amount, 'effective_session' => $request->current_session));
+                if ($st->save()) {
+                    Session::flash('status', 'Successfully captured!');
+                    Session::flash('alert-class', 'alert-info');
+                } else {
+                    Session::flash('status', 'Failed to capture!');
+                    Session::flash('alert-class', 'alert-alert');
+                }
+
+            } catch (\Exception $e) {
+
+            }
+        }
+
+        $sessions = FeeSettings::select('effective_session')->distinct()->get();
+        return redirect(route('inherit.fees'))->with(['sessions' => $sessions]);
+    }
+
+    public function load($session, $type, $nature, $mode)
+    {
+        if ($session == "")
+            $session = '%';
+        if ($type == "")
+            $type = '%';
+        if ($nature == "")
+            $nature = '%';
+        if ($mode == "")
+            $mode = '%';
+        $recordsets = PaymentForWhat::where('effective_session', 'LIKE', $session)
+            ->where('new_returning', 'LIKE', $nature)
+            ->where('prog_type', 'LIKE', $type)
+            ->where('programme_mode', 'LIKE', $mode)
+            ->join('fee_settings', 'fee_settings.payment_for_what_id', 'payment_for_whats.id')->get();
+        $msg = "";
+        $i = 0;
+        foreach ($recordsets as $recordset) {
+            switch ($recordset->residency) {
+                case 0:
+                    $residency = "All Nationalities";
+                    break;
+                case 1:
+                    $residency = "Nigerians";
+                    break;
+                case 2:
+                    $residency = "Non-Nigerian, Residence";
+                    break;
+                case 3:
+                    $residency = "Non-Nigerian, Non-Residence";
+                    break;
+            }
+            switch ($recordset->new_returning) {
+                case 0:
+                    $newreturning = "All Students";
+                    break;
+                case 1:
+                    $newreturning = "New Student";
+                    break;
+                case 2:
+                    $newreturning = "Returning";
+                    break;
+            }
+            switch ($recordset->art_science) {
+                case 0:
+                    $artscience = "All";
+                    break;
+                case 1:
+                    $artscience = "Arts";
+                    break;
+                case 2:
+                    $artscience = "Science";
+                    break;
+            }
+            switch ($recordset->programme_mode) {
+                case 0:
+                    $progmode = "All";
+                    break;
+                case 1:
+                    $progmode = "Full Time";
+                    break;
+                case 2:
+                    $progmode = "Part Time";
+                    break;
+            }
+            switch ($recordset->staff) {
+                case 0:
+                    $staff = "All";
+                    break;
+                case 1:
+                    $staff = "Staff";
+                    break;
+                case 2:
+                    $staff = "Non-staff";
+                    break;
+            }
+            $msg .= "<tr><td>" . (++$i) . "</td><td>" . FeeItem::find($recordset->fee_item_id)->item_name . "</td><td>" . $residency . "</td>";
+            $msg .= "<td>" . $newreturning . "</td><td>" . ($recordset->faculty_id == 0 ? 'All' : Faculty::find($recordset->faculty_id)->name) . "</td>";
+            $msg .= "<td>" . ($recordset->department_id == 0 ? 'All' : Department::find($recordset->department_id)->name) . "</td><td>" . ($recordset->programme_id == 0 ? 'All' : Programme::find($recordset->programme_id)->name) . "</td>";
+            $msg .= "<td>" . ($recordset->level_id == 0 ? 'All' : Level::find($recordset->level_id)->short_name) . "</td><td>" . $artscience . "</td>";
+            $msg .= "<td>" . ($recordset->religion == 'I' ? 'Islam' : 'All') . "</td><td>" . $recordset->prog_type . "</td>";
+            $msg .= "<td>" . $progmode . "</td><td>" . $staff . "</td>";
+            $msg .= "<td>" . $recordset->amount . "</td><td>" . $recordset->effective_session . "</td></tr>";
+        }
+        return $msg;
+    }
+
+    public function spgsProfile()
+    {
+        return view('pages.staff.settings.spgspaymentprofile');
+    }
+}

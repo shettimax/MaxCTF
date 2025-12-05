@@ -1,0 +1,55 @@
+<?php
+
+namespace App\Http\Controllers\Staff;
+
+use App\Models\Employee;
+use App\Models\EmployeeCommunityService;
+use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+
+class EmployeeCommunityServiceController extends Controller
+{
+    public function __construct(){
+        return $this->middleware(['auth:staff']);
+    }
+
+    public function index(){
+        try{
+            $employee = Employee::find(Auth::user()->employee_id);
+            return view('pages.staff.profile.communityservice', compact('employee'));
+        }catch (\Exception $e){
+            return redirect()->back()->with('error', $e->getMessage());
+        }
+    }
+
+    public function storeCommunityService(Request $request){
+        try{
+            $this->validate($request, [
+                'service_level'=>'required'
+            ]);
+            $service = EmployeeCommunityService::find($request->service_id);
+            if(!$service)
+                $service = new EmployeeCommunityService();
+            $service->employee_id = $request->employee_id;
+            $service->service_level = $request->service_level;
+            $service->beneficiary = $request->beneficiary;
+            $service->description = $request->description;
+            $service->from = $request->from;
+            $service->to = $request->to;
+            $service->save();
+            return redirect()->back()->with('success', 'Done!');
+        }catch(\Exception $e){
+            return redirect()->back()->with('error', $e->getMessage());
+        }
+    }
+
+    public function deleteCommunityService(EmployeeCommunityService $employeeCommunityService){
+        try{
+            EmployeeCommunityService::destroy($employeeCommunityService->id);
+            return redirect()->back()->with('success', 'Done!');
+        }catch(\Exception $e){
+            return redirect()->back()->with('error', $e->getMessage());
+        }
+    }
+}

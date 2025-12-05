@@ -1,0 +1,172 @@
+@extends("layout.staff.master")
+
+@section("pageTitle")
+    Profile: Biodata
+@endsection
+
+@include('pages.staff.profile.custom-css')
+
+@section('biodata-page-menu', 'active')
+
+@section("content")
+    @php $user = Auth::user(); @endphp
+    <section>
+        <div class="container pt-30 pb-30 pl-30 pr-30">
+            <div class="row">
+                <div class="col-md-9 pull-right flip sm-pull-none">
+                    <div class="blog-posts">
+                        <div class="col-md-12">
+                            <h2 class="widget-title" style="margin-bottom: 0">
+                                <span style="float:right">
+                                    <a href="{{ route('staff.profile.cv.generate.html', $employee->id) }}" class="btn btn-success btn-theme-colored btn-sm btn-flat">HTML</a>
+                                    {{--<a href="{{ route('staff.profile.cv.generate.word', $employee->id) }}" class="btn btn-success btn-theme-colored btn-sm btn-flat">WORD</a>--}}
+                                  {{--<a href="{{ route('staff.profile.cv.generate.pdf', $employee->id) }}" class="btn btn-success btn-theme-colored btn-sm btn-flat">PDF</a>--}}
+                                </span>
+                                Biodata
+                            </h2>
+                            <div class="double-line-bottom-theme-colored-2"></div>
+                            <div class="mt-30"></div>
+
+                            @if ($message = Session::get('success'))
+                                <div class="alert alert-success" role="alert">
+                                    <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                                    {{ $message }}
+                                </div>
+                            @endif
+                            @if ($message = Session::get('error'))
+                                <div class="alert alert-danger" role="alert">
+                                    <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                                    {{ $message }}
+                                </div>
+                            @endif
+                            <section class="bg-white-f7 pr-40 pl-40 pt-40 pb-40" style="border-left:2px solid #43B14B;">
+                                <form class="form-horizontal" action="{{ route('staff.profile.biodata.edit') }}" method="post">
+                                    @csrf
+                                    {{--<input type="hidden" name="employee_id" value="{{ $employee->id }}">--}}
+                                    <div class="form-group">
+                                        <label for="title" class="col-sm-3 control-label">Title:</label>
+                                        <div class="col-sm-5">
+                                            <select name="title" id="title" class="form-control">
+                                                <option value="{{$employee->title}}">{{ $employee->title }}</option>
+                                                <option>Mr.</option>
+                                                <option>Ms</option>
+                                                <option>Mrs</option>
+                                                <option>Miss</option>
+                                                <option>Mal.</option>
+                                                <option>Dr.</option>
+                                                <option>Prof.</option>
+                                                <option>Alh.</option>
+                                                <option>Chief.</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="name" class="col-sm-3 control-label">Name:</label>
+                                        <div class="col-sm-3">
+                                            <span><i>Surname:</i></span>
+                                            <input type="text" name="surname" value="{{ $employee->surname }}" class="form-control" id="name" placeholder="Surname" readonly>
+                                        </div>
+                                        <div class="col-sm-3">
+                                            <span><i>Firstname:</i></span>
+                                            <input type="text" name="firstname" value="{{ $employee->firstname }}" class="form-control" id="name" placeholder="Firstname" readonly>
+                                        </div>
+                                        <div class="col-sm-3">
+                                            <span><i>Othernames:</i></span>
+                                            <input type="text" name="othernames" value="{{ $employee->othernames }}" class="form-control" id="name" placeholder="Othernames" readonly>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="marital_status" class="col-sm-3 control-label">Marital Status:</label>
+                                        <div class="col-sm-4">
+                                            <select name="marital_status" id="marital_status" class="form-control">
+                                                <option value="{{$employee->marital_status}}">{{ $employee->marital_status }}</option>
+                                                <option>Married</option>
+                                                <option>Single</option>
+                                                <option>Divorced</option>
+                                                <option>Widow</option>
+                                                <option>Separated</option>
+                                            </select>
+                                        </div>
+                                        <label for="gender" class="col-sm-2 control-label">Gender:</label>
+                                        <div class="col-sm-3">
+                                            <select name="gender" id="gender" class="form-control">
+                                                <option value="{{$employee->gender}}">{{ $employee->gender }}</option>
+                                                <option>Male</option>
+                                                <option>Female</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="nationality" class="col-sm-3 control-label">Nationality:</label>
+                                        <div class="col-sm-4">
+                                            <select name="nationality" id="nationality" class="form-control">
+                                                <option value="{{isset($employee->country->id)?$employee->country->id:0}}">{{ isset($employee->country->name)?$employee->country->name:'' }}</option>
+                                                @foreach(App\Models\Country::orderBy('name', 'ASC')->get() as $country)
+                                                    <option value="{{$country->id}}">{{$country->name}}</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                        <label for="lga" class="col-sm-2 control-label">Lga of Origin:</label>
+                                        <div class="col-sm-3">
+                                            <select name="lga" id="lga" class="form-control">
+                                                <option value="{{$employee->lga->id}}">{{ $employee->lga->name }}</option>
+                                                @foreach(App\Models\Lga::orderBy('name', 'ASC')->get() as $lga)
+                                                    <option value="{{$lga->id}}">{{$lga->name}}</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="place_of_birth" class="col-sm-3 control-label">Place of Birth:</label>
+                                        <div class="col-sm-9">
+                                            <input name="place_of_birth" value="{{ $employee->place_of_birth }}" type="text" class="form-control" id="place_of_birth" placeholder="Place of Birth">
+                                        </div>
+                                    </div>
+                                    @if(!$employee->date_of_birth)
+                                    <div class="form-group">
+                                        <label for="date_of_birth" class="col-sm-3 control-label">Date of Birth:</label>
+                                        <div class="col-sm-9">
+                                            <input name="date_of_birth" value="{{ $employee->date_of_birth }}" type="date" class="form-control" id="date_of_birth" placeholder="Date of Birth:YYYY-MM-DD">
+                                        </div>
+                                    </div>
+                                    @endif
+                                    <div class="form-group">
+                                        <label for="email" class="col-sm-3 control-label">Email:</label>
+                                        <div class="col-sm-9">
+                                            <input name="email" value="{{ $employee->email }}" type="text" class="form-control" id="email" placeholder="Employee Email">
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="permanent_address" class="col-sm-3 control-label">Permanent Address:</label>
+                                        <div class="col-sm-9">
+                                            <textarea rows="3" name="permanent_address" id="permanent_address" class="form-control" placeholder="Permanent Address">{{$employee->permanent_address}}</textarea>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group mt-30">
+                                        <div class="col-sm-12 text-center">
+                                            <button type="submit" class="btn btn-success btn-theme-color btn-lg">Save</button>
+                                        </div>
+                                    </div>
+                                </form>
+                            </section>
+
+
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    @include('pages.staff.profile.page-menu')
+                </div>
+            </div>
+        </div>
+    </section>
+
+@endsection
+
+@section("js")
+    <script>
+
+    </script>
+@endsection

@@ -1,0 +1,390 @@
+@extends('layout.student.master')
+@section('css')
+    <style type='text/css'>
+        .disableit{
+            opacity:0.3;
+        }
+        a > i.disableit:hover, a > i.disableit:link{
+            cursor: default;
+        }
+        #refactions a{
+            margin-left: 3px;
+            margin-right: 3px;
+        }
+        @media print{
+            .main-nav, nav.navigation, ul.nav, #candformnav, div.bottom-footer, div.txnslipactions, div.right-side, img#remita-logo{display:none;}
+            h3#txnid{
+                text-align: right !important;
+            }
+            @page {
+                margin: 0cm;
+            }
+        }
+        @media print {
+            #cont {
+                background-color: white;
+                height: 100%;
+                width: 100%;
+                top: 0;
+                left: 0;
+                margin: auto auto;
+                padding: 15px;
+                font-size: 14px;
+                line-height: 18px;
+            }
+            .logo, #print{
+                display: none;
+            }
+
+            #inner{
+                width: 100%;
+            }
+
+            #footer-widget{
+                display:none;
+            }
+        }
+
+    </style>
+@endsection
+@section('content')
+    <section class="">
+    <div class="main-section">
+        <div  class="container"   id="cont">
+            <div id="inner" style="background:#fff;margin:0 auto;padding:10px; padding-top:20px; border-style:solid; border-width:1px; border-color:#cccccc; border-radius:5px;">
+                <img src="{{ asset('images\letterheader.jpg') }}" style="width: 100%;">
+                <h2 class="display-1 text-center">TRANSACTION SLIP</h2><br />
+                @if(count($transactions)==1)
+                    <h3 id='txnid' style="text-align:center;" >TRANSACTION ID:
+                        <span style="padding:10px; border-radius: 5px; border-width: 1px; border-color:#cccccc; border-style: solid;">{{$transactions[0]->transaction_code}}</span>
+                    </h3>
+                @endif
+                <div class="row">
+                    <div class="col-12">
+                        <h3>Student Details</h3>
+                        <div style="text-align:right; vertical-align: top; height: 0px; overflow-y: visible;">
+                            <img style="width:170px; height: 200px;" class="img-thumbnail img-fluid" src="{{ route('studentbiodata.photoupload',[time()]) }}" />
+                        </div>
+
+                        <table class="table table-condensed table-bordered table-striped">
+                            <tr>
+                                <th>Full Name:</th>
+                                <td>
+                                    {{strtoupper($student->surname)." ".$student->firstname." ".$student->othernames}}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Gender:</th>
+                                <td>{{$student->gender}}</td>
+                            </tr>
+                            <tr>
+                                <th>Mobile No.:</th>
+                                <td>{{$studentbiodata->gsm}}</td>
+                            </tr>
+                            <tr>
+                                <th>Email:</th>
+                                <td>{{$studentbiodata->email}}</td>
+                            </tr>
+                        </table>
+                        <h3>Form Details</h3>
+                        <table class="table table-condensed table-bordered table-striped">
+                            <tr>
+                                @php
+                                    $user = isset($student)?$student:Auth::user();
+                                            $programme = $user->programme();
+                                            $department = $user->department();
+                                            $faculty = $user->faculty();
+
+                                @endphp
+                                <th>Faculty:</th>
+                                <th>Department:</th>
+                                <th>Programme:</th>
+                                <th>Session:</th>
+                            </tr>
+                            <tr>
+                                <td>{{$faculty->name}}</td>
+                                <td>{{$department->name}}</td>
+                                <td>{{$programme->name}}</td>
+                                <td>{{$session}}/{{($session + 1)}}</td>
+                            <tr>
+
+                            </tr>
+
+                        </table>
+
+                        <h3>Payment Details</h3>
+                        <table class="table table-condensed table-bordered table-striped">
+                            @foreach($transactions as $trans)
+                                @php
+                                    $balance = $trans->transaction_amount;
+                                @endphp
+                                <tr>
+                                    <th colspan="2" class="text-center" style="font-size: larger; font-family: Arial"><span style="padding:10px; border-radius: 5px; border-width: 1px; border-color:#cccccc; border-style: solid;">TRANSACTION ID: {{$trans->transaction_code}}</span></th>
+                                </tr>
+                                <tr>
+                                    <th>Purpose:</th>
+                                    <td>Non-refundable Charges</td>
+                                </tr>
+
+                                <tr>
+                                    <th>Payment Status</th>
+                                    <td>{{$trans->payment_status}}</td>
+                                </tr>
+                                <tr>
+                                    <th>Date Generated</th>
+                                    <td>{{$trans->created_at}}</td>
+                                </tr>
+                                <tr>
+                                    <th colspan="2">
+                                        <table width="80%">
+                                            <tr>
+                                                <th>S/N</th>
+                                                <th>Item Name</th>
+                                                <th>Amount</th>
+                                            </tr>
+                                             @foreach($fees as $fee)
+                                                <tr>
+                                                    <td>{{ $loop->index+1 }}</td>
+                                                    <td>{{ $fee->item_name }}</td>
+                                                    <td>&#8358;
+                                                        {{number_format( $fee->amount,2,'.',',') }}</td>
+                                                </tr>
+                                            @endforeach
+
+                                        @if($trans->payment_status == "Paid")
+                                            <tr>
+                                                <th colspan="2">Amount Paid</th>
+                                                <th>&#8358;
+                                                    {{number_format($trans->transaction_amount,2,'.',',')}}</th>
+                                                </tr>
+                                        @else
+                                            <tr>
+                                                <th colspan="2">Amount Payable</th>
+                                                <th>&#8358;
+                                                    {{number_format($trans->transaction_amount,2,'.',',')}}</th>
+                                            </tr>
+
+                                        @endif
+                                        </table>
+                                    </th>
+                                </tr>
+                            @endforeach
+                        </table>
+                        <div class="text-center">
+                            @if($user->wallet_number && $trans->payment_status=="Not Paid")
+                                <input type="hidden"
+                                       class="form-control border-1px-theme-colored2 btn-flat" disabled name="amount"
+                                       value="₦{{ number_format($balance,"2",".",",") }}" id="amountId" cost="₦{{number_format($balance+200,"2",".",",")}}">
+                                <a class="btn btn-primary" id="payWallet"  data="{{$trans->id}}" >
+                                    Wallet Pay <i class="fa fa-credit-card-alt"></i>
+                                </a>
+                            @endif
+                            @if(!$user->wallet_number)
+                                <p class="text-danger">
+                                    Please consider <a href="{{ route("student.abumfb.create") }}"
+                                                       class="text-primary">opening a Wallet with
+                                        ABUMFB to make this payment</a>
+                                </p>
+                            @endif
+                            <button class="btn btn-info" id="print">Print</button>
+                            {{--<strong style="color: maroon">Please Pay in ABU Micro-Finance Bank</strong>--}}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    </section>
+
+    <div class="modal fade" id="makePaymentModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header pt-20 pb-20">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+                            aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title" id="viewTermsAndConditionModalTitle">Connecting to ABUMFB</h4>
+                </div>
+                <div class="modal-body" id="viewPMlBody">
+                    <center>
+                        <h4>Are you sure you want to process this payment?
+                            If you approve [<span id="amountLabel"></span>] will be deducted from your account.
+                            You are expected to have a minimum balance of ₦200 in your wallet
+                        </h4>
+                        <img src='{{ asset('images/preloaders/7.gif') }}' alt='loading...' style="display: none;">
+                    </center>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default btn-flat" id="makePayment" rel="">Pay</button>
+                    <button type="button" class="btn btn-default btn-flat" data-dismiss="modal">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="failed" style="display: none;">
+        <p class="alert alert-warning text-bold" style="font-weight: bolder;">
+            Operation Failed. Please try again.
+        </p>
+    </div>
+    <div id="success" style="display: none;">
+        <p class="alert alert-success text-bold" style="font-weight: bolder;">
+            Operation Successful
+        </p>
+    </div>
+@endsection
+
+@section('css')
+    <style type='text/css'>
+        .disableit{
+            opacity:0.3;
+        }
+        a > i.disableit:hover, a > i.disableit:link{
+            cursor: default;
+        }
+        #refactions a{
+            margin-left: 3px;
+            margin-right: 3px;
+        }
+        #payShow{
+            display: none;
+        }
+        @media print{
+            .main-nav, nav.navigation, ul.nav, #candformnav, div.bottom-footer, div.txnslipactions, div.right-side, img#remita-logo{display:none;}
+            h3#txnid{
+                text-align: right !important;
+            }
+            @page {
+                margin: 0cm;
+            }
+        }
+        @media print {
+            footer,header,#payV{
+                display: none;
+            }
+            #cont {
+                background-color: white;
+                height: 100%;
+                width: 100%;
+                top: 0;
+                left: 0;
+                margin: auto auto;
+                padding: 15px;
+                font-size: 14px;
+                line-height: 18px;
+            }
+            .logo, #print{
+                display: none;
+            }
+
+            #inner{
+                width: 100%;
+            }
+
+            #footer-widget{
+                display:none;
+            }
+            #payShow{
+                display: inline-block;
+            }
+        }
+
+        @media print{
+            .main-nav, nav.navigation, ul.nav, #candformnav, div.bottom-footer, div.txnslipactions, div.right-side, img#remita-logo{display:none;}
+            h3#txnid{
+                text-align: right !important;
+            }
+            @page {
+                margin: 0cm;
+            }
+        }
+        @media print {
+            #cont {
+                background-color: white;
+                height: auto;
+                width: 100%;
+                top: 0;
+                left: 0;
+                margin: auto auto;
+                padding: 15px;
+                font-size: 14px;
+                line-height: 18px;
+            }
+            .table{
+                font-size: 16px !important;
+            }
+            .inner-header{
+                display: none;
+            }
+            .wrapper{
+                height: auto;
+            }
+            body{
+                background: #FFFFFF !important;
+                padding:0 !important;
+            }
+            .logo, #print{
+                display: none;
+            }
+
+            #inner{
+                width: 100%;
+            }
+
+            #footer-widget, #main-status, #main-header , footer {
+                display:none;
+            }
+            #main-features{
+                padding:0;
+            }
+            #overlaysection2, #overlaysection,#menusection{
+                display: none;
+            }
+            nav a{
+                display: none;
+            }
+        }
+    </style>
+@endsection
+@section('js')
+    <script>
+        $('body').on('click','#print',function(){
+            window.print();
+        });
+        $(document).ready(function () {
+            $("#payWallet").on("click", function (e) {
+                e.preventDefault();
+                $("#makePaymentModal").modal();
+                $("#amountLabel").text($('#amountId').attr('cost'));
+                $("#makePayment").attr("rel", $(this).attr("data"));
+            });
+
+            $("#makePayment").on("click", function (e) {
+                e.preventDefault();
+                $("#viewPMlBody img").show();
+                $(".alert").hide();
+                $("#viewPMlBody").html("<div class='text-center'><img src='{{ asset('images/preloaders/7.gif') }}' alt='loading...'></div>");
+
+                $.ajax({
+                    url: "{{ route("student.sundry.pay") }}",
+                    type: "GET",
+                    data: {_token: "{{ csrf_token() }}", trxn56xid77: $("#makePayment").attr("rel")},
+                    success: function (response) {
+                        console.log(response);
+                        if (response.status == 1) {
+                            $("#viewPMlBody").html($("#success").html()).find(".alert").show();
+                            setTimeout(function () {
+                                document.location = '{{route('fees.pay.sundry', [$session])}}';
+                            }, 2000);
+                        } else {
+                            console.log(response.message);
+                            $("#failed").find('.alert').html(response.message);
+                            $("#viewPMlBody").html($("#failed").html()).find(".alert").show();
+                        }
+                    }
+                });
+            });
+
+        });
+
+    </script>
+@endsection

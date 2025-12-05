@@ -1,0 +1,64 @@
+<div class="availProg bg-silver-light" id="availProg">
+    <h4>Search Result</h4>
+    @foreach($programmes as $programme)
+
+        @php
+            $date = \Carbon\Carbon::parse($programme->end_date);
+        @endphp
+        <div class="upcoming-event bg-white mb-20 mt-10"
+             style="box-shadow: 2px 2px 4px #888888;border-top:1px solid #dddddd; border-bottom: 5px solid #5cb85c;padding-top: 4px;">
+            <div class="row">
+                <div class="col-md-12" style="">
+                    <div class="col-md-2 pt-40">
+                        <img class="img-circle" src="{{ asset('programme.png') }}" alt="..."
+                             width="200">
+                    </div>
+                    <div class="col-md-7">
+                        <div class="col-md-12">
+                            <a class="btn btn-flat btn-success btn-xs">Faculty</a>
+                            <a class="btn btn-flat btn-success btn-xs">{{ $programme->department()->name}}</a>
+                            <a class="btn btn-flat btn-success btn-xs">{{ $programme->programmetype()->first()->prog_type_name }}</a>
+                            <div class="font-22 text-black">{{$programme->name}}
+                                | {{$programme->programme}}</div>
+                            <p>
+                                Purchase form for <strong>{{ $programme->name }}</strong> in
+                                <strong>{{ $programme->programme }}</strong>, this form
+                                closes {{$date->diffForHumans()}}
+                            </p>
+                            <div class="p-10">
+                                <a class="btn btn-default btn-flat font-12 mt-10 ml-5"
+                                   href="{{ route("form.buy.form.fs",[$programme->fs_id,"fs"]) }}">
+                                    Apply Now
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 p-5 pt-20">
+                        <div class="pull-right">
+                            <strong class="font-18">Closes</strong>
+                            <div>
+                                            <span>
+                                                {{ $date->format('jS') }}
+                                            </span>
+                                <span>
+                                                {{ $date->format("M") }}
+                                            </span>
+                                <span>
+                                                {{ $date->year }}
+                                            </span>
+                            </div>
+                            <ul>
+                                <li class="mb-10 text-theme-colored font-14">
+                                    {{$date->diffForHumans()}}
+                                </li>
+                            </ul>
+                            <strong class="text-bold font-20 tag">
+                                &#8358;{{ number_format($programme->form_price,2) }}
+                            </strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endforeach
+</div>

@@ -1,0 +1,558 @@
+<?php
+
+namespace App\Http\Controllers\Student;
+
+
+use App\Http\Controllers\Controller;
+use App\Http\Controllers\StudentPhotoUploadController;
+use App\Models\Course;
+use App\Models\CourseDegreePlan;
+use App\Models\CourseGroup;
+use App\Models\CourseRegistration;
+use App\Models\CourseRegLog;
+use App\Models\DeanPosition;
+use App\Models\Department;
+use App\Models\DroppedCourse;
+use App\Models\Employee;
+use App\Models\Facility;
+use App\Models\Faculty;
+use App\Models\FeeManager;
+use App\Models\HodPosition;
+use App\Models\Programme;
+use App\Models\RegistrationPeriod;
+use App\Models\ReqDegreePlan;
+use App\Models\Resource;
+use App\Models\ResourceSetting;
+use App\Models\SessionReg;
+use App\Models\SpecialRegistrationPeriod;
+use App\Models\Student;
+use App\Models\Supervision;
+use Auth;
+use Illuminate\Support\Facades\DB;
+use Session;
+
+class CourseRegistrationController extends Controller
+{
+    public function __construct()
+    {
+        $this->middleware(["auth:student", "mmode"]);
+    }
+
+    public function activate()
+    {
+        try {
+            $student = Auth::user();
+
+            if (!StudentPhotoUploadController::checkPassportExists($student->matric_number)) {
+                return redirect(route('photoupload.applicant.index'))->with('info', 'UPLOAD YOUR PASSPORT FIRST!');
+            }
+
+            //Determine the resumption status of the student ('New'?'Student')
+            $newreturning = $student->isNew() ? "New" : "Returning";
+
+            //Get all sessions student has registered in
+            $sessions = $student->coursegroups()->pluck('session')->unique();
+
+
+            $sess = $student->payableSessions();
+            $session_history = [];
+//        return date('Y-m-d');
+
+            foreach ($sess as $ses) {
+                $ret = $student->entry_session == $ses ? "New" : "Returning";
+                $reg = RegistrationPeriod::where(["session" => $ses, "programme_id" => $student->programme_id, "nature" => "REG", "new_returning" => $ret])->whereDate("end_date", ">=", date('Y-m-d'))->count();
+                $reg2 = SpecialRegistrationPeriod::where(["session" => $ses, "student_id" => $student->id, "nature" => "REG"])->whereDate("end_date", ">=", date('Y-m-d'))->count();
+                $session_history[$ses] = [
+                    "open" => ($reg || $reg2),
+                    "sm1" => $this->checkStatusGlobalBoolean($student, ["resource" => "Course Registration"], $ses, 1),
+                    "sm2" => $this->checkStatusGlobalBoolean($student, ["resource" => "Course Registration"], $ses, 2)
+                ];
+            }
+//        return $session_history;
+//        return ['session'=>$student->currentSession()->session, 'programme_id'=>$student->programme()->id, 'level'=>$student->entrylevel, 'new_returning'=>$newreturning, 'nature'=>'REG'];
+            //Get the semesters of the current session
+            $sessionsemesters = RegistrationPeriod::where(['session' => $student->currentSession()->session, 'programme_id' => $student->programme()->id, 'new_returning' => $newreturning, 'nature' => 'REG'])->get();
+//        return $student->currentSemester()->semester;
+            $sc = new \stdClass();
+            $sc->start_date = today();
+            $sc->end_date = today();
+            $sessionsemesters[0] = isset($sessionsemesters[0]) ? $sessionsemesters[0] : $sc;
+            $sessionsemesters[1] = isset($sessionsemesters[1]) ? $sessionsemesters[1] : $sc;
+            //Checks if student has paid school fee or not
+            $paymentpass = $this->checkStatus($student,
+                ["resource" => "Course Registration"],
+                $student->currentSemester()->semester);
+//            return compact('sessions', 'student', 'paymentpass', 'sessionsemesters', 'session_history');
+            return view('pages.student.courseregistration.activate', compact('sessions', 'student', 'paymentpass', 'sessionsemesters', 'session_history'));
+
+        } catch (\Exception $e) {
+            return view('pages.errors.registrationperiod', compact('e'));
+            // $e->stack
+        }
+    }
+
+    public function index($session)
+    {
+
+//        try {
+
+        $student = Auth::user();
+
+        if (!StudentPhotoUploadController::checkPassportExists($student->matric_number)) {
+            return redirect(route('photoupload.applicant.index'))->with('info', 'UPLOAD YOUR PASSPORT FIRST!');
+        }
+
+        $programme = Programme::find($student->programme_id);
+        $activesemester = request('activesemester');
+        //Renders view without data on initial load, in which active semester wasn't selected
+        $student->cleanCourseRegistration($session);
+        if (!request('activesemester')) {
+            $coursestoregister = [];
+            $coursesalreadyregistered = [];
+            $maxregistrationunit = strtoupper($student->mode_of_entry) == "PG" ? 90 : 24;
+            $activesemester = 0;
+            return view('pages.student.courseregistration.form', compact('coursestoregister', 'coursesalreadyregistered', 'student', 'programme', 'maxregistrationunit', 'activesemester', 'session'));
+        }
+
+        //Gets the courses that matches the degree plan of the students
+        $currentSession = $student->currentSession();
+        $currentLevel = $student->sessionLevel($currentSession->session);
+        $clvl = $currentLevel->id;
+        $coursedegreeplans = CourseDegreePlan::join('courses', 'course_degree_plans.course_id', '=', 'courses.id')
+            ->join('course_groups', 'course_degree_plans.course_id', 'course_groups.course_id')
+            ->where(['course_degree_plans.degree_plan_id' => $student->degree_plan_id, 'level' => $clvl, 'session' => $currentSession, 'courses.coursesemester' => $activesemester, 'courses.courserunning' => 1])->get();
+
+        //For each course find the associated groups and pass in array
+        $coursestoregister = array();
+        foreach ($coursedegreeplans as $coursedegreeplan) {
+            $availablecoursegroupsLT = CourseGroup::where(['course_id' => $coursedegreeplan->course_id, 'session' => $session, 'semester' => $activesemester, "grouptype" => "LT"])->get();
+            $availablecoursegroupsLB = CourseGroup::where(['course_id' => $coursedegreeplan->course_id, 'session' => $session, 'semester' => $activesemester, "grouptype" => "LB"])->get();
+            if (count($availablecoursegroupsLT) > 0 || count($availablecoursegroupsLB) > 0)
+                $coursestoregister[] = ["course" => Course::find($coursedegreeplan->course_id), 'coursegroupslt' => $availablecoursegroupsLT, 'coursegroupslb' => $availablecoursegroupsLB, 'coursestatus' => $coursedegreeplan->course_status];
+        }
+
+//        return $coursestoregister;
+        //Find courses registered by the student
+        $coursegroups = $student->coursegroups($session, $activesemester)->get();
+        $coursesalreadyregistered = $coursegroups->mapToGroups(function ($item, $key) {
+//                if($item->course){
+            return [$item->course->coursecode . " &&& " . $item->course->coursetitle . " &&& " . $item->course->courseunit . " &&& " . $item->course->id => $item->groupno];
+//                }
+//                return [];
+
+        });
+//        return [$coursestoregister,$coursesalreadyregistered];
+
+
+//        return [$session,0];
+        $sereg = SessionReg::where(['session' => $session, 'student_id' => $student->id])->first();
+        $maxregistrationunit = ReqDegreePlan::where(['degree_plan_id' => $student->degree_plan_id, 'level_id' => $sereg->level_id])->first();
+        $maxregistrationunit = $maxregistrationunit ? $maxregistrationunit->max_registration_unit : (strtoupper($student->mode_of_entry) == "PG" ? 90 : 24);
+        //Renders the view
+        if (!$this->checkStatusGlobalBoolean($student, ["resource" => "Course Registration"], $session, $activesemester)) {
+            $res = Resource::where(["resource" => "Course Registration"])->first();
+
+            $resourceSettings = ResourceSetting::where([
+                "resource_id" => $res->id,
+                "semester" => $activesemester,
+                "programme_type_id" => $student->programme()->programmetype()->first()->id
+            ])->orderBy("effective_session", "DESC")->first();
+
+            $feeman = new FeeManager();
+            $details = $feeman->computeFee($student, $session);
+
+            if ($details['percentage'] < $resourceSettings->percentage)
+                return view("pages.student.dashboard.error",
+                    ["achievedpercentage" => $details['percentage'],
+                        "milestone" => $resourceSettings->percentage,
+                        "total" => $details["total"],
+                        "paid" => $details["amountpaid"],
+                        "session" => $session
+                    ]);
+        }
+        return view('pages.student.courseregistration.form', compact('coursestoregister', 'coursesalreadyregistered', 'student', 'programme', 'maxregistrationunit', 'activesemester', 'session'));
+//        } catch (\Exception $exception) {
+//            return $exception->getMessage();
+//        }
+
+    }
+
+    public function print($category = 'main', $session, $semester)
+    {
+        try {
+            $student = Auth::user();
+
+            if (!StudentPhotoUploadController::checkPassportExists($student->matric_number)) {
+                return redirect(route('photoupload.applicant.index'))->with('info', 'UPLOAD YOUR PASSPORT FIRST!');
+            }
+
+            $sm1 = $this->checkStatusGlobalBoolean($student, ["resource" => "Course Registration"], $session, 1);
+            $sm2 = $this->checkStatusGlobalBoolean($student, ["resource" => "Course Registration"], $session, 2);
+
+
+            $coursegroups = $student->coursegroups($session)->get();
+            $coursegroups = DB::table("course_registrations")
+                ->select("courses.*", "course_groups.session", "course_groups.semester", "groupno", "grouptype")
+                ->join("course_groups", "course_groups.id", "=", "course_registrations.course_group_id")
+                ->join("courses", "courses.id", "=", "course_groups.course_id")
+                ->where(["session" => $session, "student_id" => $student->id])
+                ->orderBy("coursecode", "ASC")
+                ->orderBy("courseunit", "ASC")
+                ->get();
+            $coursesalreadyregistered = [];
+//            $coursesalreadyregistered = $coursegroups->mapToGroups(function ($item, $key) {
+//                return [$item->course->coursecode . " &&& " . $item->course->coursetitle . " &&& " . $item->course->courseunit . " &&& " . $item->course->coursesemester . " &&& " . $item->course->id => $item->groupno];
+//            });
+
+            foreach ($coursegroups as $cg) {
+                if (isset($coursesalreadyregistered[$cg->coursecode])) {
+                    if ($cg->grouptype == "LT") {
+                        $coursesalreadyregistered[$cg->coursecode]->ltgroup = $cg->groupno;
+                    } else {
+                        $coursesalreadyregistered[$cg->coursecode]->lbgroup = $cg->groupno;
+                    }
+                } else {
+                    $coursesalreadyregistered[$cg->coursecode] = (object)["code" => $cg->coursecode, "title" => $cg->coursetitle, "unit" => $cg->courseunit, "semester" => $cg->semester, "course_id" => $cg->id, "ltgroup" => $cg->grouptype == "LT" ? $cg->groupno : "", "lbgroup" => $cg->grouptype == "LB" ? $cg->groupno : ""];
+                }
+
+            }
+
+//            return $coursesalreadyregistered;
+            $programme = Programme::find($student->programme_id);
+            $supervisions = Supervision::where(['student_id' => $student->id])
+                ->join('employees', 'supervisions.employee_id', '=', 'employees.id')
+                ->join('departments', 'employees.department_id', '=', 'departments.id')
+                ->select('supervisions.title as thesistitle', 'supervisions.examdate', 'employees.title as title', 'departments.name', 'employees.firstname', 'employees.surname', 'employees.othernames')
+                ->get();
+            $hodposition = HodPosition::where(['hod_positions.department_id' => $student->programme()->department_id, 'hod_positions.status' => "Present"])
+                ->join('employees', 'hod_positions.employee_id', '=', 'employees.id')
+                ->first();
+            $deanposition = DeanPosition::where(['dean_positions.faculty_id' => $student->programme()->department()->faculty_id, 'dean_positions.status' => "Present"])
+                ->join('employees', 'dean_positions.employee_id', '=', 'employees.id')
+                ->first();
+            $spgsdeanposition = DeanPosition::where(['dean_positions.faculty_id' => 44, 'dean_positions.status' => "Present"])
+                ->join('employees', 'dean_positions.employee_id', '=', 'employees.id')
+                ->first();
+
+            return view('pages.student.courseregistration.print', compact('coursesalreadyregistered', 'programme', 'student', 'session', 'supervisions', 'hodposition', 'deanposition', 'spgsdeanposition', 'sm1', 'sm2'));
+
+        } catch (\Exception $e) {
+            return $e->getMessage();
+        }
+
+    }
+
+    public function timetable($session, $semester)
+    {
+        $student = Auth::user();
+        $activesemester = $semester;
+        $programme = Programme::find($student->programme_id);
+        return view('pages.student.courseregistration.timetable', compact('student', 'activesemester', 'programme', 'session'));
+    }
+
+    public function getschedules()
+    {
+        //Generate timetable by lecturer - First fetch groups taken by the lecturer then push values to function
+        /**$coursegroupsbylecturer = CourseLecturer::where(['employee_id'=>1])->pluck('course_group_id');
+         * $activesemester = request('semester');
+         * $student = Auth::user();
+         * $coursegroups = $student->coursegroups($student->currentSession()->session, $activesemester, $coursegroupsbylecturer)->get();
+         * $coursegroups = $coursegroups->map(function($item, $key){
+         * return ['coursecode'=>$item->course->coursecode, 'coursetitle'=>$item->course->coursetitle, 'groupno'=>$item->groupno, 'grouptype'=>$item->grouptype, 'courseperiod'=>$item->courseperiods, 'courselecturer'=>$item->employees];
+         * });
+         * return $coursegroups;*/
+
+        $activesemester = request('semester');
+        $session = request('session');
+        $student = Auth::user();
+        $coursegroups = $student->coursegroups($session, $activesemester)->get();
+        $coursegroups = $coursegroups->map(function ($item, $key) {
+            return ['coursecode' => $item->course->coursecode, 'coursetitle' => $item->course->coursetitle, 'groupno' => $item->groupno, 'grouptype' => $item->grouptype, 'courseperiod' => $item->courseperiods, 'courselecturer' => $item->employees];
+        });
+        return $coursegroups;
+    }
+
+    public function getRegCompCourseGroups($session)
+    {
+        $student = Auth::user();
+        $activesemester = request('activesemester');
+        $coursegroups = $student->coursegroups($session, $activesemester)->get();
+        return $coursegroups;
+    }
+
+    public function getRegElectCourseGroups()
+    {
+        $coursegroupids = request('groupids'); //[6,8,14,15];
+        $coursegroups = CourseGroup::whereIn('id', $coursegroupids)->get();
+        $courses = $coursegroups->mapToGroups(function ($item, $key) {
+            return [$item->course->coursecode . " &&& " . $item->course->coursetitle . " &&& " . $item->course->courseunit . " &&& " . $item->course->id => $item->id . " &&& " . $item->grouptype . " &&& " . $item->semester];
+        });
+        return $courses;
+    }
+
+    public function getConfiguredCourseGroups($session, $semester = 0)
+    {
+        $student = Auth::user();
+        $where = [];
+        if ($semester) {
+            $where[] = ['semester', '=', $semester];
+        }
+        $course_id = request('course_id');
+        $courseGroups = CourseGroup::where(['course_id' => $course_id, 'session' => $session])->where($where)->get();
+        $lecturegroups = [];
+        $labgroups = [];
+        foreach ($courseGroups as $courseGroup) {
+            if (strtolower($courseGroup->grouptype) == "lt" && $courseGroup->canBeRegistered()) {
+                $lecturegroups [] = $courseGroup;
+            }
+            if (strtolower($courseGroup->grouptype) == "lb" && $courseGroup->canBeRegistered()) {
+                $labgroups [] = $courseGroup;
+            }
+        }
+        return [$lecturegroups, $labgroups];
+    }
+
+    public function getDepartments()
+    {
+        $departments = Department::where('faculty_id', '=', request('facultyid'))->get();
+        return $departments;
+    }
+
+    public function getFaculties()
+    {
+        $faculties = Faculty::all();
+        return $faculties;
+    }
+
+    public function getCourses()
+    {
+        $student = Auth::user();
+        $courses = Course::where(['department_id' => request('department_id'), 'courselevel' => request('courselevel')//, 'coursesemester'=>$student->currentSemester()->semester
+        ])->get();
+        return $courses;
+    }
+
+    public function getMoreCourses($session)
+    {
+        $student = Auth::user();
+        $course = Course::find(request('course_id'));
+        $coursegroups = CourseGroup::where(['course_id' => request('course_id'), 'session' => $session,// 'semester'=>$student->currentSemester()->semester
+        ])->get();
+//        foreach ($coursegroups as $courseGroup){
+////            canBeRegistered
+//            if(strtolower($courseGroup->grouptype) == 'lt' && $courseGroup->canBeRegistered()){
+//                $lecturegroups [] = $courseGroup;
+//            }
+//            if(strtolower($courseGroup->grouptype) == 'lb' ){
+//                $labgroups [] = $courseGroup;
+//            }
+//        }
+        $lecturegroups = $coursegroups->where('grouptype', '=', 'lt');
+        $labgroups = $coursegroups->where('grouptype', '=', 'lb');
+        $morecourses = ['lecturegroups' => $lecturegroups, 'labgroups' => $labgroups, 'course' => $course];
+        return $morecourses;
+    }
+
+    public function addCourse()
+    {
+
+        try {
+            $coursegroupids = [];
+            $coursegroups = request('coursegroupids');
+            $xCg = explode('-', $coursegroups[0]);
+            $cg = CourseGroup::where('id', $xCg[0])->first();
+            $regCount = CourseRegistration::where('course_group_id', $cg->id)->count();
+            $courseLog = CourseRegLog::where(['session' => $cg->session, 'semester' => $cg->semester, 'student_id' => Auth::id()])
+                ->first();
+            if ($regCount >= $cg->maxsize) {
+                return [];
+            }
+            if (!$courseLog) {
+                $courseLog = new CourseRegLog();
+                $courseLog->session = $cg->session;
+                $courseLog->semester = $cg->semester;
+                $courseLog->student_id = Auth::id();
+                $courseLog->logs = json_encode([]);
+                $courseLog->save();
+
+            }
+            $courseLogObject = $courseLog ? (array)json_decode($courseLog->logs) : (object)[];
+            $unitRegistered = CourseRegistration::join("course_groups", "course_groups.id", "=", "course_registrations.course_group_id")
+                ->join("courses", "courses.id", "=", "course_groups.course_id")
+                ->where(["course_groups.session" => $cg->session, "course_groups.semester" => $cg->semester, "course_registrations.student_id" => Auth::id()])
+                ->sum('courses.courseunit');
+            $course = Course::find($cg->course_id);
+//            return $coursegroups;
+            foreach ($coursegroups as $coursegroup) {
+                $coursegroup = explode("-", $coursegroup);
+                $new_course_group_id = $coursegroup[0];
+                $old_course_group_id = $coursegroup[1];
+//                $new_course_group_id."-".$old_course_group_id;
+                if ($new_course_group_id != "") {
+                    CourseRegistration::where(['course_group_id' => $old_course_group_id, 'student_id' => Auth::id()])->delete();
+                    if (!$courseregistration = CourseRegistration::where(['course_group_id' => $new_course_group_id, "student_id" => Auth::id()])->first())
+                        $courseregistration = new CourseRegistration();
+                    $courseregistration->course_group_id = $new_course_group_id;
+                    $courseregistration->student_id = Auth::id();
+                    $courseregistration->save();
+//                    return $courseregistration;
+                    $coursegroupids[] = $new_course_group_id;
+                    $unitRegistered2 = CourseRegistration::join("course_groups", "course_groups.id", "=", "course_registrations.course_group_id")
+                        ->join("courses", "courses.id", "=", "course_groups.course_id")
+                        ->where(["course_groups.session" => $cg->session, "course_groups.semester" => $cg->semester, "course_registrations.student_id" => Auth::id()])
+                        ->sum('courses.courseunit');
+                    $courseLogObject[date("d_m_Y")][] = [
+                        "course_code" => $course->coursecode, "course_id" => $course->id,
+                        "course_unit" => $course->courseunit, "course_title" => $course->coursetitle,
+                        "reg_time" => now(), "action" => "Add", "unit_before" => $unitRegistered, "unit_after" => $unitRegistered2,
+                        "course_group" => $cg->grouptype . "|" . $cg->session . "|" . $cg->semester . "|" . $cg->id
+                    ];
+                }
+
+            }
+            $courseLog->logs = json_encode($courseLogObject);
+            $courseLog->save();
+            return $coursegroupids;
+        } catch (\Exception $e) {
+
+            return $e->getMessage();
+        }
+    }
+
+    public function deleteCourse()
+    {
+        $coursegroupids = [];
+        $coursegroups = request('coursegroupids');
+        $xCg = $coursegroups[0] ? $coursegroups[0] : $coursegroups[1];
+        $cg = CourseGroup::where('id', $xCg)->first();
+        $courseLog = CourseRegLog::where(['session' => $cg->session, 'semester' => $cg->semester, 'student_id' => Auth::id()])
+            ->first();
+        if (!$courseLog) {
+            $courseLog = new CourseRegLog();
+            $courseLog->session = $cg->session;
+            $courseLog->semester = $cg->semester;
+            $courseLog->student_id = Auth::id();
+            $courseLog->logs = json_encode([]);
+            $courseLog->save();
+
+        }
+        $courseLogObject = (array)($courseLog ? json_decode($courseLog->logs) : (object)[]);
+        $unitRegistered = CourseRegistration::join("course_groups", "course_groups.id", "=", "course_registrations.course_group_id")
+            ->join("courses", "courses.id", "=", "course_groups.course_id")
+            ->where(["course_groups.session" => $cg->session, "course_groups.semester" => $cg->semester, "course_registrations.student_id" => Auth::id()])
+            ->sum('courses.courseunit');
+        $course = Course::find($cg->course_id);
+        foreach ($coursegroups as $coursegroup) {
+            $old_course_group_id = $coursegroup;
+            if ($old_course_group_id != "") {
+                CourseRegistration::where(['course_group_id' => $old_course_group_id, 'student_id' => Auth::id()])->delete();
+                $dp = new DroppedCourse();
+                $dp->course_group_id = $old_course_group_id;
+                $dp->student_id = Auth::id();
+                $dp->signature = implode(',', $coursegroups);
+                $dp->save();
+                $coursegroupids[] = $old_course_group_id;
+                $unitRegistered2 = CourseRegistration::join("course_groups", "course_groups.id", "=", "course_registrations.course_group_id")
+                    ->join("courses", "courses.id", "=", "course_groups.course_id")
+                    ->where(["course_groups.session" => $cg->session, "course_groups.semester" => $cg->semester, "course_registrations.student_id" => Auth::id()])
+                    ->sum('courses.courseunit');
+                $courseLogObject[date("d_m_Y")][] = [
+                    "course_code" => $course->coursecode, "course_id" => $course->id,
+                    "course_unit" => $course->courseunit, "course_title" => $course->coursetitle,
+                    "reg_time" => now(), "action" => "Drop", "unit_before" => $unitRegistered,
+                    "unit_after" => $unitRegistered2,
+                    "course_group" => $cg->grouptype . "|" . $cg->session . "|" . $cg->semester . "|" . $cg->id
+                ];
+            }
+        }
+        $courseLog->logs = json_encode($courseLogObject);
+        $courseLog->save();
+        return $coursegroupids;
+    }
+
+    public function getCourseInfo($session)
+    {
+        $student = Auth::user();
+        $coursegroups = CourseGroup::where(['course_id' => request('course_id'), 'session' => $session])->orderBy('grouptype', 'desc')->get();
+        $coursegroups = $coursegroups->map(function ($item, $key) {
+            return ['grouptype' => $item->grouptype, 'courseperiod' => $item->courseperiods, 'courselecturer' => Employee::whereIn('id', $item->courselecturers->pluck('employee_id'))->get(), 'enrolled' => CourseRegistration::where(['course_group_id' => $item->id])->count(), 'maxsize' => $item->maxsize];
+        });
+        return $coursegroups;
+    }
+
+    public function getFacility()
+    {
+        return Facility::find(request('facility_id'));
+    }
+
+    public function getRegistrationPeriod($programmeid, $level, $newreturning, $nature, $now)
+    {
+        $registrationperiod = RegistrationPeriod::where(['programme_id' => $programmeid, 'level' => $level, 'new_returning' => $newreturning, 'nature' => $nature])->where('startdate', '<=', $now)->where('end_date', '>=', $now)->first();
+        return $registrationperiod;
+    }
+
+    public function jsShowMoreCourses()
+    {
+        return view('pages.courseregistration.jsshowmorecourses');
+    }
+
+    public function viewCourseForm($studentid, $session)
+    {
+        try {
+            $student = Student::find($studentid);
+            $sm1 = $this->checkStatusGlobalBoolean($student, ["resource" => "Course Registration"], $session, 1);
+            $sm2 = $this->checkStatusGlobalBoolean($student, ["resource" => "Course Registration"], $session, 2);
+
+            $coursegroups = $student->coursegroups($session)->get();
+            $coursegroups = DB::table("course_registrations")
+                ->select("courses.*", "course_groups.session", "course_groups.semester", "groupno", "grouptype")
+                ->join("course_groups", "course_groups.id", "=", "course_registrations.course_group_id")
+                ->join("courses", "courses.id", "=", "course_groups.course_id")
+                ->where(["session" => $session, "student_id" => $student->id])
+                ->orderBy("coursecode", "ASC")
+                ->orderBy("courseunit", "ASC")
+                ->get();
+            $coursesalreadyregistered = [];
+//            $coursesalreadyregistered = $coursegroups->mapToGroups(function ($item, $key) {
+//                return [$item->course->coursecode . " &&& " . $item->course->coursetitle . " &&& " . $item->course->courseunit . " &&& " . $item->course->coursesemester . " &&& " . $item->course->id => $item->groupno];
+//            });
+
+            foreach ($coursegroups as $cg) {
+                if (isset($coursesalreadyregistered[$cg->coursecode])) {
+                    if ($cg->grouptype == "LT") {
+                        $coursesalreadyregistered[$cg->coursecode]->ltgroup = $cg->groupno;
+                    } else {
+                        $coursesalreadyregistered[$cg->coursecode]->lbgroup = $cg->groupno;
+                    }
+                } else {
+                    $coursesalreadyregistered[$cg->coursecode] = (object)["code" => $cg->coursecode, "title" => $cg->coursetitle, "unit" => $cg->courseunit, "semester" => $cg->semester, "course_id" => $cg->id, "ltgroup" => $cg->grouptype == "LT" ? $cg->groupno : "", "lbgroup" => $cg->grouptype == "LB" ? $cg->groupno : ""];
+                }
+
+            }
+
+//            return $coursesalreadyregistered;
+            $programme = Programme::find($student->programme);
+            $supervisions = Supervision::where(['student_id' => $student->id])
+                ->join('employees', 'supervisions.employee_id', '=', 'employees.id')
+                ->join('departments', 'employees.department_id', '=', 'departments.id')
+                ->select('supervisions.title as thesistitle', 'supervisions.examdate', 'employees.title as title', 'departments.name', 'employees.firstname', 'employees.surname', 'employees.othernames')
+                ->get();
+            $hodposition = HodPosition::where(['hod_positions.department_id' => $student->programme()->department_id, 'hod_positions.status' => "Present"])
+                ->join('employees', 'hod_positions.employee_id', '=', 'employees.id')
+                ->first();
+            $deanposition = DeanPosition::where(['dean_positions.faculty_id' => $student->programme()->department()->faculty_id, 'dean_positions.status' => "Present"])
+                ->join('employees', 'dean_positions.employee_id', '=', 'employees.id')
+                ->first();
+            $spgsdeanposition = DeanPosition::where(['dean_positions.faculty_id' => 44, 'dean_positions.status' => "Present"])
+                ->join('employees', 'dean_positions.employee_id', '=', 'employees.id')
+                ->first();
+
+            return view('pages.student.courseregistration.print', compact('coursesalreadyregistered', 'programme', 'student', 'session', 'supervisions', 'hodposition', 'deanposition', 'spgsdeanposition', 'sm1', 'sm2'));
+
+        } catch (\Exception $e) {
+            return $e->getMessage();
+        }
+
+    }
+
+}

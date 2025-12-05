@@ -1,0 +1,47 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Spatie\Permission\Traits\HasRoles;
+
+class Role extends Model
+{
+//    use HasRoles;
+    protected $fillable = ['name','guard_name'];
+    protected $hidden = ['guard_name', 'web'];
+    public function rolePermissions(){
+        return $this->belongsToMany(Permission::class,'role_has_permissions');
+    }
+
+
+    public static function formatScope($access_code,$scope)
+    {
+        $access = "All";
+        $scope = explode("|",$scope);
+        $scope1 = explode(",",$scope[0]);
+        $scope2 = $scope[1];
+        switch ($access_code){
+            case "p": $access = "Programmes";
+                $scopeR = implode(', ',Programme::whereIn("id",$scope1)->pluck("name")->toArray());
+            break;
+            case "d": $access = "Departments";
+                $scopeR = implode(", ",Department::whereIn("id",$scope1)->pluck("name")->toArray());
+            break;
+            case "f": $access = "Faculties";
+                $scopeR = implode(', ',Faculty::whereIn("id",$scope1)->pluck("name")->toArray());
+            break;
+            case "*": $access = "All";$scopeR="All";
+            break;
+
+        }
+        if ($scope2=="*"){
+            $ptScope = "All Programme Types:";
+        }else{
+            $ptScope = ProgrammeType::find($scope2)->prog_type_code." Only:";
+        }
+        return (object) ["access"=>$access,"scope"=>$scopeR,"ptype"=>$ptScope];
+
+    }
+
+}

@@ -1,0 +1,84 @@
+<table class="table table-bordered" id="beneficiariesTable">
+    <thead>
+    <tr>
+        <th class="sort">S/N</th>
+        <th class="sort">Matric No.</th>
+        <th class="sort">Affected Session</th>
+        <th class="sort">Level</th>
+        <th class="sort">Programme</th>
+    </tr>
+    </thead>
+    <tbody>
+    @foreach($beneficiaries as $beneficiary)
+        <tr>
+            <td>{{$loop->iteration}}</td>
+            <td>{{$beneficiary->matric_number}}</td>
+            <td>{{$beneficiary->session}}/{{$beneficiary->session+1}}</td>
+            <td>{{$beneficiary->short_name}}</td>
+            <td>{{$beneficiary->programme}}</td>
+        </tr>
+    @endforeach
+    <tfoot>
+    <tr>
+        <th class="sort">S/N</th>
+        <th class="sort">Matric No.</th>
+        <th class="sort">Affected Session</th>
+        <th class="sort">Level</th>
+        <th class="sort">Programme</th>
+    </tr>
+    </tfoot>
+
+    </tbody>
+
+</table>
+
+<script>
+    $(function () {
+        $("#beneficiariesTable").DataTable({
+            "lengthMenu": [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+            pageLength: 50,
+            dom: "<'row'<'col-sm-12'B>>" +
+                "<'row'<'col-sm-12 col-md-6'l><'col-sm-12 col-md-6'f>>" +
+                "<'row'<'col-sm-12'tr>>" +
+                "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+            buttons: [
+                {
+                    extend: 'excelHtml5',
+                    exportOptions: {
+                        columns: ':visible'
+                    }
+                },
+                {
+                    extend: 'pdfHtml5',
+                    orientation: 'landscape',
+                    pageSize: 'LEGAL',
+                    exportOptions: {
+                        columns: ':visible'
+                    }
+                },
+                {
+                    extend: 'print',
+                    messageTop: 'Candidates Report',
+                    orientation: 'landscape',
+                    pageSize: 'LEGAL'
+                },
+                {
+                    extend: 'colvis',
+                    columns: ':not(.noVis)',
+                    collectionLayout: 'fixed two-column',
+                    postfixButtons: [ {
+                        extend:'colvisGroup',
+                        text:'Show all',
+                        show:':hidden'
+                    } ]
+                }
+            ],
+            language: {
+                buttons: {
+                    colvis: 'Show/Hide columns'
+                }
+            },
+        });
+    });
+</script>
+

@@ -1,0 +1,121 @@
+@php
+$fs = $cf1->formSetting;
+   $prog_id = $cf1->programme_admitted_id;
+   $programme1 = App\Models\Programme::find($prog_id);
+   $department1 = $programme1->department();
+   $faculty1 = $department1->faculty();
+
+@endphp
+<form class="form-horizontal" action="" method="post" id="updateStudentRecordForm1">
+    @csrf
+    <input type="text" name="candidate_form_id" value="{{$cf1->id}}" id="candidate_form_id">
+    <input type="hidden" name="candidate_form_type_id" value="{{$fs->candidate_form_type_id}}" id="candidate_form_type_id">
+
+    <div class="row">
+        <div class="col-md-12">
+            <div class="form-group">
+                <label for="name" class="col-sm-4 control-label">Session:</label>
+                <div class="col-sm-8">
+                    <select name="entrysession"
+                            class="custom-select form-control {{ $errors->has('entrysession')?'is-invalid':'is-valid' }}"
+                            id="sessionUpdate" disabled required>
+                        <option value="{{$fs->session}}">{{$fs->session}}/{{$fs->session+1}}</option>
+
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-12">
+            <div class="form-group">
+                <label for="name" class="col-sm-4 control-label">Faculty:</label>
+                <div class="col-sm-8">
+                    <div class='input-group date'>
+                        <select class="custom-select form-control  {{ $errors->has('faculty')?'is-invalid':'is-valid' }}" name="faculty" id="faculty" required>
+                            <option value="">-Select-</option>
+                            @php
+                                $faculties = \App\Models\Faculty::all();
+                                //$fid = $candidateForm->formSetting()->programme()->id;
+                               // $fid = $student->programme_id?$student->faculty()->id:0;
+                            @endphp
+                            @foreach( $faculties as $faculty)
+                                @php
+                                    $selected = $faculty->id == $faculty1->id?"selected":"";
+                                @endphp
+                                <option value="{{$faculty->id}}" {{$selected}}>{{optional($faculty)->name}}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        <div class="col-md-12">
+            <div class="form-group">
+                <label for="name" class="col-sm-4 control-label">Department:</label>
+                <div class="col-sm-8">
+                    <select class="custom-select form-control  {{ $errors->has('department')?'is-invalid':'is-valid' }}" name="department" id="department" required>
+                        <option value="">Select...</option>
+                        @php
+                            $departments = \App\Models\Department::where(['faculty_id'=>$faculty1->id])->orderBy("name")->get();
+
+                        @endphp
+                        @foreach($departments  as $department)
+                            @php
+                                if($programme1)
+                                    $selected = $department->id == $department1->id?"selected":"";
+                                else
+                                    $selected ="";
+                            @endphp
+                            <option value="{{$department->id}}" {{$selected}}>{{optional($department)->name}}</option>
+                        @endforeach
+                    </select>
+
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-12">
+            <div class="form-group">
+                <label for="name" class="col-sm-4 control-label">Change Programme Admitted:</label>
+                <div class="col-sm-8">
+                    <select id="programme" name="programme"
+                            class="custom-select form-control {{ $errors->has('lgaid')?'is-invalid':'is-valid' }}"
+                            required>
+                        <option value="">--Programme--</option>
+                        @php
+                            // Filter programmes based on the same session and candidate form type as the current form
+                            $programmes = \App\Models\FormSetting::where([
+                                'session' => $fs->session,
+                                'candidate_form_type_id' => $fs->candidate_form_type_id
+                            ])->get();
+                            
+                            // If no programmes found with the filtered criteria, fall back to all programmes
+                            if($programmes->count() == 0) {
+                                $programmes = \App\Models\FormSetting::all();
+                            }
+
+                        @endphp
+                        @foreach( $programmes as $programme)
+                            @php
+                                $selected = ($programme->programme_id == $programme1->id) ? "selected" : "";
+                            @endphp
+                            <option value="{{$programme->id}}" {{ $selected }}>{{optional($programme->programme())->name}}</option>
+                        @endforeach
+
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-12 text-right">
+            {{--                           <button class="btn btn-success" type="submit" name="btnsave"><span--}}
+            {{--                                   class="icon icon-user-add"></span> Update Student--}}
+            {{--                           </button>--}}
+            <p class="alert alert-info" id="messageChangeRecord1">
+
+            </p>
+        </div>
+    </div>
+</form>

@@ -1,0 +1,66 @@
+@inject('Accommodation', 'App\Models\Accommodation')
+@extends('layout.staff.master')
+@section('css')
+<style rel="text/css">
+    .table tr td:first-child {
+        font-weight: bold;
+    }
+    .hostelaction{
+        margin:5px;
+        margin-right:7px;
+        min-width: 100px;
+    }
+    .widgeterror{
+        color:#EC391B;
+    }
+</style>
+@endsection
+@section('content')
+    <section class="">
+
+        <div class="container">
+            <div class='row'>
+                <div class='col-xs-12 col-md-10'>
+                    @csrf
+                    <div class="form-group">
+                        <label for="student_type">Student Type</label>
+                        <select name="student_type" id="student_type" class="form-control">
+                            @foreach ($programmeTypes as $code => $name)
+                                <option value="{{ $code }}" {{ isset($accommodationSessionFee) && $accommodationSessionFee->student_type == $code ? 'selected' : '' }}>
+                                    {{ $name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="unit_type">Unit Type</label>
+                        <select name="unit_type" id="unit_type" class="form-control">
+                            @foreach ($unitTypes as $key => $value)
+                                <option value="{{ $key }}" {{ isset($accommodationSessionFee) && $accommodationSessionFee->unit_type == $key ? 'selected' : '' }}>
+                                    {{ $value }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="unit_id">Unit ID</label>
+                        <input type="number" name="unit_id" id="unit_id" class="form-control" value="{{ old('unit_id', $accommodationSessionFee->unit_id ?? '') }}">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="session">Session</label>
+                        <input type="text" name="session" id="session" class="form-control" value="{{ old('session', $accommodationSessionFee->session ?? '') }}">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="amount">Amount</label>
+                        <input type="number" step="0.01" name="amount" id="amount" class="form-control" value="{{ old('amount', $accommodationSessionFee->amount ?? '') }}">
+                    </div>
+
+            </div>
+        </div>
+        </div>
+    </section>
+@endsection

@@ -1,0 +1,281 @@
+<?php
+
+namespace App\Http\Controllers\Form;
+
+use App\Http\Controllers\Controller;
+use App\Models\CandidateForm;
+use App\Models\Configuration;
+use App\Models\FeedBack;
+use App\Models\FeedBackReply;
+use App\Models\FeeManager;
+use App\Models\SundryTransaction;
+use Auth;
+use Illuminate\Http\Request;
+use PDF;
+
+class FeedBackController extends Controller
+{
+
+    public function __construct()
+    {
+        $this->middleware('auth:candidate');
+    }
+
+    /**
+     * Display a listing of the resource.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function index()
+    {
+        //
+        $session = Configuration::where(['name' => 'current_session'])->orderBy('session', 'DESC')->first()->session;
+        $accepted = CandidateForm::where(['candidate_id' => Auth::id()])->whereNotNull("acceptance_date")->join('form_settings', 'form_settings.id', '=', 'candidate_forms.formsetting_id')->where('form_settings.session', '=', $session)->first();
+
+        $candforms = CandidateForm::where(['candidate_id' => Auth::id(), "paymentstatus" => "paid"])->get();
+        return view('pages.forms.feedback.cpp.index', compact('candforms', 'accepted'));
+    }
+
+    public function index_()
+    {
+        //
+        $session = 2023;//Configuration::where(['name' => 'current_session'])->orderBy('session', 'DESC')->first()->session;
+        $accepted = CandidateForm::where(['candidate_id' => Auth::id()])->whereNotNull("acceptance_date")->join('form_settings', 'form_settings.id', '=', 'candidate_forms.form_setting_id')->where('form_settings.session', '=', $session)->first();
+
+        $candforms = CandidateForm::where(['candidate_id' => Auth::id(), "payment_status" => "paid"])->get();
+        return view('pages.forms.feedback.index', compact('candforms', 'accepted'));
+    }
+
+    public function cppindex()
+    {
+        //
+        $accepted = CandidateForm::where(['candidate_id' => Auth::id()])->whereNotNull("acceptance_date")->first();
+
+        $candforms = CandidateForm::where(['candidate_id' => Auth::id(), "paymentstatus" => "paid"])->get();
+        return view('pages.forms.feedback.cpp.index', compact('candforms', 'accepted'));
+    }
+
+    public function admission(Request $request, $enc_id)
+    {
+        //
+        $candform = CandidateForm::find(decrypt($enc_id));
+        if (!$candform)
+            return view('errors.403');
+
+        if ($candform->admission_status != "admitted")
+            return view('errors.403');
+
+//        $secretary = Configuration::secretary();
+        $secretary = "";
+        $pdf = PDF::loadView('pages.forms.feedback.admission', compact('candform', "secretary"));
+
+        return $pdf->stream();
+
+        return view('pages.forms.feedback.admission', compact('feedbacks', 'candform'));
+    }
+
+    public function cppadmission(Request $request, $enc_id)
+    {
+        //
+        $candform = CandidateForm::find(decrypt($enc_id));
+        if (!$candform)
+            return view('errors.403');
+
+        if ($candform->admissionstatus != "admitted")
+            return view('errors.403');
+
+//        $secretary = Configuration::secretary();
+        $secretary="";
+        $pdf = PDF::loadView('pages.forms.feedback.cpp.admission', compact('candform', "secretary"));
+
+        return $pdf->stream();
+
+        return view('pages.forms.feedback.cpp.admission', compact('feedbacks', 'candform'));
+    }
+
+    public function noa(Request $request, $enc_id)
+    {
+        //
+        $candform = CandidateForm::find(decrypt($enc_id));
+        $user = Auth::user();
+        $form = $candform->formsetting;
+        $fees = FeeManager::computeSundryCharges($candform);
+        $amount = 0;
+        foreach ($fees as $fee) {
+            $amount += $fee->amount;
+        }
+        $details = SundryTransaction::paySundry($candform, $amount);
+        $owing = $amount > $details["totalAmountPaid"];
+
+        if (!$candform)
+            return view('errors.403');
+        $candforms = CandidateForm::where(['candidate_id' => Auth::id(), "paymentstatus" => "paid"])->get();
+        $feedbacks = FeedBack::where(['email' => Auth::user()['email']])->get();
+        $pdf = PDF::loadView('pdfView', compact('feedbacks', 'candform'));
+
+        return $pdf->download('invoice.pdf');
+        return view('pages.candidate.download.noa', compact('feedbacks', 'candform'));
+    }
+
+    public function cppnoa(Request $request, $enc_id)
+    {
+        //
+        $candform = CandidateForm::find(decrypt($enc_id));
+        $user = Auth::user();
+        $form = $candform->formsetting;
+        $fees = FeeManager::computeSundryCharges($candform);
+        $amount = 0;
+        foreach ($fees as $fee) {
+            $amount += $fee->amount;
+        }
+        $details = SundryTransaction::paySundry($candform, $amount);
+        $owing = $amount > $details["totalAmountPaid"];
+
+        if (!$candform)
+            return view('errors.403');
+        $candforms = CandidateForm::where(['candidate_id' => Auth::id(), "paymentstatus" => "paid"])->get();
+        $feedbacks = FeedBack::where(['email' => Auth::user()['email']])->get();
+        $pdf = PDF::loadView('pdfView', compact('feedbacks', 'candform'));
+
+        return $pdf->download('invoice.pdf');
+        return view('pages.candidate.download.cpp.noa', compact('feedbacks', 'candform'));
+    }
+
+    public function send(Request $request)
+    {
+        //
+        $this->validate($request, FeedBack::$rules);
+        $feedback = new FeedBack();
+        $feedback->title = $request->title;
+        $feedback->body = $request->body;
+        if (Auth::id()) {
+            $feedback->email = Auth::user()['email'];
+        } else {
+            $feedback->body = $request->email;
+        }
+        $feedback->save();
+        if ($feedback->id) {
+//            todo:Send mail to all admins with permission to reply to a feedback
+//            todo:Send a mail telling user an admin will attend to his complain soon
+        }
+        return redirect()->back()->withErrors([]);
+    }
+
+    public function post($url_id)
+    {
+        $id = decrypt($url_id);
+
+//        check if the post actually belongs to the current user
+        $feedback = FeedBack::find($id);
+        if ($feedback->email == Auth::user()['email']) {
+            $replies = FeedBackReply::where(['feedbackid' => $id])->get();
+            return view('pages.candidate.feedback.cpp.reply', compact('feedback', 'replies'));
+        } else {
+            $access = array('access' => 0, 'message' => 'Access denied to this post');
+            return view('pages.candidate.feedback.cpp.reply', compact('access'));
+        }
+
+
+    }
+
+    public function reply(Request $request)
+    {
+        $this->validate($request, FeedBackReply::$rules);
+//        todo:check if current user owns post
+        $feedback = FeedBack::find(decrypt($request->feedbackid));
+        if ($feedback && $feedback->email == Auth::user()['email']) {
+//            return $request;
+            $reply = new FeedBackReply();
+            $reply->email = $feedback->email;
+            $reply->body = $request->body;
+            $reply->title = $request->title;
+            $reply->feedbackid = $feedback->id;
+            $reply->save();
+            $replies = FeedBackReply::where(['feedbackid' => $feedback->id])->get();
+            return redirect()->back(compact('feedback', 'replies'));
+
+        } else {
+            $access = array('access' => 0, 'message' => 'Access denied to this post');
+            return redirect()->back(compact('access'));
+        }
+    }
+
+    /**
+     * Store a newly created resource in storage.
+     *
+     * @param  \Illuminate\Http\Request $request
+     * @return \Illuminate\Http\Response
+     */
+    public function showPay($enc_id)
+    {
+        //
+        $user = Auth::user();
+        $candform = CandidateForm::find(decrypt($enc_id));
+        $form = $candform->formSetting;
+        $fees = FeeManager::computeSundryCharges($candform);
+        $amount = 0;
+        foreach ($fees as $fee) {
+            $amount += $fee->amount;
+        }
+        $details = SundryTransaction::paySundry($candform, $amount);
+        $transactions = $details["transactions"];
+        $amountPaid = $details["totalAmountPaid"];
+
+        $candidate = $candform->candidate()->first();
+        $biodata = $candidate->biodata();
+        $contact = $candidate->contact();
+        if (!$candform)
+            return view('errors.403');
+        return view("pages.forms.notification.localtransaction", compact("candform", "fees", "transactions", "biodata", "contact", "user", "form", "amountPaid"));
+
+    }
+
+    /**
+     * Display the specified resource.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function acceptAdmission($id)
+    {
+        //
+        $id = decrypt($id);
+        $candform = CandidateForm::find($id);
+        if (!$candform || !$candform->admission_status == "admitted")
+            return view('errors.403');
+
+        $candform->acceptance_date = now();
+        $candform->save();
+        return redirect()->back();
+    }
+
+    /**
+     * Show the form for editing the specified resource.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function edit(FeedBack $feedBack)
+    {
+        //
+    }
+
+    /**
+     * Update the specified resource in storage.
+     *
+     * @param  \Illuminate\Http\Request $request
+     * @return \Illuminate\Http\Response
+     */
+    public function update(Request $request, FeedBack $feedBack)
+    {
+        //
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function destroy(FeedBack $feedBack)
+    {
+        //
+    }
+}

@@ -1,0 +1,63 @@
+<table class="table table-bordered table-responsive" style="width:100%;font-size:14px;font-family: times new roman;">
+    <tr>
+        <th>S/N</th>
+        <th>Session</th>
+        <th>Faculty</th>
+        <th>Department</th>
+        <th>Programme</th>
+        <th>Level</th>
+        <th>Max Courses</th>
+        <th>Max Units</th>
+        <th>Reg. Amount</th>
+        <th>Amount/Course</th>
+        <th>Start Date</th>
+        <th>End Date</th>
+    </tr>
+
+    @foreach($configs as $config)
+        <tr>
+            <td>{{$loop->iteration}}</td>
+            <td>{{$config->session}}</td>
+            <td>
+                @if(isset($config->faculty))
+                    {{$config->faculty->name}}
+                @else
+                    All
+                @endif
+            </td>
+            <td>
+                @if(isset($config->department))
+                    {{$config->department->name}}
+                @else
+                    All
+                @endif
+            </td>
+            <td>
+                @if(isset($config->programme))
+                    {{$config->programme->name}}
+                @else
+                    All
+                @endif
+            </td>
+            <td>
+                @if(isset($config->level))
+                    {{$config->level->name}}
+                @else
+                    {{$config->level_id}}
+                @endif
+            </td>
+            <td>{{$config->max_courses}}</td>
+            <td>
+                @if($config->max_credit_unit == 0)
+                    Unlimited
+                @else
+                    {{$config->max_credit_unit}}
+                @endif
+            </td>
+            <td>₦ {{number_format($config->registration_amount, 2)}}</td>
+            <td>₦ {{number_format($config->per_course_amount, 2)}}</td>
+            <td>{{$config->start_date}}</td>
+            <td>{{$config->end_date}}</td>
+        </tr>
+    @endforeach
+</table>

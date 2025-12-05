@@ -1,0 +1,370 @@
+@extends("layout.staff.master")
+
+@section("pageTitle")
+    Student: Add/Drop
+@endsection
+
+@section("content")
+    <section>
+        <div class="container pt-30 pb-30 pl-30 pr-30">
+            <div class="row">
+                <div class="container mt-4">
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0">Course Registration Portal</h5>
+                        </div>
+                        <div class="card-body">
+                            <!-- Search Form -->
+                            <div class="row mb-3">
+                                <div class="col-md-4">
+                                    <input type="text" id="matric_number" class="form-control" placeholder="Matric Number">
+                                </div>
+                                <div class="col-md-4">
+                                    <select id="session" class="form-control">
+                                        <option value="">Select Session</option>
+                                        @for($year = 2017; $year <= date('Y'); $year++)
+                                            <option value="{{ $year }}">{{ $year }}/{{ $year + 1 }}</option>
+                                        @endfor
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <button class="btn btn-outline-primary w-100" id="searchBtn">Search Courses</button>
+                                </div>
+                            </div>
+
+                            <!-- Courses Table -->
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-hover" id="coursesTable">
+                                    <thead class="table-light">
+                                    <tr>
+                                        <th>Sn</th>
+                                        <th>Course Code</th>
+                                        <th>Title</th>
+                                        <th>Unit</th>
+                                        <th>Select</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <p class="mb-0">Total Units: <strong id="totalUnits">0</strong></p>
+                                <button class="btn btn-danger" id="dropBtn">Drop Selected Courses</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Add Course Section -->
+                    <div class="card shadow-sm mt-4">
+                        <div class="card-header bg-success text-white">
+                            <h5 class="mb-0">Add New Course</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <label for="coursecode" class="form-label">Course Code</label>
+                                    <input type="text" id="coursecode" class="form-control" placeholder="Enter course code (e.g., CSC101)">
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="add_session" class="form-label">Session</label>
+                                    <select id="add_session" class="form-control">
+                                        <option value="">Select Session</option>
+                                        @for($year = 2017; $year <= date('Y'); $year++)
+                                            <option value="{{ $year }}">{{ $year }}/{{ $year + 1 }}</option>
+                                        @endfor
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="semester" class="form-label">Semester</label>
+                                    <select id="semester" class="form-control">
+                                        <option value="">Select Semester</option>
+                                        <option value="1">Semester 1</option>
+                                        <option value="2">Semester 2</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="loadGroupsBtn" class="form-label">&nbsp;</label>
+                                    <button class="btn btn-outline-info w-100" id="loadGroupsBtn">
+                                        <i class="fas fa-search"></i> Load Course Groups
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="row mt-3">
+                                <div class="col-md-6">
+                                    <label for="course_groups" class="form-label">Available Course Groups</label>
+                                    <select id="course_groups" class="form-control" disabled>
+                                        <option value="">Select a course group</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="addCourseBtn" class="form-label">&nbsp;</label>
+                                    <button class="btn btn-success w-100" id="addCourseBtn">Add Course</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+@endsection
+
+@section("js")
+    <script>
+        $(document).ready(function() {
+            // Clear course groups when course code, session, or semester changes
+            $('#coursecode, #add_session, #semester').on('change input', function() {
+                $('#course_groups').empty().append('<option value="">Select a course group</option>').prop('disabled', true);
+            });
+
+            // Auto-uppercase course code input
+            $('#coursecode').on('input', function() {
+                this.value = this.value.toUpperCase();
+            });
+
+            // Auto-populate session in add course form when main session changes
+            $('#session').on('change', function() {
+                $('#add_session').val($(this).val());
+            });
+
+            $('#searchBtn').click(function () {
+                const matricNumber = $('#matric_number').val().trim();
+                const session = $('#session').val();
+
+                // Validation
+                if (!matricNumber) {
+                    alert('Please enter a matric number');
+                    return;
+                }
+
+                if (!session) {
+                    alert('Please select a session');
+                    return;
+                }
+
+                // Show loading state
+                $('#searchBtn').prop('disabled', true).text('Searching...');
+
+                $.post("{{ route('student.course_registration.search') }}", {
+                    matric_number: matricNumber,
+                    session: session,
+                    _token: '{{ csrf_token() }}'
+                })
+                .done(function (data) {
+                    console.log("Server response:", data);
+                    let total = 0;
+                    $('#coursesTable tbody').empty();
+
+                    if (data && data.length > 0) {
+                        data.forEach((course, i) => {
+                            if (course) { // Check if course is not null
+                                total += course.unit || 0;
+                                $('#coursesTable tbody').append(`
+                            <tr>
+                                <td>${i + 1}</td>
+                                <td>${course.coursecode || 'N/A'}</td>
+                                <td>${course.coursetitle || 'N/A'}</td>
+                                <td>${course.unit || 0}</td>
+                                <td><input type="checkbox" value="${course.registration_id}"></td>
+                            </tr>
+                        `);
+                            }
+                        });
+                    } else {
+                        $('#coursesTable tbody').append(`
+                            <tr>
+                                <td colspan="5" class="text-center text-muted">No courses found for this student in the selected session</td>
+                            </tr>
+                        `);
+                    }
+                    $('#totalUnits').text(total);
+                })
+                .fail(function(xhr, status, error) {
+                    console.error("Error:", error);
+                    console.error("Response:", xhr.responseText);
+                    alert('Error loading courses. Please check the console for details.');
+                    $('#coursesTable tbody').empty().append(`
+                        <tr>
+                            <td colspan="5" class="text-center text-danger">Error loading courses</td>
+                        </tr>
+                    `);
+                })
+                .always(function() {
+                    // Reset button state
+                    $('#searchBtn').prop('disabled', false).text('Search Courses');
+                });
+            });
+
+            $('#dropBtn').click(function () {
+                const selected = $('input[type="checkbox"]:checked').map(function () {
+                    return $(this).val();
+                }).get();
+
+                if (selected.length === 0) {
+                    alert('Please select at least one course to drop');
+                    return;
+                }
+
+                if (!confirm(`Are you sure you want to drop ${selected.length} course(s)?`)) {
+                    return;
+                }
+
+                $('#dropBtn').prop('disabled', true).text('Dropping...');
+
+                $.post("{{ route('student.course_registration.drop') }}", {
+                    ids: selected,
+                    _token: '{{ csrf_token() }}'
+                })
+                .done(function (response) {
+                    alert('Courses dropped successfully');
+                    $('#searchBtn').click();
+                })
+                .fail(function(xhr, status, error) {
+                    console.error("Error dropping courses:", error);
+                    alert('Error dropping courses. Please try again.');
+                })
+                .always(function() {
+                    $('#dropBtn').prop('disabled', false).text('Drop Selected Courses');
+                });
+            });
+
+            $('#loadGroupsBtn').click(function () {
+                const coursecode = $('#coursecode').val().trim().toUpperCase();
+                const semester = $('#semester').val();
+                const session = $('#add_session').val();
+
+                // Validation
+                if (!coursecode) {
+                    alert('Please enter a course code');
+                    $('#coursecode').focus();
+                    return;
+                }
+
+                if (!session) {
+                    alert('Please select a session');
+                    $('#add_session').focus();
+                    return;
+                }
+
+                if (!semester) {
+                    alert('Please select a semester');
+                    $('#semester').focus();
+                    return;
+                }
+
+                // Update the course code field with uppercase value
+                $('#coursecode').val(coursecode);
+
+                // Show loading state
+                $('#loadGroupsBtn').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Loading...');
+                $('#course_groups').prop('disabled', true).empty().append('<option value="">Loading course groups...</option>');
+
+                $.post("{{ route('student.course_registration.load') }}", {
+                    coursecode: coursecode,
+                    semester: semester,
+                    session: session,
+                    _token: '{{ csrf_token() }}'
+                })
+                .done(function (groups) {
+                    $('#course_groups').empty();
+                    if (groups && groups.length > 0) {
+                        $('#course_groups').append('<option value="">Select a course group</option>');
+                        groups.forEach(group => {
+                            const groupInfo = `Group ${group.groupno} (${group.grouptype})`;
+                            $('#course_groups').append(`<option value="${group.id}">${groupInfo}</option>`);
+                        });
+                        $('#course_groups').prop('disabled', false);
+                    } else {
+                        $('#course_groups').append('<option value="">No course groups available for this course</option>');
+                        $('#course_groups').prop('disabled', true);
+                    }
+                })
+                .fail(function(xhr, status, error) {
+                    console.error("Error loading groups:", error);
+                    console.error("Response:", xhr.responseText);
+                    alert('Error loading course groups. Please check if the course code exists and try again.');
+                    $('#course_groups').empty().append('<option value="">Error loading groups</option>');
+                    $('#course_groups').prop('disabled', true);
+                })
+                .always(function() {
+                    $('#loadGroupsBtn').prop('disabled', false).html('<i class="fas fa-search"></i> Load Course Groups');
+                });
+            });
+
+            $('#addCourseBtn').click(function () {
+                const matricNumber = $('#matric_number').val().trim();
+                const courseGroupId = $('#course_groups').val();
+                const courseCode = $('#coursecode').val().trim();
+
+                // Validation
+                if (!matricNumber) {
+                    alert('Please enter a matric number in the search form above');
+                    $('#matric_number').focus();
+                    return;
+                }
+
+                if (!courseGroupId) {
+                    alert('Please select a course group');
+                    $('#course_groups').focus();
+                    return;
+                }
+
+                if (!courseCode) {
+                    alert('Please enter a course code');
+                    $('#coursecode').focus();
+                    return;
+                }
+
+                // Confirmation
+                const selectedGroup = $('#course_groups option:selected').text();
+                if (!confirm(`Are you sure you want to add ${courseCode} (${selectedGroup}) for student ${matricNumber}?`)) {
+                    return;
+                }
+
+                $('#addCourseBtn').prop('disabled', true).text('Adding Course...');
+
+                $.post("{{ route('student.course_registration.add') }}", {
+                    matric_number: matricNumber,
+                    course_group_id: courseGroupId,
+                    _token: '{{ csrf_token() }}'
+                })
+                .done(function (response) {
+                    if (response.status === 'added') {
+                        alert('Course added successfully!');
+                        // Clear form
+                        $('#coursecode').val('');
+                        $('#course_groups').empty().append('<option value="">Select a course group</option>').prop('disabled', true);
+                        $('#semester').val('');
+                        $('#add_session').val('');
+                        // Refresh the courses list
+                        $('#searchBtn').click();
+                    } else if (response.status === 'already registered') {
+                        alert('This course is already registered for this student.');
+                    } else if (response.status === 'student not found') {
+                        alert('Student not found. Please check the matric number.');
+                    } else {
+                        alert('Course added successfully!');
+                        $('#searchBtn').click();
+                    }
+                })
+                .fail(function(xhr, status, error) {
+                    console.error("Error adding course:", error);
+                    console.error("Response:", xhr.responseText);
+
+                    let errorMessage = 'Error adding course. Please try again.';
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        errorMessage = xhr.responseJSON.message;
+                    }
+                    alert(errorMessage);
+                })
+                .always(function() {
+                    $('#addCourseBtn').prop('disabled', false).text('Add Course');
+                });
+            });
+        });
+    </script>
+
+@endsection

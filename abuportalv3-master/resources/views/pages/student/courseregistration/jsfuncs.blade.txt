@@ -1,0 +1,112 @@
+<script type = "text/javascript">
+
+    //Defines a global variable for Max Unit a student can register
+    maxregistrationunit = "{{$maxregistrationunit}}";
+
+    //Checks if an object is empty
+    function isEmpty(obj) {
+        for(var key in obj) {
+            if(obj.hasOwnProperty(key))
+                return false;
+        }
+        return true;
+    }
+
+    //Get Total Credit Unit Registered
+    function getTcur(){
+        //Consider Server Side access
+        sumregcourseunits = 0;
+        $.each($('.preview-course-unit'), function(idx, val){
+            sumregcourseunits = sumregcourseunits + (val.innerHTML*1);
+        });
+        console.log(sumregcourseunits);
+        return sumregcourseunits;
+    }
+
+    //Returns an array containing preconfigured courses
+    function getConfiguredCourseGroups(course_id){
+        //************************Needed to perform ajax request*********************/
+        $.ajaxSetup({headers: {'X-CSRF-TOKEN': $('meta[name="_token"]').attr('content')}});
+        //****************************************************************************/
+        $.ajax({type: 'POST',
+            url: '@php echo route('courseregistration.getconfiguredcoursegroups',[$session,strtoupper($student->mode_of_entry)!="LV"?$activesemester:0]) @endphp',
+            async: false,
+            data: {course_id: course_id},
+            success: function(data){
+                console.log(data);
+                lecturegroups = renderConfiguredCourseGroups(data[0]);
+                labgroups = renderConfiguredCourseGroups(data[1]);
+            }
+        });
+        return [lecturegroups, labgroups];
+    }
+
+    //Renders a drop down containing preconfigured courses after taking getConfiguredCourseGroups(course_id) as input
+    function renderConfiguredCourseGroups(groups){
+        if(!isEmpty(groups)){
+            option = "";
+            $.each(groups, function(idx, val){
+                option = option + "<option value = '"+val.id+"'>"+val.groupno+"</option>";
+            });
+            dropdown = "<select name = '' id = '' class = 'form-control lg'><option value = ''>-sel-</option>"+option+"</select>";
+        }else{
+            dropdown = "<select name = '' id = '' class = 'form-control lg'><option value = ''>None</option></select>";
+        }
+        return dropdown;
+    }
+
+    //Gets list of courses on a drop down to be shown the course form
+    function getCoursesToRegister(courselevel=0, department=0){
+        //alert('...');
+        $.ajax({
+            type:'POST',
+            url:'@php echo route('courseregistration.getcourses') @endphp',
+            dataType: 'json',
+            data:{
+                department_id: department,
+                courselevel: courselevel,
+                _token: '<?php echo csrf_token() ?>'
+            },
+            success:function(data){
+                //console.log(data);
+                options = "";
+                if(data.length>0){
+                    $.each(data, function(idx, val){
+                        options+="<option value = '"+val.id+"'>"+val.coursecode+"&nbsp;&nbsp;&nbsp;"+val.coursetitle+"</option>";
+                    });
+                    $("#morecourses-dropdown").html("<label >Courses</label><select name = 'morecourses' id = 'morecourses'>"+"<option value = ''>--select--</option>" + options+"</select>");
+                    $("#morecourses-btn-div").html("<button type='button' class='btn btn-primary' id = 'showmorecourses-btn'>Show in List</button>");
+                }else{
+                    $("#morecourses-dropdown").html("<div class = 'alert alert-danger'>No record found</div>");
+                }
+            }
+        });
+    }
+
+    function getPeriodString(periods){
+        str = "";
+        $.each(periods, function(idx, val){
+            //************************Needed to perform ajax request*********************/
+            $.ajaxSetup({headers: {'X-CSRF-TOKEN': $('meta[name="_token"]').attr('content')}});
+            //****************************************************************************/
+            $.ajax({
+                type: 'POST',
+                async: false,
+                url: '@php echo route('courseregistration.getfacility') @endphp',
+                data: {facility_id: val.facility_id},
+                success: function(data){
+                    str = str + val.day + "&nbsp;&nbsp;&nbsp;" + val.start + " - " + val.end + "&nbsp;&nbsp;&nbsp;(" + data.facilityname + ") ,";
+                }
+            });
+        });
+        return str.slice(0, -1);
+    }
+
+    function getLecturerString(employees){
+        str = "";
+        $.each(employees, function(idx, val){
+            str = str + val.surname + " " + val.firstname + ", ";
+        });
+        return str.slice(0, -2);
+    }
+</script>

@@ -1,0 +1,16 @@
+
+@extends("layout.student.master")
+
+@section("content")
+
+    <section class="pb-50">
+        <div class="row">
+            <div class="col-md-8 col-md-offset-2 pt-40">
+                <h1 class="font-150 text-theme-colored2 mt-0 mb-0"><i class="fa fa-map-signs text-gray-silver"></i>Oops!</h1>
+                <h2 class="mt-0">Oops!! You have completed payment for this session.</h2>
+                <p>Please click the button below to choose a different session..</p>
+                <a class="btn btn-border btn-gray btn-transparent btn-circled smooth-scroll-to-target" href="{{route("fees.index")}}">Go back</a>
+            </div>
+        </div>
+    </section>
+@endsection

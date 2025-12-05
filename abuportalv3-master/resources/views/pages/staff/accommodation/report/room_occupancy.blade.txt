@@ -1,0 +1,231 @@
+@extends('layout.staff.master')
+@section('css')
+<style rel="text/css">
+.filter-form {
+    margin-bottom: 20px;
+}
+
+.occupants a {
+    margin-right: 5px;
+    display: inline-block;
+}
+</style>
+
+@endsection
+@section('content')
+@php
+try{
+@endphp
+<div style="background-color:#ffffff;">
+    <div class="container">
+        <div class='row'>
+            <div class='col-1 col-md-1'></div>
+            <div class='col-10 col-md-10 text-center'>
+                <h2>Room Occupancy Report</h2>
+                <!-- Filter Form -->
+                <form method="GET" action="{{ route('reports.room_occupancy') }}" class="filter-form">
+                    @csrf
+                    <div class="row g-3">
+                        <!-- Hostel Filter -->
+                        <div class="col-md-3">
+                            <label for="hostel">Hostel:</label>
+                            <select id="hostel" name="hostel" class="form-control">
+                                <option value="%">All Hostel</option>
+                                @foreach ($hostels as $hostel)
+                                <option value="{{ $hostel->id }}">{{ $hostel->name }}</option>
+
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <!-- Block Filter -->
+                        <div class="col-md-3">
+                            <label for="block">Block:</label>
+                            <select id="block" name="block" class="form-control">
+                                <option value="">Select Block</option>
+                                @if($hostel)
+
+                                @endif
+                            </select>
+                        </div>
+
+                        <!-- Room Filter -->
+                        <div class="col-md-3">
+                            <label for="room">Room:</label>
+                            <select id="room" name="room" class="form-control">
+                                <option value="">Select Room</option>
+                            </select>
+                        </div>
+
+                        <!-- Session Filter -->
+                        <div class="col-md-3">
+                            <label for="session" class="form-label">Session</label>
+                            <input type="text" name="session" id="session" class="form-control" value="{{ $session }}"
+                                placeholder="e.g., 2024">
+                        </div>
+                    </div>
+                    <br>
+                    <div class="row mt-3">
+                        <div class="col-md-3">
+                            <button type="submit" class="btn btn-primary">Generate</button>
+
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{{ route('reports.room_occupancy') }}" class="btn btn-danger">Reset</a>
+
+                        </div>
+
+                    </div>
+                </form>
+
+                <!-- Report Table -->
+                <table class="table table-hover">
+                    <tr>
+                        <td> <label class="badge badge-primary text-decoration-none"
+                                style='background: #008822;'>Paid</label> </td>
+                        // <td> <label class="badge badge-warning text-decoration-none"
+                                style='background: orange;'>Revoked</label> </td>
+                        // <td> <label class="badge badge-primary text-decoration-none"
+                                style='background: maroon;'>Expired</label> </td>
+                        <td> <label class="badge badge-info text-decoration-none" style='background: #4a95dc ;'>Reserved
+                                - Not Paid</label> </td>
+                        // <td> <label class="badge badge-secondary text-decoration-none"
+                                style='background: #999;'>Cancelled</label> </td>
+                    </tr>
+                </table>
+
+                <table class="table table-bordered table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>#</th>
+                            <th>Hostel Name</th>
+                            <th>Block Name</th>
+                            <th>Room Number</th>
+                            <th>Bed Space</th>
+                            <th>Occupants</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse ($rooms as $room)
+                        <tr>
+                            <td>{{ $loop->iteration }}</td>
+                            <td>{{ $room['hostel_name'] }}</td>
+                            <td>{{ $room['block_name'] }}</td>
+                            <td>{{ $room['room_no'] }}</td>
+                            <td>{{ $room['bed_space'] }}</td>
+                            <td class="occupants" style="text-align: left">
+                                @foreach ($room['occupants'] as $student)
+                                @if($room['status']=='paid')
+                                <a href="{{ route('student.search.view', $student->matric_number) }}"
+                                    class="badge badge-primary text-decoration-none" style='background: #008822;'>
+                                    {{ strtoupper($student->matric_number) }}
+                                </a>
+
+                                @elseif($room['status']=='reserved')
+                                <a href="{{ route('student.search.view', $student->matric_number) }}"
+                                    class="badge badge-warning text-decoration-none" style='background: #4a95dc;'>
+                                    {{ strtoupper($student->matric_number) }}
+                                </a>
+
+                                @endif
+                                @endforeach
+                                @if(count($room['occupants']) === 0)
+                                <span class="text-muted">No Occupants</span>
+                                @endif
+                            </td>
+                        </tr>
+                        @empty
+                        <tr>
+                            <td colspan="6" class="text-center">No records found.</td>
+                        </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+@php
+}catch(\Exception $e){
+echo $e->getMessage();
+}
+@endphp
+
+@endsection
+@section('js')
+<script>
+$(document).ready(function() {
+    $.ajaxSetup({
+        headers: {
+            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+        }
+    });
+
+    $('#hostel').change(function() {
+        let hostelId = $(this).val();
+        $('#block').html('<option value="%">All Blocks</option>');
+        $('#room').html('<option value="%">All Rooms</option>');
+
+        if (hostelId !== '%') {
+            $.ajax({
+                url: `{{ url('/staff/accommodation/get-blocks') }}/${hostelId}`,
+                type: 'GET',
+                success: function(data) {
+                    data.forEach(function(block) {
+                        $('#block').append(
+                            `<option value="${block.id}">${block.name}</option>`
+                            );
+                    });
+                }
+            });
+        } else {
+            // When "All Hostel" is selected, populate all blocks and rooms
+            $.ajax({
+                url: `{{ url('/staff/accommodation/get-blocks') }}/%`,
+                type: 'GET',
+                success: function(data) {
+                    data.forEach(function(block) {
+                        $('#block').append(
+                            `<option value="${block.id}">${block.name}</option>`
+                            );
+                    });
+                }
+            });
+        }
+    });
+
+    $('#block').change(function() {
+        let blockId = $(this).val();
+        $('#room').html('<option value="%">All Rooms</option>');
+
+        if (blockId !== '%') {
+            $.ajax({
+                url: `{{ url('/staff/accommodation/get-rooms') }}/${blockId}`,
+                type: 'GET',
+                success: function(data) {
+                    data.forEach(function(room) {
+                        $('#room').append(
+                            `<option value="${room.id}">${room.room_no}</option>`
+                            );
+                    });
+                }
+            });
+        } else {
+            // When "All Blocks" is selected, populate all rooms
+            $.ajax({
+                url: `{{ url('/staff/accommodation/get-rooms') }}/%`,
+                type: 'GET',
+                success: function(data) {
+                    data.forEach(function(room) {
+                        $('#room').append(
+                            `<option value="${room.id}">${room.room_no}</option>`
+                            );
+                    });
+                }
+            });
+        }
+    });
+});
+</script>
+
+@endsection

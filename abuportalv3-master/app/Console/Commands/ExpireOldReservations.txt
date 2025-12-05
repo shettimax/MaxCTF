@@ -1,0 +1,47 @@
+<?php
+
+namespace App\Console\Commands;
+
+use Illuminate\Support\Facades\Log;
+use Illuminate\Console\Command;
+use App\Models\Reservation;
+use Carbon\Carbon;
+
+class ExpireOldReservations extends Command
+{
+    protected $signature = 'reservations:expire-old';
+    protected $description = 'Expire reserved bedspaces older than 48 hours and release them.';
+
+    public function handle()
+    {
+        $cutoff = Carbon::now()->subHours(48)->format('Y-m-d H:i:s');
+
+        $expired = Reservation::where('status', 'reserved')
+            ->where('reservation_date', '<', $cutoff)
+            ->get();
+
+        $count = 0;
+        $failed = 0;
+
+        foreach ($expired as $reservation) {
+            try {
+                $reservation->expireReservation();
+                $count++;
+            } catch (\Exception $e) {
+                Log::error("Failed to expire reservation ID {$reservation->id}: " . $e->getMessage());
+                $failed++;
+            }
+        }
+
+        $total = $expired->count();
+
+        if ($total > 0) {
+            $this->info("Processed $total reservation(s): $count expired successfully, $failed failed.");
+            Log::info("$count reservation(s) expired and bedspaces released. $failed failed.");
+        } else {
+            $this->info("No expired reservations found.");
+        }
+
+        return 0; // Success exit code
+    }
+}

@@ -1,0 +1,120 @@
+<?php
+
+use App\Http\Controllers\Form\DocumentsController;
+use App\Http\Controllers\Form\FeedBackController;
+use App\Http\Controllers\Form\BiodataController;
+use App\Http\Controllers\Form\CandidateContactController;
+use App\Http\Controllers\Form\CandidateController;
+use App\Http\Controllers\Form\CandidateFormController;
+use App\Http\Controllers\Form\CandidatePhotoUploadController;
+use App\Http\Controllers\Form\CandidatesOlevelController;
+use App\Http\Controllers\Form\LoginController;
+use App\Http\Controllers\Form\NotificationController;
+use App\Http\Controllers\StudentBiodataController;
+use Illuminate\Support\Facades\Route;
+
+/*
+|--------------------------------------------------------------------------
+| Candidates" Web Routes
+|--------------------------------------------------------------------------
+|
+| Here is where you can register web routes for your application. These
+| routes are loaded by the RouteServiceProvider within a group which
+| contains the "web" middleware group. Now create something great!
+|
+*/
+
+
+Route::prefix("/forms")->group(function () {
+
+    Route::get("/testAdm", function () {
+        $cd = App\Models\CandidateDocument::find(66388);
+        return $cd->documents;
+        return view('pages.forms.notification.admission_pg');
+    });
+    Route::get("/", [LoginController::class, "showLogin"])->name("forms.home");
+    Route::get("/putme", [LoginController::class, "putme"])->name("forms.putme");
+    Route::get("/available-programmes", [LoginController::class, "availableProgrammes"])->name("forms.available");
+    Route::get("/spgs-programmes", [LoginController::class, "spgsProgrammes"])->name("forms.spgs.programmes");
+    Route::get("/dashboard", [CandidateController::class, "index"])->name("forms.dashboard");
+    Route::post("/login", [LoginController::class, "login"])->name("form.login.post");
+    Route::post("/register", [LoginController::class, "register"])->name("form.register.post");
+    Route::get("/logout", [LoginController::class, "logout"])->name("form.logout");
+    Route::prefix("/candidate")->group(function () {
+        Route::get("/wallet/create", [CandidateController::class, "createWallet"])->name("candidate.wallet.create");
+        Route::any("/wallet/store", [CandidateController::class, "storeWallet"])->name("candidate.wallet.store");
+        Route::any("/account/pay", [CandidateController::class, "makePay"])->name("candidate.wallet.pay");
+        Route::any("/wallet/", [CandidateController::class, "viewWallet"])->name("candidate.wallet.view");
+        Route::get("/profile/image/{rubish}", [CandidateController::class, "profileImage"])->name("candidate.profile.image");
+        Route::get("/provide/matric", [CandidateController::class, "providematric"])->name("candidate.ugmatric");
+        Route::post("/provide/savematric", [CandidateController::class, "savematric"])->name("candidate.ugmatricsave");
+        Route::get("/password/change", [CandidateController::class, "showpasswordchange"])->name("candidate.changepassword");
+        Route::post("/password/change", [CandidateController::class, "changepassword"])->name("candidate.password");
+        Route::get("/profile/image/{id}", [CandidatePhotoUploadController::class, "profilepicture"])->name("candidate.photoupload");
+        Route::post("/form/upload", [CandidatePhotoUploadController::class, "uploadPicture"])->name("photoupload.uploadPicture");
+        Route::get("/form/photoupload/", [CandidatePhotoUploadController::class, "index"])->name("photoupload.index");
+        Route::get("/update/email", [CandidateFormController::class, "email"])->name("candidate.fill.email");
+        Route::post("/update/email", [CandidateFormController::class, "emailPost"])->name("candidate.fill.email.post");
+    });
+
+//    Route::get("/biodata",[BiodataController::class,"index"])->name("forms.dashboard.biodata");
+    Route::post("/create/biodata", [BiodataController::class, "createBiodata"])->name("forms.dashboard.create.biodata");
+    Route::any("/addolevel", [CandidatesOlevelController::class, "store"])->name("candidate.addolevel");
+    Route::get("/studentolevel", [StudentBiodataController::class, "getolevelresults"])->name("studentbiodata.studentolevel");
+
+    Route::get("/biodata", [BiodataController::class, "index"])->name("forms.profile.biodata");
+    Route::get("/states/", [BiodataController::class, "get_states"])->name("form.filter.states");
+    Route::get("/lgas", [BiodataController::class, "get_lgas"])->name("form.filter.lgas");
+    Route::get("/depts", [BiodataController::class, "get_depts"])->name("form.filter.depts");
+    Route::get("/progs", [BiodataController::class, "get_progs"])->name("form.filter.progs");
+    Route::post("/create/biodata", [BiodataController::class, "createBiodata"])->name("forms.profile.create.biodata");
+    Route::get("/contact", [CandidateContactController::class, "index"])->name("form.profile.contact");
+
+    Route::post("/create/contact", [CandidateContactController::class, "createContact"])->name("forms.profile.create.contact");
+    Route::post("/alevle/create", [CandidateController::class, "addAlevel"])->name("alevel.store");
+    Route::get("/alevle/edit/{id}", [CandidateController::class, "editAlevel"])->name("alevel.edit");
+    Route::get("/alevle/show", [CandidateController::class, "showAlevel"])->name("alevel.show");
+    Route::get("/delete/{id}", [CandidateController::class, "destroy"])->name("alevel.destroy");
+    Route::get("/alevel/image/{id}", [CandidateController::class, "alevelpicture"])->name("candidate.alevel.doc");
+    Route::get("/documents", [DocumentsController::class, "index"])->name("candidate.docs");
+    Route::post("/documents/upload", [DocumentsController::class, "upload"])->name("candidate.docs.upload");
+    Route::post("/documents/delete", [DocumentsController::class, "delete"])->name("candidate.docs.delete");
+
+
+    Route::prefix("buy")->group(function () {
+        Route::get("/form/fs/{form_setting_id}", [CandidateFormController::class, "formSettings"])->name("form.buy.form.fs");
+        Route::get("/form/{id}", [CandidateFormController::class, "form"])->name("form.buy.form");
+        Route::post("/form/{id}", [CandidateFormController::class, "formPost"])->name("form.buy.form.post");
+        Route::get("/pay/{id}", [CandidateFormController::class, "pay"])->name("form.buy.pay");
+        Route::get("/completed/{id}", [CandidateFormController::class, "completedForm"])->name("form.buy.completed");
+        Route::get("/", [CandidateFormController::class, "index"])->name("form.buy.index");
+        Route::get("/result/{id}", [CandidateFormController::class, "printResultSlip"])->name("form.print.result");
+//        Route::get("/result/{id}",[CandidateFormController::class,"printResultSlip"])->name("feedback.admission.index");
+
+        Route::post("/matric/{id}", [CandidateFormController::class, "updateMatric"])->name("update.matric.post");
+        Route::post("/update/interuniversity/{id}", [CandidateFormController::class, "updateInterUni"])->name("update.inter.university");
+        Route::get("/update/interuniversity/transcript/file", [CandidateFormController::class, "updateInterUniFile"])->name("update.inter.university.transcript.file");
+
+    });
+    Route::prefix("notification")->group(function () {
+        Route::get("/", [NotificationController::class, "index"])->name("form.notification");
+        Route::get("/get/{id}", [NotificationController::class, "notification"])->name("form.notification.get");
+        Route::get('/admission/{enc_id}', [FeedBackController::class, "admission"])->name('feedback.admission.index');
+        Route::get("/accept/{id}", [FeedBackController::class, "acceptAdmission"])->name('admission.accept');
+        Route::get("/admission/{id}/pay", [FeedBackController::class, "showPay"])->name('admission.pay');
+        Route::get('/feed', [FeedBackController::class, "index_"])->name('feedback');
+
+    });
+    Route::prefix("mis")->group(function () {
+        Route::any("/addolevel", [CandidatesOlevelController::class, "store"])->name("candidatebiodata.addolevel");
+        Route::post("/getsubjects", [CandidatesOlevelController::class, "getsubjects"])->name("mis.getsubjects");
+        Route::post("/getgrades", [CandidatesOlevelController::class, "getgrades"])->name("mis.getgrades");
+        Route::post("/getexamtypes", [CandidatesOlevelController::class, "getexamtypes"])->name("mis.getexamtypes");
+        Route::post("/getolevelresults", [CandidatesOlevelController::class, "getolevelresults"])->name("mis.getolevelresults");
+        Route::post("/create/contact", [CandidateContactController::class, "createContact"])->name("forms.profile.create.contact");
+        Route::get("/programmes/open", [CandidateFormController::class, "openForms"])->name("forms.open.programmes");
+
+    });
+
+
+});

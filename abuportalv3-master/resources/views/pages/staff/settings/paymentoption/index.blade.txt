@@ -1,0 +1,372 @@
+@extends("layout.staff.master")
+
+@section("pageTitle")
+    Payment Options
+@endsection
+
+
+@section("css")
+
+    <link rel="stylesheet" href="{{ asset('DataTables/datatables.min.css') }}">
+@endsection
+
+@section("content")
+    <section>
+        <div class="container pt-10">
+            <div class="row" style="background: #f5f5f5;">
+                <div class="col-lg-12">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="card mb-4">
+                                <div class="card-body pl-5 pr-5">
+                                    <div class="d-flex align-items-center justify-content-between">
+                                        <div class="">
+                                            <h2 class="mb-2"></h2>
+                                            <form action="{{route('payment.option.store')}}" method="post">
+                                                @csrf
+                                                <div class="form-group">
+                                                    <select name="from_session" class="form-control form-control-sm"
+                                                            required>
+                                                        <option value="">For Session</option>
+                                                        @foreach(\App\Models\RegistrationPeriod::distinct('session')->orderBy('session','DESC')->pluck('session') as $session)
+                                                            <option value="{{$session+1}}">{{$session+1}}
+                                                                /{{$session+2}}</option>
+                                                        @endforeach
+                                                    </select>
+                                                </div>
+                                                <div class="form-group">
+                                                    <select name="entry_session" class="form-control form-control-sm"
+                                                            required>
+                                                        <option value="">Entry Session</option>
+                                                        <option value="0">All</option>
+                                                        @foreach(\App\Models\RegistrationPeriod::distinct('session')->orderBy('session','DESC')->pluck('session') as $session)
+                                                            <option value="{{$session+1}}">{{$session+1}}
+                                                                /{{$session+2}}</option>
+                                                        @endforeach
+                                                    </select>
+                                                </div>
+
+                                                <div class="form-group">
+                                                    <select name="mode_of_entry" class="form-control form-control-sm"
+                                                            required>
+                                                        <option value="">Mode of Entry</option>
+                                                        @foreach(\App\Models\Student::distinct('mode_of_entry')->pluck('mode_of_entry') as $mod)
+                                                            <option>{{ $mod }}</option>
+                                                        @endforeach
+                                                    </select>
+                                                </div>
+
+                                                <div class="form-group">
+                                                    <select name="level_id" class="form-control form-control-sm"
+                                                            required>
+                                                        <option value="">For level</option>
+                                                        <option value="0">All levels</option>
+                                                        @foreach(\App\Models\Level::all() as $level)
+                                                            <option value="{{$level->id}}">{{ $level->short_name }}
+                                                                ({{ \App\Models\ProgrammeType::find($level->programme_type_id)->prog_type_name }}
+                                                                )
+                                                            </option>
+                                                        @endforeach
+                                                    </select>
+                                                </div>
+                                                <div class="form-group">
+                                                    <select name="new_returning" class="form-control form-control-sm"
+                                                            required>
+                                                        <option>New/Returning</option>
+                                                        <option>All</option>
+                                                        <option>New</option>
+                                                        <option>Returning</option>
+                                                    </select>
+                                                </div>
+                                                <div class="form-group">
+                                                    <label for="">Split Type</label>
+                                                    <select name="type" id="split_type"
+                                                            class="form-control form-control-sm" required>
+                                                        <option value="">Select</option>
+                                                        <option>Percentage</option>
+                                                        <option>Fixed Amount</option>
+                                                    </select>
+                                                </div>
+                                                <div class="form-group">
+                                                    <label for="">Availability</label>
+                                                    <select name="selected_student" id="selected_student"
+                                                            class="form-control form-control-sm" required>
+                                                        <option value="">Select</option>
+                                                        <option value="Yes">Selected Students</option>
+                                                        <option value="No">All Configured</option>
+                                                        <option value="Loan">Loan</option>
+                                                        <option value="Lumpsum">Lumpsum</option>
+                                                    </select>
+                                                </div>
+                                                <div class="form-group">
+                                                    <label for="">Payment Code</label>
+                                                    <select name="payment_code" id="payment_code"
+                                                            class="form-control form-control-sm" required>
+                                                        <option value="">Select</option>
+                                                        @foreach(App\Models\PaymentCode::where('type','Custom')->get() as $paymtCd)
+                                                        <option value="{{$paymtCd->code}}">{{$paymtCd->target}} | {{$paymtCd->code}}</option>
+                                                        @endforeach
+                                                    </select>
+                                                </div>
+
+                                                <div class="form-group">
+                                                    <label for="">Config <span id="hint"></span></label>
+                                                    <input type="text" class="form-control" name="value">
+
+                                                </div>
+
+                                                <button type="submit" class="btn btn-primary mb-2">Save Record</button>
+                                            </form>
+
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+
+
+                        <div class="col-md-9">
+                            <div class="card mb-12">
+                                <div class="card-body pl-5 pr-5 pt-5">
+                                    <!--begin update alert-->
+                                    @if ($message1 = Session::get('success'))
+                                        <div class="alert alert-info" role="alert">
+                                            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                                <span aria-hidden="true">&times;</span></button>
+                                            {{ $message1 }}
+                                        </div>
+                                    @endif
+                                    @if ($message1 = Session::get('error'))
+                                        <div class="alert alert-danger" role="alert">
+                                            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                                <span aria-hidden="true">&times;</span></button>
+                                            {{ $message1 }}
+                                        </div>
+                                    @endif
+                                <!--end alert -->
+                                    <table id="registrationtb"
+                                           class="table table-hover table-bordered table-striped datatable"
+                                           style="width:100%">
+                                        <thead>
+                                        <tr>
+                                            <th></th>
+                                            <th colspan="3">Configuration For</th>
+                                            <th colspan="5" class="text-center">Students Affected</th>
+                                        </tr>
+                                        <tr>
+                                            <th>S/N</th>
+                                            <th>Session</th>
+                                            <th>Selected Student</th>
+                                            <th>Value</th>
+                                            <th>Entry Mode</th>
+                                            <th>Entry Session</th>
+                                            <th>Current Level</th>
+                                            <th>New Returning</th>
+                                            <th>Status</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach($options as $option)
+                                                @php $lv = \App\Models\Level::find($option->level_id);@endphp
+                                                <tr>
+                                                    <th>{{$loop->iteration}}</th>
+                                                    <th>{{ $option->from_session }}</th>
+                                                    <th class="text-center">
+                                                        {{ $option->selected_student }}
+                                                        @if($option->selected_student!="No")
+                                                            <br>
+                                                            <a class='btn btn-success btn-flat btn-sm viewBeneficairies' opt-id="{{$option->id}}">View</a>
+                                                            <span style="display: block;height: 4px;"></span>
+                                                            <a class='btn btn-warning btn-flat btn-sm uploadBeneficairies' opt-id="{{$option->id}}">Upload Students</a>
+                                                        @endif
+                                                    </th>
+                                                    <th id="value_{{$option->id}}">{{ $option->value }}</th>
+                                                    <th>{{ $option->mode_of_entry }}</th>
+                                                    <th>{{ $option->entry_session }}</th>
+                                                    <th>{{ $lv?$lv->short_name:"All" }}</th>
+                                                    <th>{{ $option->new_returning }}</th>
+                                                    <th>
+                                                        {{$option->status}} |
+                                                        <a href="{{ route("payment.option.activate",['id_'=>$option->id]) }}" class="btn btn-sm btn-flat btn-primary">
+                                                            {{$option->status=="Active"?"Deactivate":"Activate"}}
+                                                        </a>
+
+                                                    </th>
+                                                </tr>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!--  begin Modal -->
+        <div id="myModalU" class="modal fade" role="dialog">
+            <div class="modal-dialog">
+                <!-- Modal content-->
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal">&times;</button>
+                        <h4 class="modal-title">Upload Students</h4>
+                    </div>
+                    <form action="{{ route("payment.option.beneficiary.upload") }}" method="post" enctype="multipart/form-data">
+                        <div class="modal-body" id="upload body">
+                            @csrf
+                            <input type="hidden" name="payment_option_id" id="payment_option_id" value="">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="">Session</label>
+                                        <select name="session" id="" class="form-control" required>
+                                            <option value="">Session</option>
+                                            @foreach(range(date("Y")+1,2004) as $session)
+                                                <option value="{{$session}}">{{$session}}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="">Upload File</label>
+                                        <input type="file" name="filename" class="form-control" required>
+                                    </div>
+
+                                </div>
+                                <div class="col-md-12">
+                                    <h3>Sample <span style="font-size: 14px;color: red;font-weight: 1000;">excel,xls,xlsx</span></h3>
+                                    <table class="table table-bordered table-stripped">
+                                        <tr>
+                                            <th>Matric No</th>
+                                        </tr>
+                                        <tr>
+                                            <td>P18PSCS8001</td>
+                                        </tr>
+                                        <tr>
+                                            <td>P18PSCS8002</td>
+                                        </tr>
+                                        <tr>
+                                            <td>P18PSCS8003</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="submit" class="btn btn-primary" >Upload</button>
+                            <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+                        </div>
+                    </form>
+
+
+                </div>
+
+            </div>
+        </div>
+        <!--end of popup modal -->
+
+
+        <!--  Delete begin Modal -->
+        <div id="myModalV" class="modal fade" role="dialog">
+            <div class="modal-dialog modal-lg">
+                <!-- Modal content-->
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal">&times;</button>
+                        <h4 class="modal-title">View Beneficiaries</h4>
+                    </div>
+
+                    <div class="modal-body" id="VmodlBody">
+
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+                    </div>
+
+
+                </div>
+
+            </div>
+        </div>
+        <!--end of popup modal -->
+
+        </div>
+    </section>
+
+@endsection
+
+@section("js")
+    <script src="{{ asset('DataTables/datatables.min.js') }}"></script>
+    <script type="text/javascript">
+
+
+        $(function () {
+
+
+            $("#split_type").on("change", function (e) {
+                if ($(this).val() == 'Percentage') {
+                    $("#hint").text("e.g. 50:50 or 40:30:40 or 50:Waived or Waived or Loan or Loan:40 or Lumpsum or Lumpsum:60 e.t.c")
+                } else {
+                    $("#hint").text("e.g. 20000,40000")
+                }
+            });
+
+            // $(".datatable").DataTable();
+
+            $("#saveSetSession").on("click", function (e) {
+                $("#Editform").submit();
+            });
+
+            $(".editSession").on("click", function (e) {
+                e.preventDefault();
+                let dis = $(this);
+                $.ajax({
+                    type: 'get',
+                    url: '{{route("sessional.fee.edit", ["feesSetting"=>0])}}' + dis.attr("session-id")
+
+                }).done(function (data) {
+                    console.log(data);
+                    $('#editfeesetting').html(data);
+                });
+            });
+
+            $(".viewBeneficairies").on("click",function (e){
+                e.preventDefault();
+                let dis = $(this);
+
+                $.ajax({
+                    type: 'get',
+                    url: '{{route("payment.option.beneficiary", [""])}}/' + dis.attr("opt-id")
+
+                }).done(function (data) {
+                    $("#myModalV").modal();
+                    $('#VmodlBody').html(data);
+                });
+            });
+
+            $(".uploadBeneficairies").on("click",function (e){
+                e.preventDefault();
+                let dis = $(this);
+                $("#payment_option_id").val(dis.attr("opt-id"));
+                $("#myModalU").modal();
+
+            });
+        });
+
+        $(".deletesessionalfee").on("click", function (e) {
+            e.preventDefault();
+            $("#modaldeletesessionalfee").modal();
+            let DId = $(this).attr("session-idd");
+            $('#deletesessionfee_id ').val(DId);
+            //console.log(id);
+        });
+
+    </script>
+@endsection
+
+

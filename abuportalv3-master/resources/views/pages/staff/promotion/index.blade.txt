@@ -1,0 +1,195 @@
+@extends('layout.staff.master')
+
+@section('css')
+    <link rel="stylesheet" href="{{ asset('DataTables/datatables.min.css') }}">
+    <style>
+        .row {
+            margin-left: unset;
+            margin-right: unset;
+        }
+
+        #records {
+            overflow-x: auto;
+            border-color: #cccccc;
+            border-width: 1px;
+            border-radius: 5px;
+            min-height: 50px;
+            padding: 10px;
+        }
+
+        .breadcrumb {
+            margin-bottom: unset;
+        }
+
+        .heading-line-bottom {
+            margin: unset;
+        }
+
+
+
+        h2 {
+            font-family: Georgia, serif;
+            font-weight: normal;
+            color: #008822;
+            line-height: 1.25;
+            font-size: 40px;
+            padding-top: 10px;
+        }
+
+        p {
+            position: absolute;
+            bottom: 0;
+            font-size: 14px;
+        }
+
+        .containerx {
+            max-width: 900px;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            grid-gap: 48px;
+            margin: 0 auto;
+        }
+
+        .cardx {
+            cursor: pointer;
+            position: relative;
+            height: 0;
+            padding-bottom: 100%;
+            --offset-multiplier: 4px;
+            transition: transform 0.6s ease;
+            --translate: 0;
+            transform: translate(var(--translate), var(--translate));
+        }
+        .cardx:hover {
+            --offset-multiplier: 6px;
+        }
+        .cardx:hover {
+            --translate: calc(-1px * (var(--cards) - 1));
+            transition: transform 0.3s ease;
+        }
+
+        .child {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            padding: 0 16px;
+            box-sizing: border-box;
+            background: #fff;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1), 0px -4px 8px rgba(255, 255, 255, 0.8);
+            border-radius: 6px;
+            transition: inherit;
+            --translate: calc(var(--offset) * var(--offset-multiplier));
+            transform: translate(var(--translate), var(--translate));
+            z-index: 5;
+        }
+        .child:nth-child(1) {
+            --offset: 0;
+            z-index: 4;
+        }
+        .child:nth-child(2) {
+            --offset: 1;
+            z-index: 3;
+        }
+        .child:nth-child(3) {
+            --offset: 2;
+            z-index: 2;
+        }
+        .child:nth-child(4) {
+            --offset: 3;
+            z-index: 1;
+        }
+        .child:nth-child(5) {
+            --offset: 4;
+            z-index: 0;
+        }
+    </style>
+@endsection
+
+@section('content')
+    <section>
+        <div class="main-section">
+            <div class="container">
+                <div class="row justify-content-center">
+                    <div class="col-md-12">
+                        <div class="card" style="margin-bottom: 30px;padding: 30px;">
+
+                            <div class="row">
+                                @foreach($employeeStats as $employeeStat)
+                                <div class="col-md-2 litholda" href="{{route("promotion.report.per.year",[$employeeStat->yearx])}}">
+                                    <div class="cardx" style="--cards:5">
+                                        <div class="child">
+                                            <h2>{{$employeeStat->yearx}}</h2>
+                                            <p>{{$employeeStat->counter}} staff</p>
+                                        </div>
+                                        {!! str_repeat("<div class='child'></div>",$employeeStat->counter<4?$employeeStat->counter+1:4) !!}
+                                    </div>
+                                </div>
+                                @endforeach
+                            </div>
+
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+@endsection
+
+@section('js')
+    <script src="{{ asset('DataTables/datatables.min.js') }}"></script>
+    <script>
+
+        $(".litholda").on('click',function (e){
+            document.location = $(this).attr('href');
+        });
+
+        $('#mystaff').DataTable({
+            "lengthMenu": [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+            pageLength: 50,
+            dom: "<'row'<'col-sm-12'B>>" +
+                "<'row'<'col-sm-12 col-md-6'l><'col-sm-12 col-md-6'f>>" +
+                "<'row'<'col-sm-12'tr>>" +
+                "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+            buttons: [
+                {
+                    extend: 'excelHtml5',
+                    exportOptions: {
+                        columns: ':visible'
+                    }
+                },
+                {
+                    extend: 'pdfHtml5',
+                    orientation: 'landscape',
+                    pageSize: 'LEGAL',
+                    exportOptions: {
+                        columns: ':visible'
+                    }
+                },
+                {
+                    extend: 'print',
+                    messageTop: 'Candidates Report',
+                    orientation: 'landscape',
+                    pageSize: 'LEGAL'
+                },
+                {
+                    extend: 'colvis',
+                    columns: ':not(.noVis)',
+                    collectionLayout: 'fixed two-column',
+                    postfixButtons: [{
+                        extend: 'colvisGroup',
+                        text: 'Show all',
+                        show: ':hidden'
+                    }]
+                }
+            ],
+            language: {
+                buttons: {
+                    colvis: 'Show/Hide columns'
+                }
+            }
+        });
+
+    </script>
+
+@endsection

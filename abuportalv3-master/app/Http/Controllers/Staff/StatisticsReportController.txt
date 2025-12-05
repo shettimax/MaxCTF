@@ -1,0 +1,563 @@
+<?php
+
+namespace App\Http\Controllers\Staff;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use App\Models\Level;
+use App\Models\State;
+
+
+
+
+class StatisticsReportController extends Controller
+{
+    public function __construct()
+    {
+        $this->middleware(['auth:staff']);
+    }
+
+    public function byState(Request $request)
+    {
+
+        $students = array();
+        if ($request->ajax()) {
+            $facultyid = $request->query->get('faculty');
+            $departmentid = $request->query->get('department');
+            $programmetypeid = $request->query->get('progtype');
+            $programmeid = $request->query->get('programme');
+            $session = $request->query->get('session');
+            $level = $request->query->get('level');
+            $stateid = $request->query->get('state');
+
+            // print_r($facultyid."d".$departmentid."pt".$programmetypeid."p".$programmeid."s".$session."lev".
+            // $level."s".$stateid."l".$lgaid);
+
+            $arropts = [
+                ["session_regs.session", "=", $session],
+            ];
+            if ($facultyid != '%') {
+                $arropts[] = ["faculties.id", "=", $facultyid];
+            }
+            if ($departmentid != '%') {
+                $arropts[] = ["departments.id", "=", $departmentid];
+            }
+            if ($programmetypeid != '%') {
+                $arropts[] = ["programme_types.id", "=", $programmetypeid];
+            }
+            if ($programmeid != '%') {
+                $arropts[] = ["programmes.id", "=", $programmeid];
+            }
+            if ($level != '%') {
+                $arropts[] = ["session_regs.level_id", "=", $level];
+            }
+            if ($stateid != '%') {
+                $arropts[] = ["states.id", "=", $stateid];
+            }
+
+           // $arropts[] = ["students.gender", "=", "Male"];
+
+
+            //DB::statement(DB::raw('set @serialnum=0'));
+
+           $students = DB::table("students")
+                ->leftJoin("session_regs", "students.id", "=", "session_regs.student_id")
+                ->leftjoin("programmes", "students.programme_id", "=", "programmes.id")
+                ->leftjoin("programme_types", "programmes.programme_type_id", "=", "programme_types.id")
+                ->leftjoin("departments", "programmes.department_id", "=", "departments.id")
+                ->leftjoin("faculties", "departments.faculty_id", "=", "faculties.id")
+                ->leftJoin("lgas", "students.lga_id", "=", "lgas.id")
+                ->leftJoin("states", "lgas.state_id", "=", "states.id")
+                ->leftJoin("levels", "levels.id", "=", "session_regs.level_id")
+                ->select([DB::raw('COUNT(gender) as numberofgender'), "gender", "states.name as state", "states.id as stateid", "session_regs.level_id"])
+                ->where($arropts)
+               ->groupBy("states.id")
+               ->groupBy("gender")
+               ->get();
+
+            foreach ($students as $student){
+                $arrstudents[$student->state][$student->gender] = $student->numberofgender;
+            }
+
+            return view('pages.staff.reports.statistics.load_bystate_data', compact('arrstudents'))->render();
+        }
+
+        return view('pages.staff.reports.statistics.bystate', compact('students'));
+
+
+    }
+
+    public function applicant()
+    {
+        return view("pages.staff.reports.candidates.applied");
+    }
+
+
+    public function applicantData()
+    {
+
+    }
+
+
+
+//    public function putmeexamscreening(Request $request)
+//    {
+//
+//        //return $request;
+//     //  $user = Auth::user();
+//        $putmecandidates = array();
+//        if ($request->ajax()) {
+//
+//            $facultyid = $request->query->get('faculty');
+//            $departmentid = $request->query->get('department');
+//            $programmeid = $request->query->get('programme');
+//            $putmestatus = $request->query->get('putmestatus');
+//            $candidatetype = $request->query->get('candidate_type');
+//            $session = $request->query->get('session');
+//            $firstFourDigits = substr($session, 0, 4);
+//            $arropts = [
+//                [
+//                    "candidates.username",
+//                    "LIKE",
+//                    "{$firstFourDigits}%",
+//                ],
+//            ];
+//            dd($facultyid, $departmentid, $programmeid, $putmestatus, $session, $candidatetype).'welcome';
+//            if ($facultyid != '%') {
+//                $arropts[] = ["faculties.id", "=", $facultyid];
+//            }
+//            if ($departmentid != '%') {
+//                $arropts[] = ["departments.id", "=", $departmentid];
+//            }
+//
+//            if ($programmeid != '%') {
+//                $arropts[] = ["programmes.id", "=", $programmeid];
+//            }
+//
+//            if ($candidatetypeid != '%') {
+//                $arropts[] = ["candidate_form_types.id", "=", $candidatetype];
+//            }
+//            if ($putmestatus != '%') {
+//                $arropts[] = ["candidates.screening_status", "=", $putmestatus];
+//            }
+//
+//            $putmecandidates = DB::table("candidates")
+//                ->leftJoin("candidate_biodatas", "candidates.id", "=" ,"candidate_biodatas.candidate_id")
+//                ->leftJoin("candidate_forms", "candidates.id", "=" ,"candidate_forms.candidate_id")
+//                ->leftJoin("form_settings", "candidate_forms.form_setting_id", "=" ,"form_settings.id")
+//                ->leftJoin("candidate_form_types", "form_settings.candidate_form_type_id", "=" ,"candidate_form_types.id")
+//                ->leftjoin("programmes", "form_settings.programme_id", "=", "programmes.id")
+//                ->leftjoin("programme_types", "programmes.programme_type_id", "=", "programme_types.id")
+//                ->leftjoin("departments", "programmes.department_id", "=", "departments.id")
+//                ->leftjoin("faculties", "departments.faculty_id", "=", "faculties.id")
+//                ->leftJoin("lgas", "candidates.lga_id", "=", "lgas.id")
+//                ->leftJoin("states", "lgas.state_id", "=", "states.id")
+//                ->select(["candidate_biodatas.candidate_id", DB::raw("CONCAT(surname,', ',firstname,' ',IFNULL(other_names, ''))  AS fullname"), "gender", "states.name as state", "programmes.name AS programme", "departments.name AS department", "faculties.name AS faculty", "candidates.username"])
+//                ->where($arropts)
+//                ->orderBy("faculties.name")->orderBy("departments.name")->orderBy("programme_types.prog_type_name")->orderBy("programmes.name")->orderBy("surname")
+//                ->toSql();
+//                //->get();
+//            return view('pages.staff.reports.candidates.load_putme_candidate', compact('putmecandidates'))->render();
+//        }
+//
+//        return view('pages.staff.reports.candidates.putmecandidate', compact('putmecandidates'));
+//
+//    }
+
+    public function putmeexamscreening(Request $request)
+    {
+        //  $user = Auth::user();
+
+        $students = array();
+        if ($request->ajax()) {
+            $facultyid = $request->query->get('faculty');
+            $departmentid = $request->query->get('department');
+            $programmetypeid = $request->query->get('progtype');
+            $programmeid = $request->query->get('programme');
+            $session = $request->query->get('session');
+            $studentstatus = $request->query->get('studentstatus');
+
+            $arropts = [
+                ["students.entry_session", "=", $session],
+            ];
+            if ($facultyid != '%') {
+                $arropts[] = ["faculties.id", "=", $facultyid];
+            }
+            if ($departmentid != '%') {
+                $arropts[] = ["departments.id", "=", $departmentid];
+            }
+            if ($programmetypeid != '%') {
+                $arropts[] = ["programme_types.id", "=", $programmetypeid];
+            }
+            if ($programmeid != '%') {
+                $arropts[] = ["programmes.id", "=", $programmeid];
+            }
+            if ($studentstatus != '%') {
+                $arropts[] = ["students.enabled", "=", $studentstatus];
+            }
+
+            $students = DB::table("students")
+                ->leftjoin("programmes", "students.programme_id", "=", "programmes.id")
+                ->leftjoin("programme_types", "programmes.programme_type_id", "=", "programme_types.id")
+                ->leftjoin("departments", "programmes.department_id", "=", "departments.id")
+                ->leftjoin("faculties", "departments.faculty_id", "=", "faculties.id")
+                ->leftJoin("lgas", "students.lga_id", "=", "lgas.id")
+                ->leftJoin("states", "lgas.state_id", "=", "states.id")
+                ->leftJoin("levels", "levels.id", "=", "students.entry_level_id")
+                ->select(["students.matric_number", DB::raw("CONCAT(surname,', ',firstname,' ',IFNULL(other_names, ''))  AS fullname"), "gender", "states.name as state", "programmes.name AS programme", "departments.name AS department", "faculties.name AS faculty", "students.entry_level_id"])
+                ->where($arropts)
+                ->orderBy("faculties.name")->orderBy("departments.name")->orderBy("programme_types.prog_type_name")->orderBy("programmes.name")->orderBy("surname")
+                ->get();
+            return view('pages.staff.reports.students.load_admitted_data', compact('students'))->render();
+        }
+
+        return view('pages.staff.reports.students.admitted', compact('students'));
+
+    }
+
+    public function programmeAnalytics(Request $request)
+    {
+        if ($request->ajax()) {
+            $facultyId = $request->input('faculty_id');
+            $departmentId = $request->input('department_id');
+            $programmeTypeId = $request->input('programme_type_id');
+            $programmeId = $request->input('programme_id');
+            $session = $request->input('session');
+            $levelId = $request->input('level_id');
+
+            // Treat '%' as no filter (skip)
+            $facultyId = ($facultyId === '%' || !$facultyId) ? null : $facultyId;
+            $departmentId = ($departmentId === '%' || !$departmentId) ? null : $departmentId;
+            $programmeTypeId = ($programmeTypeId === '%' || !$programmeTypeId) ? null : $programmeTypeId;
+            $programmeId = ($programmeId === '%' || !$programmeId) ? null : $programmeId;
+            $session = ($session === '%' || !$session) ? null : $session;
+            $levelId = ($levelId === '%' || !$levelId) ? null : $levelId;
+
+            $query = \App\Models\Programme::query()
+                ->with(['department.faculty', 'programmetype']);
+
+            // Apply filters if set
+            if ($facultyId) {
+                $query->whereHas('department', function($q) use ($facultyId) {
+                    $q->whereHas('faculty', function($q2) use ($facultyId) {
+                        $q2->where('id', $facultyId);
+                    });
+                });
+            }
+            if ($departmentId) $query->whereHas('department', fn($q) => $q->where('id', $departmentId));
+            if ($programmeTypeId) $query->where('programme_type_id', $programmeTypeId);
+            if ($programmeId) $query->where('id', $programmeId);
+            if ($levelId) {
+                $query->whereHas('students', function($q) use ($levelId) {
+                    $q->where('entry_level_id', $levelId);
+                });
+            }
+
+            $programmes = $query->get();
+
+            $stats = [];
+            $totalApplicants = $totalAdmitted = $totalRegistered = 0;
+
+            foreach ($programmes as $programme) {
+                // Total Applicants
+                $applicants = \App\Models\CandidateForm::whereHas('formSetting', function($q) use ($programme, $session) {
+                    $q->where('programme_id', $programme->id);
+                    if ($session) $q->where('session', $session);
+                })->count();
+
+                // Admitted
+                $admitted = \App\Models\CandidateForm::whereHas('formSetting', function($q) use ($programme, $session) {
+                    $q->where('programme_id', $programme->id);
+                    if ($session) $q->where('session', $session);
+                })->where('admission_status', 'admitted')->count();
+
+                // Registered
+                $registered = \App\Models\Student::where('programme_id', $programme->id)
+                    ->when($session, fn($q) => $q->where('entry_session', $session))
+                    ->count();
+
+                $stats[] = [
+                    'faculty' => $programme->department->faculty->name ?? '',
+                    'department' => $programme->department->name ?? '',
+                    'programme_type' => $programme->programmetype->prog_type_name ?? '',
+                    'programme' => $programme->name,
+                    'applicants' => $applicants,
+                    'admitted' => $admitted,
+                    'registered' => $registered,
+                    'admission_rate' => $applicants > 0 ? round(($admitted / $applicants) * 100, 2) : 0,
+                    'registration_rate' => $admitted > 0 ? round(($registered / $admitted) * 100, 2) : 0,
+                ];
+
+                $totalApplicants += $applicants;
+                $totalAdmitted += $admitted;
+                $totalRegistered += $registered;
+            }
+
+            $summary = [
+                'totalApplicants' => $totalApplicants,
+                'totalAdmitted' => $totalAdmitted,
+                'totalRegistered' => $totalRegistered,
+            ];
+
+            return view('pages.staff.reports.students.load_programme_analytics_data', compact('stats', 'summary'))->render();
+        }
+
+        $faculties = \App\Models\Faculty::all();
+        $sessions = \App\Models\FormSetting::distinct()
+            ->where('session', '>=', 2010)
+            ->pluck('session')
+            ->sort()
+            ->values();
+        $levels = \App\Models\Level::list();
+        return view('pages.staff.reports.students.programme_analytics', compact('faculties', 'sessions', 'levels'));
+    }
+
+    /**
+     * Display the statistics by programme type report form
+     */
+    public function statisticsByProgrammeType()
+    {
+        $faculties = \App\Models\Faculty::all();
+        $sessions = \App\Models\SessionReg::distinct()
+            ->where('session', '>=', 2010)
+            ->pluck('session')
+            ->sort()
+            ->values();
+        $programmeTypes = \App\Models\ProgrammeType::all();
+        
+        return view('pages.staff.reports.students.statistics_by_programme_type', compact('faculties', 'sessions', 'programmeTypes'));
+    }
+
+    /**
+     * Generate statistics by programme type data
+     */
+    public function generateStatisticsByProgrammeType(Request $request)
+    {
+        if ($request->ajax()) {
+            $facultyIds = $request->input('faculty_ids', []);
+            $departmentIds = $request->input('department_ids', []);
+            $programmeTypeIds = $request->input('programme_type_ids', []);
+            $programmeIds = $request->input('programme_ids', []);
+            $sessionIds = $request->input('session_ids', []);
+
+            // Build the query based on the provided SQL
+            $query = DB::table('students as s')
+                ->join('session_regs as sr', 's.id', '=', 'sr.student_id')
+                ->join('transactions as t', function($join) {
+                    $join->on('s.id', '=', 't.student_id')
+                         ->on('t.session', '=', 'sr.session');
+                })
+                ->join('programmes as p', 's.programme_id', '=', 'p.id')
+                ->join('departments as d', 'p.department_id', '=', 'd.id')
+                ->join('faculties as f', 'd.faculty_id', '=', 'f.id')
+                ->join('lgas as l', 's.lga_id', '=', 'l.id')
+                ->join('states as st', 'l.state_id', '=', 'st.id')
+                ->join('programme_types as pt', 's.mode_of_entry', '=', 'pt.prog_type_code')
+                ->where('t.payment_status', 'Paid')
+                ->whereIn('sr.session', $sessionIds)
+                ->whereIn('s.mode_of_entry', ['UG', 'PG', 'ND']);
+
+            // Apply filters
+            if (!empty($facultyIds)) {
+                $query->whereIn('f.id', $facultyIds);
+            }
+            if (!empty($departmentIds)) {
+                $query->whereIn('d.id', $departmentIds);
+            }
+            if (!empty($programmeTypeIds)) {
+                $query->whereIn('pt.id', $programmeTypeIds);
+            }
+            if (!empty($programmeIds)) {
+                $query->whereIn('p.id', $programmeIds);
+            }
+
+            $results = $query->select([
+                'pt.prog_type_name',
+                'sr.session',
+                's.gender',
+                DB::raw('COUNT(*) as count')
+            ])
+            ->groupBy('pt.prog_type_name', 'sr.session', 's.gender')
+            ->get();
+
+            // Debug: Log the query and results
+            \Log::info('Statistics Query Results:', [
+                'query' => $query->toSql(),
+                'bindings' => $query->getBindings(),
+                'results_count' => $results->count(),
+                'results' => $results->toArray()
+            ]);
+
+            // Process the data for display
+            $reportData = [];
+            $programmeTypes = [];
+            $sessions = [];
+            $grandTotals = [];
+
+            foreach ($results as $result) {
+                $progType = $result->prog_type_name;
+                $session = $result->session;
+                $gender = $result->gender;
+                $count = $result->count;
+
+                if (!in_array($progType, $programmeTypes)) {
+                    $programmeTypes[] = $progType;
+                }
+                if (!in_array($session, $sessions)) {
+                    $sessions[] = $session;
+                }
+
+                $reportData[$session][$progType][$gender] = $count;
+                
+                // Calculate grand totals
+                if (!isset($grandTotals[$progType][$gender])) {
+                    $grandTotals[$progType][$gender] = 0;
+                }
+                $grandTotals[$progType][$gender] += $count;
+            }
+
+            // Sort sessions and programme types
+            sort($sessions);
+            sort($programmeTypes);
+
+            return view('pages.staff.reports.students.load_statistics_by_programme_type_data', compact('reportData', 'programmeTypes', 'sessions', 'grandTotals'))->render();
+        }
+
+        return response()->json(['error' => 'Invalid request'], 400);
+    }
+
+    /**
+     * Get departments based on selected faculties
+     */
+    public function getDepartmentsByFaculties(Request $request)
+    {
+        $facultyIds = $request->input('faculty_ids', []);
+        
+        if (empty($facultyIds)) {
+            return response()->json([]);
+        }
+
+        $departments = \App\Models\Department::whereIn('faculty_id', $facultyIds)
+            ->orderBy('name')
+            ->get(['id', 'name']);
+
+        return response()->json($departments);
+    }
+
+    /**
+     * Get programmes based on selected departments and programme types
+     */
+    public function getProgrammesByDepartmentsAndTypes(Request $request)
+    {
+        $departmentIds = $request->input('department_ids', []);
+        $programmeTypeIds = $request->input('programme_type_ids', []);
+        
+        if (empty($departmentIds) || empty($programmeTypeIds)) {
+            return response()->json([]);
+        }
+
+        $programmes = \App\Models\Programme::whereIn('department_id', $departmentIds)
+            ->whereIn('programme_type_id', $programmeTypeIds)
+            ->orderBy('name')
+            ->get(['id', 'name']);
+
+        return response()->json($programmes);
+    }
+
+    /**
+     * Export statistics by programme type to Excel
+     */
+    public function exportStatisticsByProgrammeType(Request $request)
+    {
+        $facultyIds = $request->input('faculty_ids', []);
+        $departmentIds = $request->input('department_ids', []);
+        $programmeTypeIds = $request->input('programme_type_ids', []);
+        $programmeIds = $request->input('programme_ids', []);
+        $sessionIds = $request->input('session_ids', []);
+
+        // Use the same query as generateStatisticsByProgrammeType
+        $query = DB::table('students as s')
+            ->join('session_regs as sr', 's.id', '=', 'sr.student_id')
+            ->join('transactions as t', function($join) {
+                $join->on('s.id', '=', 't.student_id')
+                     ->on('t.session', '=', 'sr.session');
+            })
+            ->join('programmes as p', 's.programme_id', '=', 'p.id')
+            ->join('departments as d', 'p.department_id', '=', 'd.id')
+            ->join('faculties as f', 'd.faculty_id', '=', 'f.id')
+            ->join('lgas as l', 's.lga_id', '=', 'l.id')
+            ->join('states as st', 'l.state_id', '=', 'st.id')
+            ->join('programme_types as pt', 's.mode_of_entry', '=', 'pt.prog_type_code')
+            ->where('t.payment_status', 'Paid')
+            ->whereIn('sr.session', $sessionIds)
+            ->whereIn('s.mode_of_entry', ['UG', 'PG', 'ND']);
+
+        // Apply filters
+        if (!empty($facultyIds)) {
+            $query->whereIn('f.id', $facultyIds);
+        }
+        if (!empty($departmentIds)) {
+            $query->whereIn('d.id', $departmentIds);
+        }
+        if (!empty($programmeTypeIds)) {
+            $query->whereIn('pt.id', $programmeTypeIds);
+        }
+        if (!empty($programmeIds)) {
+            $query->whereIn('p.id', $programmeIds);
+        }
+
+        $results = $query->select([
+            'pt.prog_type_name',
+            'sr.session',
+            's.gender',
+            DB::raw('COUNT(*) as count')
+        ])
+        ->groupBy('pt.prog_type_name', 'sr.session', 's.gender')
+        ->get();
+
+        // Process data for Excel export
+        $reportData = [];
+        $programmeTypes = [];
+        $sessions = [];
+        $grandTotals = [];
+
+        foreach ($results as $result) {
+            $progType = $result->prog_type_name;
+            $session = $result->session;
+            $gender = $result->gender;
+            $count = $result->count;
+
+            if (!in_array($progType, $programmeTypes)) {
+                $programmeTypes[] = $progType;
+            }
+            if (!in_array($session, $sessions)) {
+                $sessions[] = $session;
+            }
+
+            $reportData[$session][$progType][$gender] = $count;
+            
+            if (!isset($grandTotals[$progType][$gender])) {
+                $grandTotals[$progType][$gender] = 0;
+            }
+            $grandTotals[$progType][$gender] += $count;
+        }
+
+        sort($sessions);
+        sort($programmeTypes);
+
+        // Generate Excel file
+        $filename = 'statistics_by_programme_type_' . date('Y-m-d_H-i-s') . '.xlsx';
+        
+        // This would typically use a package like Maatwebsite\Excel
+        // For now, we'll return a JSON response with the data
+        return response()->json([
+            'filename' => $filename,
+            'data' => $reportData,
+            'programmeTypes' => $programmeTypes,
+            'sessions' => $sessions,
+            'grandTotals' => $grandTotals
+        ]);
+    }
+
+}

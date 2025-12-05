@@ -1,0 +1,237 @@
+<?php
+
+namespace App\Http\HandShake;
+
+use App\Models\OlevelExamType;
+use App\Models\OlevelGrade;
+use App\Models\Qualification;
+use App\Models\QualificationGrade;
+use App\Models\SessionReg;
+use App\Models\StudentAlevel;
+use App\Models\StudentBiodata;
+use App\Models\StudentOlevel;
+use App\Models\StudentOlevelResult;
+use App\Models\Subject;
+use App\Models\Transaction;
+use GuzzleHttp\Client;
+use GuzzleHttp\Exception\GuzzleException;
+use App\Models\Student;
+use Illuminate\Support\Facades\DB;
+use function GuzzleHttp\Psr7\str;
+
+class Portal
+{
+
+    protected $base_uri = 'http://196.220.67.174/portal/api/';
+
+    /**
+     * @var $client
+     *
+     */
+    protected $client;
+
+    //Construction
+
+    public function __construct()
+    {
+        // Generate Authorization String
+        $base_uri = $this->base_uri;
+
+        $this->client = new Client([
+            'base_uri' => $base_uri,
+            'protocols' => ['http']
+        ]);
+    }
+
+
+    private function request($url,$type,$header,$body,$staff=0)
+    {
+        return $this->client->request($type,$url,[
+            'headers' => array_merge(
+                [
+                    'Content-Type' => 'application/json'
+                ],
+                $header
+            ),
+            "json"=>$body
+        ]);
+
+    }
+
+
+    public  function fetchPGStudent($matric_number)
+    {
+        try{
+            $body = ['matric_number'=>$matric_number];
+            $response = $this->request("student/records/fetch","GET",[],$body);
+            $responseObj = json_decode($response->getBody()->getContents());
+            if($responseObj->status){
+                $data = $responseObj->data;
+                $st = $data->student;
+                $bio = $data->biodata;
+                $sessRecs = $data->session;
+                $transactions = $data->fee;
+                $alevels = $data->alevels;
+                $olevels = $data->olevels;
+                $subjects = Subject::pluck('id','subject_description')->toArray();
+                $grades = OlevelGrade::pluck('id','grade')->toArray();
+                $olevelExamTypes = OlevelExamType::pluck('id','exam_type_desc')->toArray();
+                //fetch or create Student
+                if(!$student = Student::where(['matric_number'=>$matric_number])->first()){
+                    $student = new Student();
+                    $student->matric_number = $st->matricnumber;
+                    $student->application_number = $st->applicationnumber;
+                    $student->jamb_number = $st->applicationnumber;
+                    $student->degree_plan_id = 0;
+                    $student->programme_id = $st->programme_id;
+                    $student->firstname = $st->firstname;
+                    $student->surname = $st->surname;
+                    $student->other_names = $st->othernames;
+                    $student->gender = $st->gender;
+                    $student->dob = $st->dob;
+                    $student->lga_id = $st->lga_id;
+                    $student->residency = $st->residency;
+                    $student->country_id = $st->country_id;
+                    $student->entry_level_id = $st->entry_level;
+                    $student->entry_session = $st->entrysession;
+                    $student->mode_of_entry = $st->modeofentry;
+                    $student->matric_gen = 'yes';
+                    $student->religion = $st->religion;
+                    $student->christian_group = $st->chrisgroup;
+                    $student->nin = $st->nin;
+                    $student->status = 'cleared';
+                    $student->enabled = 'Yes';
+                    $student->password = "123456";
+                    $student->save();
+                }
+
+                //add biodata
+                if(!$biodata = StudentBiodata::where('student_id',$student->id)->first()){
+                    $biodata = new StudentBiodata;
+                    $biodata->student_id = $student->id;
+                    $biodata->home_address = $bio->homeaddress;
+                    $biodata->contact_address = $bio->contactaddress;
+                    $biodata->gsm = $bio->gsm;
+                    $biodata->email = $bio->email;
+                    $biodata->abu_mail = $bio->homeaddress;
+                    $biodata->place_of_birth = $bio->placeofbirth;
+                    $biodata->home_town = $bio->hometown;
+                    $biodata->nok_name = $bio->nok;
+                    $biodata->nok_address = $bio->nokaddress;
+                    $biodata->nok_gsm = $bio->nokgsm;
+                    $biodata->blood_group = $bio->bloodgroup;
+                    $biodata->genotype = $bio->genotype;
+                    $biodata->disability = $bio->disability;
+                    $biodata->health_record = $bio->healthrecord;
+                    $biodata->sponsor = $bio->sponsor;
+                    $biodata->other_sponsor = $bio->othersponsor;
+                    $biodata->sport = $bio->sport;
+                    $biodata->other_phone = $bio->otherphone;
+                }
+
+                //add session record
+                foreach ($sessRecs as $sessRec){
+                    if(!$ses = SessionReg::where(['student_id'=>$student->id,'session'=>$sessRec->session])->first()){
+                        $ses = new SessionReg();
+                        $ses->student_id = $student->id;
+                        $ses->matric_number = $sessRec->matricnumber;
+                        $ses->session = $sessRec->session;
+                        $ses->graduation_status = $sessRec->graduationstatus;
+                        $ses->marital_status = $sessRec->maritalstatus;
+                        $ses->study_mode = $sessRec->studymode;
+                        $ses->study_type = $sessRec->studytype;
+                        $ses->level_id = $sessRec->level;
+                        $ses->programme_id = $sessRec->programme_id;
+                        $ses->save();
+                    }
+                }
+                //add transactions
+                foreach ($transactions as $session=>$fee){
+                    foreach ($fee->transactions as $trans){
+                        if(!$transaction = Transaction::where(['transaction_code'=>$trans->code])->first()){
+                            $transaction = new Transaction();
+                            $transaction->student_id = $student->id;
+                            $transaction->code = 'REG';
+                            $transaction->transaction_code = $trans->code;
+                            $transaction->transaction_amount = $trans->amount;
+                            $transaction->session = $session;
+                            $transaction->payment_status = $trans->status;
+                            $transaction->branch_id = "";
+                            $transaction->invoice_number = $trans->invoice_number;
+                            $transaction->payment_ref = $trans->invoice_number;
+                            $transaction->save();
+                        }else{
+                            $transaction->student_id = $student->id;
+                            $transaction->transaction_code = $trans->code;
+                            $transaction->transaction_amount = $trans->amount;
+                            $transaction->session = $session;
+                            $transaction->payment_status = $transaction->payment_status=="Not Paid"?$trans->status:$transaction->payment_status;
+                            $transaction->branch_id = "";
+                            $transaction->invoice_number = $trans->invoice_number;
+                            $transaction->payment_ref = $trans->invoice_number;
+                            $transaction->save();
+                        }
+                    }
+
+                }
+                //add course reg
+                //add alevel
+                foreach ($alevels  as $alvl){
+                    if(!$alevel = StudentAlevel::where(['from_year'=>$alvl->fromyear,"student_id"=>$student->id])->first() ){
+                        $qualification = Qualification::where('qualification',$alvl->qualification)->first();
+                        $grade = QualificationGrade::where('grade',$alvl->grade)->first();
+                        $alevel = new StudentAlevel();
+                        $alevel->student_id = $student->id;
+                        $alevel->institution_name = $alvl->institutionname;
+                        $alevel->from_year = $alvl->fromyear;
+                        $alevel->to_year = $alvl->toyear;
+                        $alevel->course = $alvl->course;
+                        $alevel->degreeclass_id = $grade?$grade->id:0;
+                        $alevel->qualification_id = $qualification?$qualification->id:0;
+                        $alevel->cgpa = $alvl->cgpa;
+                        $alevel->save();
+                    }
+
+                }
+//            return 1;
+                //add olevel
+                foreach ($olevels as $sitting=>$olvl){
+
+                    if(!$olevel = StudentOlevel::where(['student_id'=>$student->id,'sitting'=>$sitting])->first()){
+                        $examTypeId = isset($olevelExamTypes[$olvl->exam])?$olevelExamTypes[$olvl->exam]:1;
+                        $olevel = new StudentOlevel();
+                        $olevel->student_id = $student->id;
+                        $olevel->exam_type_id = $examTypeId;
+                        $olevel->exam_year = $olvl->year;
+                        $olevel->exam_number = $olvl->exam_number;
+                        $olevel->center_number = $olvl->center_number;
+                        $olevel->center_name = $olvl->center_name;
+                        $olevel->sitting = $sitting;
+                        $olevel->save();
+                        foreach($olvl->scores as $score){
+
+
+                            $olvGrade = new StudentOlevelResult();
+                            $olvGrade->student_olevel_id = $olevel->id;
+                            $olvGrade->subject_id = $subjects[$score[0]] ?? 0;
+                            $olvGrade->olevel_grade_id = $grades[$score[1]] ?? 0;
+                            $olvGrade->save();
+                        }
+                    }
+
+                }
+
+            }
+        }catch(\Exception $exception){
+            return $exception->getMessage();
+        }
+    }
+
+    public static function fetchUGApplicant($email)
+    {
+
+        return DB::connection('mysql2')->table('candidates')->where(['email'=>$email])->get();
+
+
+    }
+}

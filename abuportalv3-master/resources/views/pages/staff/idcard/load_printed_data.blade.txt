@@ -1,0 +1,51 @@
+<div id="load" style="position: relative;" class="table-responsive">
+    <button style="float: right;" type="button" class="btn btn-primary selectedrecords"
+            data-target="#usermodal">
+        <span class="ti-eye">&nbsp;View Selected</span>
+    </button>
+    <br/><br/>
+    <table id="reporttb" class="table table-bordered table-striped table-responsive nowrap">
+        <thead class="thead-light">
+        <tr class="text-dark text-uppercase">
+            <th class="no-sort">S/N</th>
+            <th>Matric Number</th>
+            <td>Surname</td>
+            {{--<td>Other names</td>--}}
+            <td>Faculty</td>
+            {{--<th>Department</th>--}}
+            <th>Programme</th>
+            <th>View</th>
+            <th>Collected</th>
+            {{--<th>Check all&nbsp;&nbsp;<input name="check_all" class="check_all" type="checkbox"></th>--}}
+        </tr>
+        </thead>
+        <tbody>
+        @foreach ($students as $stud)
+            @php
+                $othernames = isset($stud->other_names)?" ".$stud->other_names:"";
+                $othernames = $stud->firstname . $othernames;
+            @endphp
+            <tr>
+                <td>{{$loop->index+1}}</td>
+                <td>{{ $stud->matric_number}}</td>
+                <td>{{ $stud->surname ." ". $othernames }}</td>
+                {{--<td>{{  }}</td>--}}
+                <td>{{ $stud->faculty }}</td>
+                {{--<td>{{ $stud->department}}</td>--}}
+                <td>{{ $stud->programme}} </td>
+                <td>
+                    <a name="print" class="btn btn-info btn-xs print" href="{{route('idcard.viewstudentidcard')}}?id={{$stud->id}}"  target="_blank" ><span class="fa fa-eye"></span></a>
+                </td>
+                <td>{{$stud->collected}}</td>
+                {{--<td class="text-center">
+                    <input value="{{$stud->id}}" name="studentid[]" class="selectedforprint" type="checkbox" >
+                </td>--}}
+            </tr>
+        @endforeach
+        </tbody>
+    </table>
+</div>
+<button style="float: right;" type="button" class="btn btn-primary selectedrecords"
+        data-target="#usermodal">
+    <span class="ti-eye">&nbsp;View Selected</span>
+</button>

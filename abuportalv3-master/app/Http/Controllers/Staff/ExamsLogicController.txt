@@ -1,0 +1,390 @@
+<?php
+
+namespace App\Http\Controllers\Staff;
+
+use App\Models\ExamsLogic;
+use App\Http\Controllers\Controller;
+use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Contracts\View\Factory;
+use Illuminate\Http\Request;
+use Auth;
+use DB;
+use Excel;
+use App\Models\Student;
+use Illuminate\Http\Response;
+use Illuminate\View\View;
+
+class ExamsLogicController extends Controller
+{
+    /**
+     * Display a listing of the resource.
+     *
+     * @return Response
+     */
+    public function __construct()
+    {
+        $this->middleware('auth:staff');
+    }
+
+    public function index()
+    {
+        //
+        return view('pages.staff.examslogic.index');
+    }
+
+    /**
+     * Show the form for creating a new resource.
+     *
+     * @return Application|Factory|View
+     */
+    public function create()
+    {
+        //
+        return view('pages.staff.examslogic.upload');
+    }
+
+    /**
+     * Show the form for creating a new resource.
+     *
+     * @return Application|Factory|View
+     */
+    public function upload()
+    {
+        //
+        return view('pages.staff.examslogic.fileupload');
+    }
+
+    /**
+     * Store a newly created resource in storage.
+     *
+     * @param Request $request
+     * @return Response
+     */
+    public function store(Request $request)
+    {
+        $this->validate($request, [
+            'session' => 'required',
+            'semester' => 'required',
+            'student' => 'required',
+            'course' => 'required'
+        ]);
+//        return $request->student;
+//        $input = $request->except('_token');
+        foreach ($request->student as $id) {
+            $result = ExamsLogic::where(["student_id" => $id, "course_group_id" => $request->group_id])->first();
+            if (!$result) {
+                $result = new ExamsLogic;
+            }
+            $result->session = $request->session;
+            $result->semester = $request->semester;
+            $result->course_group_id = $request->group_id;
+            $result->student_id = $id;
+            $result->course_id = $request->course;
+            $result->ca = request("studentca_" . $id);
+            $result->exam = request("studentexam_" . $id);
+            $result->staff_id = Auth::id();
+            $result->save();
+        }
+        return redirect()->back();
+    }
+
+    /**
+     * Store a newly created resource in storage.
+     *
+     * @param Request $request
+     * @return Response
+     */
+    public function write(Request $request)
+    {
+        $this->validate($request, [
+            'session' => 'required',
+            'semester' => 'required',
+            'course' => 'required',
+            'row' => 'required',
+            'ca_column' => 'required',
+            'exams_column' => 'required',
+            'reg_column' => 'required',
+            'sheet' => 'required'
+        ]);
+//        return $request;
+
+        if ($request->hasFile('filename')) {
+            $path = $request->file('filename')->getRealPath();
+            $data = Excel::load($path, function ($reader) {
+
+            })->get();
+            $array = [];
+            $count = "0";
+            $col = 0;
+            foreach ($data as $datum) {
+                if ($request->row <= $count) {
+                    $sub = [];
+                    $col = 0;
+                    $reg = '';
+                    foreach ($datum as $dat) {
+
+                        if ($col == $request->reg_column) {
+                            $reg = $dat;
+                            $sub[$count]["reg_column"] = $dat;
+                        }
+                        if ($col == $request->ca_column)
+                            $sub[$count]["ca_column"] = $dat;
+                        if ($col == $request->exams_column) {
+                            $sub[$count]["exams_column"] = $dat;
+                        }
+                        $col++;
+                    }
+                    $array[] = $sub;
+                    $count++;
+                }
+            }
+            ///look for duplicate and save in duplicates array
+            $duplicates = [];
+            $invalidmatrics = [];
+            $validMatrics = [];
+//            $not
+//            return $array;
+            $data = [];
+            $count = 0;
+//            return $array;
+            foreach ($array as $item) {
+                $student = Student::where(["matric_number" => $item[$count]['reg_column']])->first();
+                if ($student && $student->isEnrolledForCourseGroup($request->group_id)) {
+                    if (isset($data[$item[$count]['reg_column']]) && $data[$item[$count]['reg_column']] > 0) {
+                        $data[$item[$count]['reg_column']] += 1;
+                        $duplicates[] = $item[$count]['reg_column'];
+//                        $duplicates[]['reg'] = $item[$count]['reg_column'];
+//                        $duplicates[]['ca'] = $item[$count]['ca_column'];
+//                        $duplicates[]['exams'] = $item[$count]['exams_column'];
+                    } else {
+                        $data[$item[$count]['reg_column']] = 1;
+                    }
+                } else {
+                    $invalidmatrics[] = $item[$count]['reg_column'];
+                }
+                $count++;
+            }
+            $count = 0;
+            foreach ($array as $item) {
+                $matric_number = $item[$count]['reg_column'];
+                if (!in_array($matric_number, $duplicates) && !in_array($matric_number, $invalidmatrics)) {
+                    $student = Student::where(["matric_number" => $matric_number])->first();
+                    $validMatrics[] = $item[$count]['reg_column'];
+                    $result = $student->hasResultFor($request->group_id);
+                    if ($result == null) {
+                        $result = new ExamsLogic;
+                    }
+                    $result->session = 0;
+                    $result->semester = 0;
+                    $result->course_group_id = $request->group_id;
+                    $result->studentid = $student->id;
+                    $result->courseid = 0;
+                    $result->ca = $item[$count]['ca_column'];
+                    $result->exam = $item[$count]['exams_column'];
+                    $result->staffid = Auth::id();
+                    $result->save();
+                }
+                $count++;
+            }
+
+            $coursecode = $this->getCourseName($request->course);
+            $session = $request->session . "/" . ($request->session + 1);
+            $totalvalid = count($validMatrics);
+
+            $noResult = $this->getStudentWithoutResult($request->group_id);
+
+//            return $duplicates;
+
+            return view("pages.staff.examslogic.uploadchecker", compact("validMatrics", "duplicates", "invalidmatrics", "coursecode", "session", "totalvalid", "noResult"));
+        }
+    }
+
+    /**
+     * Display the specified resource.
+     *
+     * @param ExamsLogic $examsLogic
+     * @return Response
+     */
+    public function show(ExamsLogic $examsLogic)
+    {
+        //
+    }
+
+    /**
+     * Show the form for editing the specified resource.
+     *
+     * @param ExamsLogic $examsLogic
+     * @return Response
+     */
+    public function edit(ExamsLogic $examsLogic)
+    {
+        //
+    }
+
+    /**
+     * Update the specified resource in storage.
+     *
+     * @param Request $request
+     * @param ExamsLogic $examsLogic
+     * @return Response
+     */
+    public function update(Request $request, ExamsLogic $examsLogic)
+    {
+        //
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     *
+     * @param ExamsLogic $examsLogic
+     * @return Response
+     */
+    public function destroy(ExamsLogic $examsLogic)
+    {
+        //
+    }
+
+    public function getMarkSheet(Request $request)
+    {
+
+        $result = "<table class='table table-striped table-bordered' style='width: 75%'><tr><th>Matric</th><th>CA</th><th>Exams</th></tr>";
+
+        $course_id = ($request->query('courseid')) ? ($request->query('courseid')) : (null);
+        $sessionid = ($request->query('sessionid')) ? ($request->query('sessionid')) : (null);
+        $semesterid = ($request->query('semesterid')) ? ($request->query('semesterid')) : (null);
+
+        $records = DB::table('course_lecturers')->where('employee_id', "=", Auth::user()["employee_id"])
+            ->join('course_groups', 'course_lecturers.course_group_id', '=', 'course_groups.id')
+            ->join('course_registrations', 'course_groups.id', '=', 'course_registrations.course_group_id')
+            ->join('students', 'course_registrations.student_id', '=', 'students.id')
+            ->LeftJoin('resultbanks', 'resultbanks.course_group_id', '=', 'course_groups.id')
+            ->where([
+                ['course_groups.session', '=', $sessionid],
+                ['course_groups.semester', '=', $semesterid],
+                ['course_groups.course_id', '=', $course_id],
+            ])
+//                        ->select('students.matric_number', 'course_registrations.student_id', 'course_groups.id')->get();
+            ->select('students.matric_number', 'course_registrations.student_id', 'resultbanks.ca', 'resultbanks.exam', 'course_groups.id')->get();
+//        return var_dump($records);
+
+        foreach ($records as $record) {
+            $ca = ExamsLogic::where(["student_id" => $record->student_id, "course_group_id" => $record->id])->select('ca')->first();
+            $exam = ExamsLogic::where(["student_id" => $record->student_id, "course_group_id" => $record->id])->select('exam')->first();
+//            $score = ExamsLogic::where(["student_id" => $record->student_id, "course_group_id" => $record->id])->first();
+//            return var_dump($record);
+            $result .= "<tr><td>" . $record->matric_number . "<input type='checkbox' class='hide' checked name='student[]' "
+                . "value='{$record->student_id}'/></td><td><input type='text' name='studentca_" . $record->student_id
+                . "' value='" . ($ca['ca'] ? $ca['ca'] : 0) . "'/></td><td><input type='text' name='studentexam_" . $record->student_id
+                . "' value='" . ($exam['exam'] ? $exam['exam'] : 0) . "'/><input type='hidden' name='group_id' value='" . $record->id
+                . "'/></td></tr>";
+        }
+
+        $result .= "</table>";
+
+
+        return $result;
+    }
+
+    public function getCourses(Request $request)
+    {
+        $result = "<option value='0'>--Select--</option>";
+        $sessionid = ($request->query('sessionid')) ? ($request->query('sessionid')) : (null);
+        $semesterid = ($request->query('semesterid')) ? ($request->query('semesterid')) : (null);
+
+        $courses = DB::table('course_lecturers')->where('employee_id', '=', Auth::user()["employee_id"])
+            ->join('course_groups', 'course_groups.id', '=', 'course_lecturers.course_group_id')
+            ->join('courses', 'courses.id', '=', 'course_groups.course_id')
+            ->where([
+                ['course_groups.session', '=', $sessionid],
+                ['course_groups.semester', '=', $semesterid],
+            ])->select('courses.coursecode', 'courses.id')->get();
+
+        foreach ($courses as $course) {
+            $result .= "<option value='" . $course->id . "'>$course->coursecode</option>";
+        }
+
+        return $result;
+    }
+
+    public function getGroup(Request $request)
+    {
+
+        $sessionid = ($request->query('sessionid')) ? ($request->query('sessionid')) : (null);
+        $semesterid = ($request->query('semesterid')) ? ($request->query('semesterid')) : (null);
+        $course_id = ($request->query('courseid')) ? ($request->query('courseid')) : (null);
+
+        $group = DB::table('course_lecturers')->where('employee_id', '=', Auth::user()["employee_id"])
+            ->join('course_groups', 'course_groups.id', '=', 'course_lecturers.course_group_id')
+            ->join('course_registrations', 'course_groups.id', '=', 'course_registrations.course_group_id')
+            ->where([
+                ['course_groups.session', '=', $sessionid],
+                ['course_groups.semester', '=', $semesterid],
+                ['course_groups.course_id', '=', $course_id],
+            ])->select('course_groups.id')->first();
+
+
+        return $group->id;
+    }
+
+    public function getStudentWithoutResult($groupid)
+    {
+        $array = [];
+        $matric = [];
+        $sub_query = DB::table('resultbanks')->where('course_group_id', '=', $groupid)->select('student_id')->get();
+
+        foreach ($sub_query as $value) {
+            $array[] = $value->student_id;
+        }
+//        return $array;
+
+        $group = DB::table('course_registrations')->where('course_group_id', '=', $groupid)
+            ->join('students', 'course_registrations.student_id', '=', 'students.id')
+            ->whereNotIn('student_id', $array)
+            ->select('students.matric_number')
+            ->get();
+
+        foreach ($group as $value) {
+            $matric[] = $value->matric_number;
+        }
+
+        return $matric;
+    }
+
+    public function getStudentID($student_id)
+    {
+
+        $student = DB::table('students')->where('matric_number', '=', $student_id)->select('id')->first();
+
+        return $student->id;
+    }
+
+    public function getCourseID($coursecode)
+    {
+
+        $course = DB::table('courses')->where('coursecode', '=', $coursecode)->select('id')->first();
+
+        return $course->id;
+    }
+
+    public function getCourseName($course_id)
+    {
+
+        $course = DB::table('courses')->where('id', '=', $course_id)->select('coursecode')->first();
+
+        return $course->coursecode;
+    }
+
+//    public function getCA($course_id) {
+//
+//        $course = DB::table('courses')->where('id', '=', $course_id)->select('coursecode')->first();
+//
+//        return $course->coursecode;
+//    }
+//
+//    public function getCourseName($course_id) {
+//
+//        $course = DB::table('courses')->where('id', '=', $course_id)->select('coursecode')->first();
+//
+//        return $course->coursecode;
+//    }
+}

@@ -1,0 +1,120 @@
+@extends('layout.student.master')
+
+@section('content')
+    <meta name="_token" content="{!! csrf_token() !!}" />
+    <section>
+        <div class="container pt-30 pb-30 pl-30 pr-30">
+            <div id="printArea" style="">
+                <table width="100%" border="1" cellspacing="0" cellpadding="0">
+                    <tr>
+                        <td colspan="5">
+                            <div style="font-family: 'AmerType Md BT';text-align: center;font-size: 34px;">
+                                AHMADU BELLO UNIVERSITY, ZARIA, NIGERIA.
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="5">
+                            <div style="font-family: 'broadway';text-align: center;font-size: 24px;">
+                                OFFICE OF THE REGISTRAR
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="5">
+                            <div style="font-family: 'Cooper';text-align: center;font-size: 18px;">
+                                (Academic Affairs Department)
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="2">
+                            <img src="{{ asset('images/abulogo.png') }}" alt="" width="160">
+                        </td>
+                        <td colspan="2"></td>
+                        <td>
+                            <div>academicoffice@abu.edu.ng</div>
+                            <div>academicaffairs.abu@abu.edu.ng</div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Ref.R ACA /ADM/03</td>
+                        <td width="10%">&nbsp;</td>
+                        <td width="20%">&nbsp;</td>
+                        <td width="20%">&nbsp;</td>
+                        <td width="18%">Reg. No. {{$student->matric_number}}</td>
+                    </tr>
+                    <tr>
+                        <td colspan="5">
+                            <div style="text-align: center; font-family: amertype; font-weight: bolder;font-size: 24px;padding: 24px;">
+                                2019/2020 PROVISIONAL ADMISSION INTO UNDERGRADUATE DEGREE PROGRAMME
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="3"><b>Name in Full:</b>{{$student->getFullname()}}</td>
+                        <td colspan="2"><b>Sex:</b> {{$data->gender}}</td>
+                    </tr>
+                    <tr>
+                        <td colspan="3"><b>Nationality:</b> {{$data->country}}</td>
+                        <td colspan="2"><b>Jamb Number:</b> {{$data->jamb_number}}</td>
+                    </tr>
+                    <tr>
+                        <td colspan="3"><b>State of Origin:</b> {{$data->state}}</td>
+                        <td colspan="2"><b>UTME/DE Score:</b></td>
+                    </tr>
+                    <tr>
+                        <td colspan="3"><b>LGA:</b> {{$data->lga}}</td>
+                        <td colspan="2"><b>Level: </b>{{$data->level}}</td>
+                    </tr>
+                    <tr>
+                        <td colspan="5"><b>Faculty:</b>{{$data->faculty}}</td>
+                    </tr>
+                    <tr>
+                        <td colspan="5"><b>Course of Study:</b> {{$data->programme}}</td>
+                    </tr>
+                    <tr>
+                        <td colspan="5">
+                            <div>
+                                I write to inform you that you have been offered provissional admission as indicated above, subject to confirmation
+                                of all registration requirements. Failure to submit your file to the Academic Office two weeks after matriculation may lead
+                                to withdrawal of admission. Please note and adhere strickly. Congratulations!
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+
+            </div>
+        </div>
+    </section>
+@endsection
+@section('css')
+    <style>
+        @media print {
+            #menuzord0, #menusection, section.inner-header, section.inner-header + section, #header2,#footer, #footer+a{
+                display: none;
+            }
+
+            #printArea {
+                background-color: white;
+                box-shadow: 2px 2px 2px 2px #AAAAAA;
+                padding: 24px;
+                border-radius: 4px;
+                background-image: url('{{ asset('images/watermark.png') }}');
+                background-size: 190px;
+                background-repeat: space;
+            }
+            #printArea  table  tr td h1{
+                font-size: 23px !important;
+                color:#008822 !important;
+                text-align: center;
+            }
+
+            #printArea  table  tr td{
+                color: #008822;
+            }
+
+
+        }
+    </style>
+@endsection

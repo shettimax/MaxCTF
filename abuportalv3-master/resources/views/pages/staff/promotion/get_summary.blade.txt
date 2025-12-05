@@ -1,0 +1,296 @@
+@extends('layout.staff.master')
+
+@section('css')
+    <link rel="stylesheet" href="{{ asset('DataTables/datatables.min.css') }}">
+    <style>
+        .row {
+            margin-left: unset;
+            margin-right: unset;
+        }
+
+        #records {
+            overflow-x: auto;
+            border-color: #cccccc;
+            border-width: 1px;
+            border-radius: 5px;
+            min-height: 50px;
+            padding: 10px;
+        }
+
+        .breadcrumb {
+            margin-bottom: unset;
+        }
+
+        .heading-line-bottom {
+            margin: unset;
+        }
+        .recommended{
+            color:#008822;
+        }
+
+        .pending{
+            color:#0B90C4;
+        }
+        .not_recommended{
+            color:maroon;
+        }
+
+    </style>
+@endsection
+
+@section('content')
+    <section>
+        <div class="main-section">
+            <div class="container">
+                <div class="row justify-content-center">
+                    <div class="col-md-12">
+                        <div class="card">
+                            <h3>For {{$year}}</h3>
+
+
+
+                            <div class="table-responsive p-5">
+                                <table id="mystaff" class="table table-bordered table-striped nowrap">
+                                    <thead class="thead-light">
+                                    <tr class="text-dark text-uppercase">
+                                        <th class="no-sort">S/N</th>
+                                        <th>Complex</th>
+                                        <th>Faculty</th>
+                                        <th>Department</th>
+                                        <th>Title</th>
+                                        <th>Personnel Number</th>
+                                        <td>Name</td>
+                                        <th>Date of Appointment</th>
+                                        <th>Date of Confirmation</th>
+                                        <th>Date of Last Promotion</th>
+                                        <td>Rank/Salary</td>
+                                        <th>Waiting Period</th>
+                                        <th>View CV</th>
+                                        <th>View Summary</th>
+                                        <th>HOD Recommendation</th>
+                                        <th>HOD Comment</th>
+                                        <th>Recommended Rank</th>
+                                        <th>Dean Recommendation</th>
+                                        <th>Dean Comment</th>
+                                        <th>Complex Recommendation</th>
+                                        <th>Complex Comment</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+
+                                    @foreach ($staffs as $staff)
+                                        @php
+                                            $year = Carbon\Carbon::now()->year;
+                                            $lpro = Carbon\Carbon::parse($staff->dolp);
+                                             $yearOfLastPromotion=$lpro->format('Y');
+                                            $c=$year - $yearOfLastPromotion;
+
+                                        @endphp
+                                        <tr>
+                                            <td>{{$loop->index+1}}</td>
+                                            <td>{{$staff->complex_name}}</td>
+                                            <td>{{$staff->faculty_name}}</td>
+                                            <td>{{$staff->department_name}}</td>
+                                            <td>{{$staff->title}}</td>
+                                            <td>{{ $staff->personnel_no}}</td>
+                                            <td>{{ $staff->name }}</td>
+                                            <td>{{ $staff->dofapt }}</td>
+                                            <td>{{ $staff->doc}}</td>
+                                            <td>{{ $staff->dolp}} </td>
+                                            <td>{{ $staff->present_salary_step}} </td>
+                                            <td>{{ $c}} </td>
+                                            <td>
+                                                <a id="sendBtn" class="btn btn-info btn-xs print"
+                                                   href="{{ route('staff.profile.cv.generate.html', $staff->employee_id) }}"
+                                                   target="_blank"><span class="fa fa-eye"></span></a>
+                                            </td>
+                                            <td>
+                                                <a id="sendBtn" class="btn btn-info btn-xs print"
+                                                   href="{{ route('staff.summary.view',[ $staff->employee_id,'year'=>$year]) }}" target="_blank"><span
+                                                        class="fa fa-eye"></span></a>
+                                            </td>
+                                            <td>
+                                                <strong class="{{str_replace(" ","_",strtolower($staff->unit_status))}}">{{$staff->unit_status}}</strong>
+
+                                            </td>
+                                            <td class="">{!! $staff->unit_recommendation() !!}</td>
+                                            <td>{{$staff->recommended_rank}}</td>
+                                            <td>
+
+                                                    <strong class="{{str_replace(" ","_",strtolower($staff->faculty_status))}}">{{$staff->faculty_status}}</strong>
+
+
+                                            </td>
+                                            <td class="">{!! $staff->faculty_recommendation() !!} </td>
+                                            <td>
+                                                <strong class="{{str_replace(" ","_",strtolower($staff->complex_status))}}">{{$staff->complex_status}}</strong>
+                                            </td>
+                                            <td class="text-wrap">
+                                                {!! $staff->complex_recommendation() !!}
+                                            </td>
+
+                                        </tr>
+                                    @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    {{--Modal--}}
+    <div class="modal fade" id="myModal" tabindex="-1" role="dialog"
+         aria-labelledby="myModalLabel">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal"
+                            aria-label="Close"><span aria-hidden="true">&times;</span>
+                    </button>
+                    <h4 class="modal-title text-left" id="myModalLabel">Recomendation
+                        <div class="double-line-bottom-theme-colored-2"></div>
+                    </h4>
+                </div>
+                <form class="form" action="{{route('staff.promotion.recommendation')}}" method="POST"
+                      style="width: 100%; margin-top: 3vh; ">
+                    @csrf
+                    <div class="modal-body" style="min-height:180px;">
+                        <input type="hidden" id="recommendation_id" value="" name="recommendation_id"/>
+                        <input type="hidden" id="type" value="" name="type"/>
+                        <div class="row">
+                            <div class="form-group col-md-6">
+                                <label for="recommendation">Recommendation:</label>
+                                <select name="recommendation" id="recommendation" class="form-control">
+
+                                </select>
+
+                            </div>
+                            <div class="form-group col-md-6" id="rankDiv">
+                                <label for="recommendation">Recommended Rank:</label>
+                                <select name="recommended_rank_id" id="recommended_rank_id" class="form-control">
+                                    <option value="">Select</option>
+                                    @foreach(\App\Models\Rank::orderBy("name","ASC")->get() as $rank)
+                                        <option value="{{$rank->id}}">{{$rank->name}}</option>
+                                    @endforeach
+                                </select>
+
+                            </div>
+                            <div class="form-group col-md-12">
+                                <label for="Reasons">Reasons:</label>
+                                <textarea name="reasons" id="Reasons" class="form-control"></textarea>
+                                <div id="nature_error" class="invalid-feedback"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <div class="form-group">
+                            <button type="button" class="btn btn-flat btn-danger" data-dismiss="modal">Close</button>
+                            <button type="submit" id="addbtn" class="btn btn-flat btn-success text-right"><span
+                                    class="icon icon-save"> Save </span></button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+@endsection
+
+@section('js')
+    <script src="{{ asset('DataTables/datatables.min.js') }}"></script>
+    <script>
+        $(document).on('click', '.add', function () {
+            $("#recommendation_id").val($(this).attr('data-id'));
+            $("#type").val($(this).attr('data-type'));
+            ddlist = "<option value=\"\">--Select--</option><option value=\"Recommended\">Recommended</option><option value=\"Not Recommended\">Not Recommended</option>";
+            $("#rankDiv").show();
+            headType = $(this).attr('data-type');
+            if(headType!='HOD'){
+                ddlist += "<option value=\"Return\">Return</option>";
+                $("#rankDiv").hide();
+            }
+            $("#recommendation").html(ddlist);
+            $('#myModal').modal();
+            console.log($("#recommendation_id").val())
+        });
+
+        $('#mystaff').DataTable({
+            "lengthMenu": [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+            pageLength: 50,
+            dom: "<'row'<'col-sm-12'B>>" +
+                "<'row'<'col-sm-12 col-md-6'l><'col-sm-12 col-md-6'f>>" +
+                "<'row'<'col-sm-12'tr>>" +
+                "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+            buttons: [
+                {
+                    extend: 'excelHtml5',
+                    exportOptions: {
+                        columns: ':visible'
+                    }
+                },
+                {
+                    extend: 'pdfHtml5',
+                    orientation: 'landscape',
+                    pageSize: 'LEGAL',
+                    exportOptions: {
+                        columns: ':visible'
+                    }
+                },
+                {
+                    extend: 'print',
+                    messageTop: 'Candidates Report',
+                    orientation: 'landscape',
+                    pageSize: 'LEGAL'
+                },
+                {
+                    extend: 'colvis',
+                    columns: ':not(.noVis)',
+                    collectionLayout: 'fixed two-column',
+                    postfixButtons: [{
+                        extend: 'colvisGroup',
+                        text: 'Show all',
+                        show: ':hidden'
+                    }]
+                }
+            ],
+            language: {
+                buttons: {
+                    colvis: 'Show/Hide columns'
+                }
+            }
+        });
+
+        $('#sendBtn').on('click', function (e) {
+            data = {
+                department: $(this).data('department'),
+                title: $(this).data('title'),
+                personnel_no: $(this).data('personnel_no'),
+                fullname: $(this).data('fullname'),
+                date_of_first_appointment: $(this).data('date_of_first_appointment'),
+                date_of_confirmation: $(this).data('date_of_confirmation'),
+                date_of_last_promotion: $(this).data('date_of_last_promotion'),
+                grade: $(this).data('grade')
+            }
+            console.log(data);
+            e.preventDefault();
+            // Send data to the controller via AJAX
+            $.ajax({
+                type: 'POST',
+                url: '{{ route('staff.generate.summary') }}',
+                data: {
+                    staffOutput: staffOutput,
+                    _token: '{{ csrf_token() }}'
+                },
+                success: function (response) {
+                    // Handle the response if needed
+                    console.log(response);
+                }
+            });
+        });
+
+
+    </script>
+
+@endsection

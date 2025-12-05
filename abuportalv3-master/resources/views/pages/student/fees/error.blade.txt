@@ -1,0 +1,35 @@
+
+@extends("layout.student.master")
+@section("content")
+    <section class="pb-50">
+        <div class="row">
+            <div class="col-md-8 col-md-offset-2 pt-40">
+                <h1 class="font-150 text-theme-colored2 mt-0 mb-0"><i class="fa fa-map-signs text-gray-silver"></i>Oops!</h1>
+                <ol>
+                    @php
+                        $student = Auth::user();
+                    @endphp
+                    @if($student->religion==null || empty($student->religion) )
+                        <li><h2>You have not Chosen your religion</h2></li>
+                    @endif
+                    @php
+                        $biodata = $student->biodata();
+                    @endphp
+                    @if( $biodata)
+                        @if(!filter_var($biodata->email,FILTER_VALIDATE_EMAIL))
+                            <li><h2>Invalid Email</h2></li>
+                        @endif
+                        @if(!$biodata->gsm )
+                            <li><h2>Invalid Phone Number</h2></li>
+                        @endif
+                    @else
+
+                            <li><h2>Please Update your profile</h2></li>
+                    @endif
+                </ol>
+                <h4 class="mt-0 text-danger">Oops!! You will need to update <a href="{{ route("studentbiodata.index")}}">Biodata</a> to continue</h4>
+                <a class="btn btn-border btn-gray btn-transparent btn-circled smooth-scroll-to-target" href="{{route("student.dashboard")}}">Return Home</a>
+            </div>
+        </div>
+    </section>
+@endsection

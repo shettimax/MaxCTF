@@ -1,0 +1,52 @@
+@extends("layout.student.master")
+
+@section("content")
+    @php
+        $student= Auth::user();
+    @endphp
+
+    <section class="">
+        <div class="main-section">
+            <!-- Page Section -->
+            <div class="page-section"
+                 style="margin-top: 0px;margin-bottom: 0px;border-top: 0px #e0e0e0 solid;border-bottom: 0px #e0e0e0 solid;">
+                <!-- Container Start -->
+                <div class="container">
+                    <div class="col-xs-6 col-sm-6 col-md-6 pt-20">
+                        <div class="panel panel-default btn-flat" style="min-height: 200px;">
+                            <div class="panel-heading">History</div>
+                            <div class="panel-body">
+                                @if($sessions)
+                                    <ul class="list angle-double-right">
+                                    @foreach($sessions as $key=>$value)
+                                                <li>
+                                                    <span>{{$key . " / " . (($key * 1) + 1)}} Academic Session</span>
+                                                    <ul style="list-style: none;">
+                                                    @foreach($value as $semester)
+                                                        <li>
+                                                            <a href="{{route('gradebook.result', [$key, $semester])}}">
+                                                                {{ $semester==1?"First":"Second" }} Semester</a>
+                                                        </li>
+                                                    @endforeach
+                                                    </ul>
+                                                </li>
+
+                                    @endforeach
+                                    </ul>
+                            </div>
+                            @else
+                                <div class="alert-warning">
+                                    No Available result
+                                </div>
+                            @endif
+                        </div>
+
+                    </div>
+                    <div class="col-xs-6 col-sm-6 col-md-6">
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+@endsection

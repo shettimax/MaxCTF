@@ -1,0 +1,15 @@
+
+@extends("layout.student.master")
+@section("content")
+    <section class="pb-50">
+        <div class="row">
+            <div class="col-md-8 col-md-offset-2 pt-40">
+                <h1 class="font-150 text-theme-colored2 mt-0 mb-0">
+                    <i class="fa fa-map-signs text-gray-silver"></i>Oops!
+                </h1>
+                <h4 class="mt-0 text-danger">Oops!! You are not allowed on this page.Please goto <a href="{{ route("student.dashboard")}}">My Dashboard</a></h4>
+                <a class="btn btn-border btn-gray btn-transparent btn-circled smooth-scroll-to-target" href="{{route("student.dashboard")}}">Return Home</a>
+            </div>
+        </div>
+    </section>
+@endsection

@@ -1,0 +1,234 @@
+<?php
+
+namespace App\Http\Controllers\Form;
+
+use App\Http\Controllers\Controller;
+use App\Models\Candidate;
+use App\Models\CandidateForm;
+use App\Models\Configuration;
+use App\Models\Programme;
+use Auth;
+use Endroid\QrCode\Color\Color;
+use Endroid\QrCode\Encoding\Encoding;
+use Endroid\QrCode\ErrorCorrectionLevel\ErrorCorrectionLevelLow;
+use Endroid\QrCode\QrCode;
+use Endroid\QrCode\RoundBlockSizeMode\RoundBlockSizeModeMargin;
+use Endroid\QrCode\Writer\PngWriter;
+use Endroid\QrCode\Writer\ValidationException;
+use Illuminate\Http\Request;
+use PDF;
+use setasign\Fpdi\Fpdi;
+
+class NotificationController extends Controller
+{
+
+    public function __construct()
+    {
+        $this->middleware("auth:candidate");
+    }
+
+    /**
+     * Display a listing of the resource.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function index()
+    {
+        //
+        $candidate = Auth::user();
+        $candidateForms = CandidateForm::where("candidate_id", "=", $candidate->id)
+            ->select(["form_settings.*", "candidate_forms.*", "programmes.name", "programmes.duration", "duration",])
+            ->join("form_settings", "candidate_forms.form_setting_id", "=", "form_settings.id")
+            ->join("programmes", "programmes.id", "=", "form_settings.programme_id")
+            ->get();
+        return view("pages.forms.notification.notification", compact('candidateForms'));
+    }
+
+    /**
+     * Show the form for creating a new resource.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function create()
+    {
+        //
+    }
+
+    /**
+     * Store a newly created resource in storage.
+     *
+     * @param \Illuminate\Http\Request $request
+     * @return \Illuminate\Http\Response
+     */
+    public function store(Request $request)
+    {
+        //
+    }
+
+    /**
+     * Display the specified resource.
+     *
+     * @param int $id
+     * @return \Illuminate\Http\Response
+     */
+    public function notification(Request $request, $id)
+    {
+        //
+        $candform = CandidateForm::find($id);
+        $canid = $candform->candidate_id;
+        $candidate = Candidate::find($canid);
+        $candidateForms = CandidateForm::where("candidate_forms.id", "=", $candform->id)
+            ->select(["form_settings.*", "candidate_forms.*", "programmes.name", "programmes.duration", "duration",])
+            ->join("form_settings", "candidate_forms.form_setting_id", "=", "form_settings.id")
+            ->join("programmes", "programmes.id", "=", "form_settings.programme_id")
+            ->get();
+        $admittedProgramme = Programme::find($candform->programme_admitted_id);
+        if ($admittedProgramme->isPG()) {
+            try {
+                $fileName = str_replace("/", "_", strtoupper($candidate->id));
+                $file = public_path() . '/candidatepics/' . $fileName . '.JPG';
+                $filePng = public_path() . '/candidatepics/' . $fileName . '.PNG';
+                if ($request->img_err) {
+                    if (file_exists($file)) {
+                        $image_mime = image_type_to_mime_type(exif_imagetype($file));
+                        if (str_contains($image_mime, "png")) {
+                            rename($file, $filePng);
+                            $pathToFile = public_path() . "/candidatepics/" . $fileName . ".PNG";
+                        } else
+                            $pathToFile = public_path() . "/candidatepics/" . $fileName . ".JPG";
+                    } elseif (file_exists($filePng)) {
+                        $pathToFile = public_path() . "/candidatepics/" . $fileName . ".PNG";
+                    } else {
+                        $pathToFile = public_path() . "/studentpics/user.png";
+                    }
+                } else {
+                    $pathToFile = public_path() . "/studentpics/user.png";
+                }
+
+                $app_no = str_pad($candform->id, 10, " ", STR_PAD_LEFT);
+                $fullName = $candidate->getFullName();
+                $admissionPath = "admissions/";
+                $config = $admittedProgramme->getConfig(Configuration::NOTIFICATION_OF_ADMISSION);
+                $secretary_sign = $config->signature;
+                $signature = $secretary_sign[0] == '/' ? substr($secretary_sign, 1) : $secretary_sign;;
+                $signatory = strtoupper($config->config);
+                $signatoryPst = $config->position;
+                $session = $candform->formSetting->session;
+                $sessionName = "$session/" . ($session + 1);
+                $faculty = $admittedProgramme->faculty();
+                $facultyName = $faculty->type == "School" ? $faculty->name . " School" : $faculty->type . " of " . $faculty->name;
+                $progName = $admittedProgramme->name;
+                $admissionTemplate = $admissionPath . "pg_noa.pdf";
+                $pdf = new Fpdi('P', 'mm', 'A4');
+                // add a page
+                $pdf->AddPage();
+                // set the source file
+                $pdf->setSourceFile($admissionTemplate);
+                // import page 1
+                $tplId = $pdf->importPage(1);
+                // use the imported page and place it at point 0,0 with a width of 210 mm
+                $pdf->useTemplate($tplId, 0, 0, 210, null, 1);
+                $pdf->SetFont('Courier', '', 13);
+                $pdf->SetTextColor(60, 60, 60);
+                $x = 60;
+                $y = 108;
+                $h = 0;
+                //student picture
+                $pdf->Image($pathToFile, 175, 6, 22);
+                //serial number
+                $pdf->SetXY(143, 36.5);
+                $pdf->Write($h, $app_no);
+                $pdf->SetFont('Courier', '', 16);
+                $pdf->SetXY(80, 56.5);
+                $pdf->Write($h, $fullName);
+                $pdf->SetFont('Courier', '', strlen($progName) > 30 ? 8 : 12);
+                $pdf->SetXY(37, 85);
+                $pdf->Write($h, $progName);
+                $pdf->SetFont('Courier', '', 12);
+                $pdf->SetXY(121, 97.8);
+                $pdf->Write($h, $sessionName);
+                $pdf->SetFont('Courier', '', 9);
+                $pdf->SetXY(37, 97.8);
+                $pdf->Write($h, $facultyName);
+
+                $writer = new PngWriter();
+                // Create QR code
+                $qrCode = QrCode::create(trim($app_no))
+                    ->setEncoding(new Encoding('UTF-8'))
+                    ->setErrorCorrectionLevel(new ErrorCorrectionLevelLow())
+                    ->setSize(300)
+//            ->setMargin(10)
+                    ->setRoundBlockSizeMode(new RoundBlockSizeModeMargin())
+                    ->setForegroundColor(new Color(0, 136, 34, 0));
+                // $output_file = 'candidate_noa/' . trim($app_no) . '.png';
+                $result = $writer->write($qrCode);
+                $dataUri = $result->getDataUri();
+                // $result->saveToFile($output_file);
+                // $base64 = explode(",", $dataUri);
+                // $encodedImg = $base64[1];
+                // $pdf->Image($output_file, 162, 227, 28);
+                $pdf->Image($signature, 51, 227, 28);
+                $pdf->SetFont('Courier', '', 13);
+                $pdf->SetXY(46, 246);
+                $pdf->Write($h, $signatory);
+                $pdf->SetFont('Courier', '', 12);
+                $pdf->SetXY(56, 251);
+                $pdf->Write($h, $signatoryPst);
+
+                $pdf->AddPage();
+                $tplId = $pdf->importPage(2);
+                // use the imported page and place it at point 0,0 with a width of 210 mm
+                $pdf->useTemplate($tplId, 0, 0, 210, null, 1);
+
+                $pdf->AddPage();
+                $tplId = $pdf->importPage(3);
+                // use the imported page and place it at point 0,0 with a width of 210 mm
+                $pdf->useTemplate($tplId, 0, 0, 210, null, 1);
+                $pdf->Output();
+            } catch (\Exception $exception) {
+                return redirect("form.notification.get", ["id" => $id, "img_err" => 1]);
+            }
+        }
+        $ioe_secretary = '';
+        $ioa_secretary = '';
+        $iaiict_secretary = '';
+
+        return view("pages.forms.notification.admission", compact("candform", "ioe_secretary", "ioa_secretary", "iaiict_secretary", "candidate", "candidateForms"));
+        $pdf = PDF::loadView('pages.forms.notification.admission', compact("candform", "secretary"));
+        return $pdf->download('pdf_file.pdf');
+    }
+
+    /**
+     * Show the form for editing the specified resource.
+     *
+     * @param int $id
+     * @return \Illuminate\Http\Response
+     */
+    public function edit($id)
+    {
+        //
+    }
+
+    /**
+     * Update the specified resource in storage.
+     *
+     * @param \Illuminate\Http\Request $request
+     * @param int $id
+     * @return \Illuminate\Http\Response
+     */
+    public function update(Request $request, $id)
+    {
+        //
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     *
+     * @param int $id
+     * @return \Illuminate\Http\Response
+     */
+    public function destroy($id)
+    {
+        //
+    }
+}

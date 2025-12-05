@@ -1,0 +1,37 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\ConditionalMessage;;
+use Illuminate\Http\Request;
+use Symfony\Component\VarDumper\Caster\RdKafkaCaster;
+use Illuminate\Support\Facades\Auth;
+
+class ConditionalMessageController extends Controller
+{
+    //
+
+    public function __construct()
+    {
+        $this->middleware('auth');
+    }
+
+    public function index(Request $request, $id)
+    {
+        $student = Auth::user();
+        $cm = $student->conditionalMessage();
+        $cm->hasSeen($id);
+        $message = ConditionalMessage::find($id);
+        return view("pages.student.notification.index",compact("message","student"));
+    }
+
+    public function accepted(Request $request)
+    {
+        $id = $request->conditional_message_id;
+        $student = Auth::user();
+        $cm = $student->conditionalMessage();
+        $cm->hasAgreed($id);
+
+        return redirect(route("student.dashboard"));
+    }
+}

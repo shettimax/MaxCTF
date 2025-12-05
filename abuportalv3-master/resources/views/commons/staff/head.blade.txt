@@ -1,0 +1,66 @@
+<!-- Meta Tags -->
+<meta name="viewport" content="width=device-width,initial-scale=1.0" />
+<meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+<meta name="description" content="Ahmadu Bello University, Zaria , School Portal" />
+<meta name="keywords"
+    content="education,school,university,educational,learn,learning,teaching,workshop,conference,diploma,degree,portal,login" />
+
+<!-- Favicon and Touch Icons -->
+<link rel="apple-touch-icon" sizes="57x57" href="{{ asset("fav/apple-icon-57x57.png") }}">
+<link rel="apple-touch-icon" sizes="60x60" href="{{ asset("fav/apple-icon-60x60.png") }}">
+<link rel="apple-touch-icon" sizes="72x72" href="{{ asset("fav/apple-icon-72x72.png") }}">
+<link rel="apple-touch-icon" sizes="76x76" href="{{ asset("fav/apple-icon-76x76.png") }}">
+<link rel="apple-touch-icon" sizes="114x114" href="{{ asset("fav/apple-icon-114x114.png") }}">
+<link rel="apple-touch-icon" sizes="120x120" href="{{ asset("fav/apple-icon-120x120.png") }}">
+<link rel="apple-touch-icon" sizes="144x144" href="{{ asset("fav/apple-icon-144x144.png") }}">
+<link rel="apple-touch-icon" sizes="152x152" href="{{ asset("fav/apple-icon-152x152.png") }}">
+<link rel="apple-touch-icon" sizes="180x180" href="{{ asset("fav/apple-icon-180x180.png") }}">
+<link rel="icon" type="image/png" sizes="192x192" href="{{ asset("fav/android-icon-192x192.png") }}">
+<link rel="icon" type="image/png" sizes="32x32" href="{{ asset("fav/favicon-32x32.png") }}">
+<link rel="icon" type="image/png" sizes="96x96" href="{{ asset("fav/favicon-96x96.png") }}">
+<link rel="icon" type="image/png" sizes="16x16" href="{{ asset("fav/favicon-16x16.png") }}">
+<link rel="manifest" href="{{ asset("fav/manifest.json") }}">
+<meta name="msapplication-TileImage" content="{{ asset("fav/ms-icon-144x144.png") }}">
+
+<!-- Stylesheet -->
+<link href="{{ asset('css/bootstrap.min.css') }}" rel="stylesheet" type="text/css">
+<link href="{{ asset('css/jquery-ui.min.css') }}" rel="stylesheet" type="text/css">
+<link href="{{ asset('css/animate.css') }}" rel="stylesheet" type="text/css">
+<link href="{{ asset('css/css-plugin-collections.css') }}" rel="stylesheet" />
+<!-- CSS | menuzord megamenu skins -->
+<link href="{{ asset('css/menuzord-megamenu.css') }}" rel="stylesheet" />
+<link id="menuzord-menu-skins" href="{{ asset('css/menuzord-skins/menuzord-boxed.css') }}" rel="stylesheet" />
+<!-- CSS | Main style file -->
+<link href="{{ asset('css/style-main.css') }}" rel="stylesheet" type="text/css">
+<link href="{{ asset('css/noty.css') }}" rel="stylesheet" type="text/css">
+<!-- CSS | Preloader Styles -->
+<link href="{{ asset('css/preloader.css') }}" rel="stylesheet" type="text/css">
+<!-- CSS | Custom Margin Padding Collection -->
+<link href="{{ asset('css/custom-bootstrap-margin-padding.css') }}" rel="stylesheet" type="text/css">
+<!-- CSS | Responsive media queries -->
+<link href="{{ asset('css/responsive.css') }}" rel="stylesheet" type="text/css">
+<!-- CSS | Style css. This is the file where you can place your own custom css code. Just uncomment it and use it. -->
+<!-- <link href="css/style.css" rel="stylesheet" type="text/css"> -->
+<!-- CSS | student id cards css-->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" />
+
+<!-- Revolution Slider 5.x CSS settings -->
+<link href="{{ asset('js/revolution-slider/css/settings.css') }}" rel="stylesheet" type="text/css" />
+<link href="{{ asset('js/revolution-slider/css/layers.css') }}" rel="stylesheet" type="text/css" />
+<link href="{{ asset('js/revolution-slider/css/navigation.css') }}" rel="stylesheet" type="text/css" />
+
+<!-- CSS | Theme Color -->
+<link href="{{ asset('css/colors/theme-skin-color-set2.css') }}" rel="stylesheet" type="text/css">
+
+<!-- external javascripts -->
+<script src="{{ asset('js/jquery-2.2.4.min.js') }}"></script>
+<script src="{{ asset('js/jquery-ui.min.js') }}"></script>
+<script src="{{ asset('js/bootstrap.min.js') }}"></script>
+<!-- JS | jquery plugin collection for this theme -->
+<script src="{{ asset('js/jquery-plugin-collection.js') }}"></script>
+
+<!-- Revolution Slider 5.x SCRIPTS -->
+<script src="{{ asset('js/revolution-slider/js/jquery.themepunch.tools.min.js') }}"></script>
+<script src="{{ asset('js/revolution-slider/js/jquery.themepunch.revolution.min.js') }}"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>

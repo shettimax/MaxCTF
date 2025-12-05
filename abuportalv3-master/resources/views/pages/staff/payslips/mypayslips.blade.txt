@@ -1,0 +1,158 @@
+@extends("layout.staff.master")
+
+@section("pageTitle")
+    My Payslips
+@endsection
+@section("content")
+    @php
+        $last_row_columns = fmod($year_count, 6);
+        $intDiv = intdiv($year_count, 6);
+        $rows = 0;
+        $collapseid = 0;
+    @endphp
+
+    <section>
+        <div class="container pt-10">
+          <div class="panel-group toggle accordion-icon-filled accordion-no-border accordion-icon-left accordion-icon-filled-theme-colored2">
+          @for($i = 1; $i <= $intDiv; ++$i )
+          <div class='row'>
+            @for($j = 0; $j < 6; ++$j )
+            <div class="col-md-2">
+            <div class="panel panel-default">
+              <div class="panel-heading">
+                <div class="panel-title">
+                <a class="collapsed" data-toggle="collapse" href="#toggle{{++$collapseid}}"><span class="open-sub"></span>{{ $mat_years[$rows][$j] }}</a>
+                </div>
+              </div>
+              <div id="toggle{{$collapseid}}" class="panel-collapse collapse" aria-expanded="false" style="height: 0px;">
+                <div class="panel-body">
+                  <ul class="nav">
+                    @foreach($payslips3 as $payslip)
+                    @if($mat_years[$rows][$j] == $payslip->year)
+                        @php
+                            $month = strtolower($payslip->month);
+                            $month = ucwords($month);
+                        @endphp
+                        <li class="nav-item">
+                            <a href="{{ route('staff.payslip.show3', \Illuminate\Support\Facades\Crypt::encryptString($payslip->id)) }}"
+                               target="_blank" class="nav-link">
+                                {{ $month }}
+                            </a>
+                        </li>
+                    @endif
+                @endforeach
+                @foreach($payslips2 as $payslip)
+                                                    @if($mat_years[$rows][$j] == $payslip->year)
+                                                        @php
+                                                            $month = strtolower($payslip->month);
+                                                            $month = ucwords($month);
+                                                        @endphp
+                                                        <li class="nav-item">
+                                                            <a href="{{ route('staff.payslip.show2', \Illuminate\Support\Facades\Crypt::encryptString($payslip->id)) }}"
+                                                               target="_blank" class="nav-link">
+                                                                {{ $month }}
+                                                            </a>
+                                                        </li>
+                                                    @endif
+                                                @endforeach
+                                                @foreach($payslips as $payslip)
+                                                    @if($mat_years[$rows][$j] == $payslip->year)
+                                                        @php
+                                                            $month = strtolower($payslip->month);
+                                                            $month = ucwords($month);
+                                                        @endphp
+                                                        <li class="nav-item">
+                                                            <a href="{{ route('staff.payslip.show1', \Illuminate\Support\Facades\Crypt::encryptString($payslip->id)) }}"
+                                                               target="_blank" class="nav-link">
+                                                                {{ $month }}
+                                                            </a>
+                                                        </li>
+                                                    @endif
+                                                @endforeach
+                  </ul>
+                  <div class="text-center mt-15">
+                    <a href="{{ route('staff.payslip.deductions') }}" target="_blank" class="btn btn-info btn-sm">
+                      <i class="fa fa-chart-bar"></i> View Deduction Analysis
+                    </a>
+                  </div>
+                 </div>
+              </div>
+            </div>
+            </div>
+            @endfor
+            @php $rows++; @endphp
+          </div>
+          @endfor
+          @if($last_row_columns > 0)
+          <div class='row'>
+            @for($j = 0; $j < $last_row_columns; ++$j )
+            <div class="col-md-2">
+            <div class="panel panel-default">
+              <div class="panel-heading">
+                <div class="panel-title">
+                <a class="collapsed" data-toggle="collapse" href="#toggle{{++$collapseid}}"><span class="open-sub"></span>{{ $mat_years[$rows][$j] }}</a>
+                </div>
+              </div>
+              <div id="toggle{{$collapseid}}" class="panel-collapse collapse" aria-expanded="false" style="height: 0px;">
+                <div class="panel-body">
+                  <ul class="nav">
+                    @foreach($payslips3 as $payslip)
+                    @if($mat_years[$rows][$j] == $payslip->year)
+                        @php
+                            $month = strtolower($payslip->month);
+                            $month = ucwords($month);
+                        @endphp
+                        <li class="nav-item">
+                            <a href="{{ route('staff.payslip.show3', \Illuminate\Support\Facades\Crypt::encryptString($payslip->id)) }}"
+                               target="_blank" class="nav-link">
+                                {{ $month }}
+                            </a>
+                        </li>
+                    @endif
+                @endforeach
+                @foreach($payslips2 as $payslip)
+                                                    @if($mat_years[$rows][$j] == $payslip->year)
+                                                        @php
+                                                            $month = strtolower($payslip->month);
+                                                            $month = ucwords($month);
+                                                        @endphp
+                                                        <li class="nav-item">
+                                                            <a href="{{ route('staff.payslip.show2', \Illuminate\Support\Facades\Crypt::encryptString($payslip->id)) }}"
+                                                               target="_blank" class="nav-link">
+                                                                {{ $month }}
+                                                            </a>
+                                                        </li>
+                                                    @endif
+                                                @endforeach
+                                                @foreach($payslips as $payslip)
+                                                    @if($mat_years[$rows][$j] == $payslip->year)
+                                                        @php
+                                                            $month = strtolower($payslip->month);
+                                                            $month = ucwords($month);
+                                                        @endphp
+                                                        <li class="nav-item">
+                                                            <a href="{{ route('staff.payslip.show1', \Illuminate\Support\Facades\Crypt::encryptString($payslip->id)) }}"
+                                                               target="_blank" class="nav-link">
+                                                                {{ $month }}
+                                                            </a>
+                                                        </li>
+                                                    @endif
+                                                @endforeach
+                  </ul>
+                  <div class="text-center mt-15">
+                    <a href="{{ route('staff.payslip.deductions') }}" target="_blank" class="btn btn-info btn-sm">
+                      <i class="fa fa-chart-bar"></i> View Deduction Analysis
+                    </a>
+                  </div>
+                 </div>
+              </div>
+            </div>
+            </div>
+            @endfor
+           </div>
+          @endif
+        </div>
+         </div>
+    </section>
+
+@endsection

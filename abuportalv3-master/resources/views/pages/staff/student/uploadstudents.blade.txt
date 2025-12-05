@@ -1,0 +1,136 @@
+@extends("layout.staff.master")
+@section("pageTitle")
+    Add Student
+@endsection
+@section("content")
+    <section>
+
+        <div class="col-md-11 blog-pull-right mt-12">
+            @if(Session::has('success'))
+                <div class="alert alert-success">
+                    {{ Session::get('success') }}
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <script>
+                    setTimeout(function () {
+                        $("#errors").fadeOut();
+                    },4000);
+                </script>
+            @endif
+
+        </div>
+
+
+        <div class="container">
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="bg-lightest border-1px p-25">
+                        <div class="row">
+                            <div class="product">
+
+                                <div class="col-md-12">
+                                    <div class="row">
+                                        <div class="display-table">
+                                            <div class="display-table-cell">
+                                                <div class="container">
+                                                    <div class="row">
+                                                        <div class="col-md-12">
+                                                            <div class="bg-lightest border-1px p-30 mb-0">
+                                                                <h3 class="text-theme-colored mt-0 pt-5">Import New Students</h3>
+                                                                <hr>
+                                                                <table class="table table-bordered table-condensed table-striped variations">
+                                                                    <thead>
+                                                                    <tr style="font-size: 12px;">
+                                                                        <th>JAMB</th>
+                                                                        <th>Surname</th>
+                                                                        <th>Firstname</th>
+                                                                        <th>Othername</th>
+                                                                        <th>Gender</th>
+                                                                        <th>State</th>
+                                                                        <th>LGA</th>
+                                                                        <th>Programme Admitted</th>
+                                                                        <th>Level Admitted</th>
+                                                                        <th>Entry Session</th>
+                                                                        <th>Mode of Entry</th>
+
+                                                                    </tr>
+                                                                    </thead>
+
+                                                                    <tbody id="">
+                                                                    <tr>
+                                                                        <td>97205985DC</td>
+                                                                        <td>Umar</td>
+                                                                        <td>Abba</td>
+                                                                        <td>Dewu</td>
+                                                                        <td>Male</td>
+                                                                        <td>Bauchi</td>
+                                                                        <td>Kirfi</td>
+                                                                        <td>LLB With Specialization in Islamic Law</td>
+                                                                        <td>100L</td>
+                                                                        <td>2019</td>
+                                                                        <td>UG</td>
+                                                                    </tr>
+                                                                    <tr>
+                                                                        <td>97205985DC</td>
+                                                                        <td>Umar</td>
+                                                                        <td>Abba</td>
+                                                                        <td>Dewu</td>
+                                                                        <td>Male</td>
+                                                                        <td>Bauchi</td>
+                                                                        <td>Kirfi</td>
+                                                                        <td>Diploma in Science Laboratory Technology (SLT)</td>
+                                                                        <td>Dip I</td>
+                                                                        <td>2019</td>
+                                                                        <td>DP</td>
+                                                                    </tr>
+
+                                                                    </tbody>
+                                                                </table>
+                                                                <form id="studentupload" name="studentupload" action="{{ route("student.upload.save") }}" method="post" enctype="multipart/form-data">
+                                                                    <div class="row">
+                                                                        <div class="col-md-3">
+                                                                            <div class="form-group">
+                                                                                @csrf
+                                                                                <label>Upload Excel</label>
+                                                                                <input name="form_attachment" class="file form-control" type="file"  data-show-upload="false" data-show-caption="true" required>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+
+                                                                    <div class="row">
+
+                                                                    </div>
+
+                                                                    <div class="form-group">
+                                                                        <input name="form_botcheck" class="form-" type="hidden" value="" />
+                                                                        <button type="submit" class="btn btn-dark btn-theme-colored btn-sm mt-20 pt-10 pb-10" data-loading-text="Please wait...">Upload</button>
+                                                                    </div>
+                                                                </form>
+
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+@endsection
+
+@section("js")
+    <script>
+
+
+    </script>
+@endsection

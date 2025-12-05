@@ -1,0 +1,439 @@
+<?php
+
+namespace App\Http\Controllers\Form;
+
+use App\Http\Controllers\Controller;
+use App\Models\Candidate;
+use App\Services\ExternalFileService;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+use Intervention\Image\Facades\Image;
+
+class CandidatePhotoUploadController extends Controller
+{
+    protected $externalFileService;
+
+    public function __construct(ExternalFileService $externalFileService)
+    {
+        $this->middleware(["auth:candidate","hasEmail"]);
+        $this->externalFileService = $externalFileService;
+    }
+
+    public function index()
+    {
+        $candidate = Auth::user();
+        $candidateid = $candidate->id;
+        $photoPath = "candidate/photos/{$candidateid}.JPG";
+
+        // Check if photo actually exists (both external and local)
+        $photoExists = $this->checkPhotoExists($candidateid, $photoPath);
+
+        // Get photo URL if it exists
+        if ($photoExists) {
+            if ($this->externalFileService->isConfigured() && $this->externalFileService->exists($photoPath)) {
+                $url = $this->externalFileService->getUrl($photoPath);
+            } else {
+                // Check local storage
+                $localPath = public_path('candidatepics/' . $candidateid . '.JPG');
+                if (file_exists($localPath)) {
+                    $url = route('candidate.photoupload', [time()]);
+                } else {
+                    $url = asset('studentpics/man.jpg');
+                    $photoExists = false; // Photo doesn't actually exist
+                }
+            }
+        } else {
+            // Fallback to default image
+            $url = asset('studentpics/man.jpg');
+        }
+
+        // Allow upload if photo doesn't exist OR if database allows it
+        // If photo was deleted but database still says no upload, allow it anyway
+        $allowUpload = !$photoExists || ($candidate->allow_upload ?? 1) == 1;
+
+        return view('pages.forms.profile.photoupload', compact('url', 'allowUpload','candidate'));
+    }
+
+    /**
+     * Check if candidate photo exists (both external and local)
+     */
+    private function checkPhotoExists(int $candidateId, string $photoPath): bool
+    {
+        // Check external server first
+        if ($this->externalFileService->isConfigured() && $this->externalFileService->exists($photoPath)) {
+            return true;
+        }
+
+        // Check local storage
+        $localPath = public_path('candidatepics/' . $candidateId . '.JPG');
+        if (file_exists($localPath)) {
+            return true;
+        }
+
+        // Also check alternative formats
+        $extensions = ['jpg', 'JPG', 'jpeg', 'JPEG', 'png', 'PNG'];
+        foreach ($extensions as $ext) {
+            $altPath = public_path('candidatepics/' . $candidateId . '.' . $ext);
+            if (file_exists($altPath)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public function uploadPicture(Request $request)
+    {
+        try {
+            $candidate = Auth::user();
+            $candidateid = $candidate->id;
+
+            // Check if photo actually exists
+            $photoPath = "candidate/photos/{$candidateid}.JPG";
+            $photoExists = $this->checkPhotoExists($candidateid, $photoPath);
+            
+            // Always allow upload if photo doesn't exist (photo was deleted)
+            if (!$photoExists) {
+                Log::info('Photo does not exist, allowing upload', [
+                    'candidate_id' => $candidateid
+                ]);
+                // Continue with upload
+            } elseif (($candidate->allow_upload ?? 1) != 1) {
+                // Photo exists and database says no upload
+                Log::warning('Photo upload blocked - photo exists and allow_upload is not 1', [
+                    'candidate_id' => $candidateid,
+                    'allow_upload' => $candidate->allow_upload
+                ]);
+                return redirect()->back()->with('error', 'Photo upload is not allowed at this time.');
+            }
+            // If photo exists and allow_upload is 1, allow upload (to replace existing photo)
+
+            $this->validate(request(), [
+                'file' => 'required|image|mimes:jpg,jpeg,png|max:200'
+            ]);
+
+            $file = $request->file('file');
+            $fileName = str_replace("/", "_", $candidateid) . ".JPG";
+            $photoPath = "candidate/photos/{$fileName}";
+
+            // Delete old photo before uploading new one
+            $this->deleteOldPhoto($candidateid, $photoPath);
+
+            // Debug logging
+            Log::info('Photo upload started', [
+                'candidate_id' => $candidateid,
+                'file_name' => $file->getClientOriginalName(),
+                'file_size' => $file->getSize(),
+                'file_mime' => $file->getMimeType(),
+                'target_path' => $photoPath
+            ]);
+
+            // Check if external service is configured
+            $externalServiceConfig = $this->externalFileService->getConfig();
+            Log::info('External service configuration', $externalServiceConfig);
+
+            if (!$this->externalFileService->isConfigured()) {
+                Log::warning('External service not properly configured, will use local storage only', $externalServiceConfig);
+
+                // Skip external service and go directly to local storage
+                $localPath = public_path('candidatepics');
+                if (!file_exists($localPath)) {
+                    mkdir($localPath, 0755, true);
+                }
+
+                $localFileName = $candidateid . '.JPG';
+                $localFilePath = $localPath . '/' . $localFileName;
+
+                // Process and save image locally
+                if (in_array($file->getMimeType(), ['image/jpeg', 'image/jpg', 'image/png'])) {
+                    $image = Image::make($file);
+                    $image->resize(300, 300, function ($constraint) {
+                        $constraint->aspectRatio();
+                        $constraint->upsize();
+                    });
+                    $image->save($localFilePath);
+                } else {
+                    $file->move($localPath, $localFileName);
+                }
+
+                Log::info('Photo saved directly to local storage (external service not configured)', [
+                    'candidate_id' => $candidateid,
+                    'local_path' => $localFilePath,
+                    'file_exists' => file_exists($localFilePath)
+                ]);
+
+                // Update allow_upload to 0 after successful upload
+                $candidate->allow_upload = 0;
+                $candidate->save();
+
+                return redirect()->back()->with('success', 'Picture uploaded successfully to local storage!');
+            }
+
+            // Process image if needed
+            if (in_array($file->getMimeType(), ['image/jpeg', 'image/jpg', 'image/png'])) {
+                // Create thumbnail or resize if needed
+                $image = Image::make($file);
+                $image->resize(300, 300, function ($constraint) {
+                    $constraint->aspectRatio();
+                    $constraint->upsize();
+                });
+
+                // Save processed image temporarily
+                $tempPath = storage_path('app/temp/' . $fileName);
+                $image->save($tempPath);
+
+                // Create a new UploadedFile instance for the processed image
+                $processedFile = new \Illuminate\Http\UploadedFile(
+                    $tempPath,
+                    $fileName,
+                    'image/jpeg',
+                    null,
+                    true
+                );
+
+                // Upload to external server
+                Log::info('Attempting external server upload', [
+                    'candidate_id' => $candidateid,
+                    'photo_path' => $photoPath,
+                    'temp_path' => $tempPath
+                ]);
+
+                $result = $this->externalFileService->uploadWithRetry($processedFile, $photoPath, [
+                    'category' => 'candidate_photo',
+                    'candidate_id' => $candidateid,
+                    'original_name' => $file->getClientOriginalName(),
+                    'size' => $file->getSize()
+                ]);
+
+                Log::info('External server upload result', [
+                    'candidate_id' => $candidateid,
+                    'success' => $result['success'] ?? false,
+                    'error' => $result['error'] ?? null,
+                    'url' => $result['url'] ?? null
+                ]);
+
+                // Clean up temp file
+                if (file_exists($tempPath)) {
+                    unlink($tempPath);
+                }
+            } else {
+                // Upload original file directly
+                $result = $this->externalFileService->uploadWithRetry($file, $photoPath, [
+                    'category' => 'candidate_photo',
+                    'candidate_id' => $candidateid,
+                    'original_name' => $file->getClientOriginalName(),
+                    'size' => $file->getSize()
+                ]);
+            }
+
+            if ($result['success']) {
+                Log::info('Candidate photo uploaded successfully to external server', [
+                    'candidate_id' => $candidateid,
+                    'external_id' => $result['external_id'],
+                    'url' => $result['url'],
+                    'photo_path' => $photoPath
+                ]);
+
+                // Also save to local storage as backup
+                try {
+                    $localPath = public_path('candidatepics');
+                    if (!file_exists($localPath)) {
+                        mkdir($localPath, 0755, true);
+                    }
+
+                    $localFileName = $candidateid . '.JPG';
+                    $localFilePath = $localPath . '/' . $localFileName;
+
+                    if (isset($tempPath) && file_exists($tempPath)) {
+                        copy($tempPath, $localFilePath);
+                    } else {
+                        $file->move($localPath, $localFileName);
+                    }
+
+                    Log::info('Also saved to local storage as backup', [
+                        'candidate_id' => $candidateid,
+                        'local_path' => $localFilePath,
+                        'file_exists' => file_exists($localFilePath)
+                    ]);
+                } catch (\Exception $backupException) {
+                    Log::warning('Failed to save backup to local storage', [
+                        'candidate_id' => $candidateid,
+                        'error' => $backupException->getMessage()
+                    ]);
+                }
+
+                // Update allow_upload to 0 after successful upload
+                $candidate->allow_upload = 0;
+                $candidate->save();
+
+                Log::info('Candidate allow_upload set to 0 after successful upload', [
+                    'candidate_id' => $candidateid
+                ]);
+
+                return redirect()->back()->with('success', 'Picture uploaded successfully!');
+            } else {
+                Log::error('Failed to upload candidate photo to external server, trying local storage', [
+                    'candidate_id' => $candidateid,
+                    'error' => $result['error']
+                ]);
+
+                // Fallback to local storage
+                try {
+                    $localPath = public_path('candidatepics');
+                    Log::info('Attempting local storage fallback', [
+                        'candidate_id' => $candidateid,
+                        'local_path' => $localPath,
+                        'temp_path_exists' => isset($tempPath) && file_exists($tempPath ?? ''),
+                        'original_file_path' => $file->getPathname()
+                    ]);
+
+                    if (!file_exists($localPath)) {
+                        mkdir($localPath, 0755, true);
+                        Log::info('Created local directory', ['path' => $localPath]);
+                    }
+
+                    $localFileName = $candidateid . '.JPG';
+                    $localFilePath = $localPath . '/' . $localFileName;
+
+                    // Save the processed image locally
+                    if (isset($tempPath) && file_exists($tempPath)) {
+                        $copyResult = copy($tempPath, $localFilePath);
+                        Log::info('Copied from temp file', [
+                            'from' => $tempPath,
+                            'to' => $localFilePath,
+                            'success' => $copyResult
+                        ]);
+                    } else {
+                        $moveResult = $file->move($localPath, $localFileName);
+                        Log::info('Moved original file', [
+                            'from' => $file->getPathname(),
+                            'to' => $localFilePath,
+                            'success' => $moveResult !== false
+                        ]);
+                    }
+
+                    // Verify file was saved
+                    $fileExists = file_exists($localFilePath);
+                    $fileSize = $fileExists ? filesize($localFilePath) : 0;
+
+                    Log::info('Local storage verification', [
+                        'candidate_id' => $candidateid,
+                        'local_path' => $localFilePath,
+                        'file_exists' => $fileExists,
+                        'file_size' => $fileSize
+                    ]);
+
+                    if ($fileExists) {
+                        // Update allow_upload to 0 after successful upload
+                        $candidate->allow_upload = 0;
+                        $candidate->save();
+
+                        Log::info('Candidate allow_upload set to 0 after successful local storage upload', [
+                            'candidate_id' => $candidateid
+                        ]);
+
+                        return redirect()->back()->with('success', 'Picture uploaded successfully to local storage!');
+                    } else {
+                        throw new \Exception('File was not saved to local storage');
+                    }
+                } catch (\Exception $localException) {
+                    Log::error('Failed to save candidate photo locally', [
+                        'candidate_id' => $candidateid,
+                        'error' => $localException->getMessage()
+                    ]);
+
+                    return redirect()->back()->with('error', 'Failed to upload picture: ' . $result['error']);
+                }
+            }
+
+        } catch (\Exception $exception) {
+            Log::error('Exception during candidate photo upload', [
+                'candidate_id' => $candidateid ?? 'unknown',
+                'error' => $exception->getMessage(),
+                'trace' => $exception->getTraceAsString()
+            ]);
+
+            return redirect()->back()->with('error', 'Upload failed: ' . $exception->getMessage());
+        }
+    }
+
+    public function profilepicture($id)
+    {
+        try {
+            $candidateid = Auth::user()->id;
+            $photoPath = "candidate/photos/{$candidateid}.JPG";
+
+            // First try external server
+            if ($this->externalFileService->exists($photoPath)) {
+                $url = $this->externalFileService->getUrl($photoPath);
+                return redirect($url);
+            }
+
+            // Fallback to local storage
+            $localPath = public_path('candidatepics/' . $candidateid . '.JPG');
+            if (file_exists($localPath)) {
+                return response()->file($localPath);
+            }
+
+            // Default image
+            $defaultPath = public_path('studentpics/man.jpg');
+            if (file_exists($defaultPath)) {
+                return response()->file($defaultPath);
+            }
+
+            // Return 404 if no image found
+            abort(404, 'Image not found');
+
+        } catch (\Exception $e) {
+            Log::error('Error serving candidate photo', [
+                'candidate_id' => Auth::user()->id ?? 'unknown',
+                'error' => $e->getMessage()
+            ]);
+
+            // Return default image on error
+            $defaultPath = public_path('studentpics/man.jpg');
+            if (file_exists($defaultPath)) {
+                return response()->file($defaultPath);
+            }
+
+            abort(404, 'Image not found');
+        }
+    }
+
+    /**
+     * Delete old photo from both external server and local storage
+     */
+    private function deleteOldPhoto(int $candidateId, string $photoPath): void
+    {
+        try {
+            // Delete from external server
+            if ($this->externalFileService->isConfigured() && $this->externalFileService->exists($photoPath)) {
+                $deleted = $this->externalFileService->delete($photoPath);
+                Log::info('Old candidate photo deletion attempt', [
+                    'candidate_id' => $candidateId,
+                    'photo_path' => $photoPath,
+                    'deleted' => $deleted
+                ]);
+            }
+
+            // Delete from local storage
+            $localPath = public_path('candidatepics/' . $candidateId . '.JPG');
+            if (file_exists($localPath)) {
+                $deleted = unlink($localPath);
+                Log::info('Old candidate photo deleted from local storage', [
+                    'candidate_id' => $candidateId,
+                    'local_path' => $localPath,
+                    'deleted' => $deleted
+                ]);
+            }
+        } catch (\Exception $e) {
+            // Log error but don't fail the upload if deletion fails
+            Log::warning('Failed to delete old candidate photo', [
+                'candidate_id' => $candidateId,
+                'photo_path' => $photoPath,
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+}

@@ -1,0 +1,256 @@
+@extends('layout.student.master')
+
+@section('css')
+    <style>
+        tr > td, tr > th, .table > tfoot > tr > td, .table > tfoot > tr > th, .table > thead > tr > td, .table > thead > tr > th {
+            padding: 4.5px;
+            line-height: 1.42857143;
+            vertical-align: center;
+            border-top: 0px solid #ddd;
+        }
+    </style>
+@endsection
+
+@section('content')
+    <section class="">
+        <div class="main-section pt-20 pb-20">
+            <!-- Page Section -->
+            <div class="page-section"
+                 style="margin-top: 0px;margin-bottom: 0px;border-top: 0px #e0e0e0 solid;border-bottom: 0px #e0e0e0 solid;">
+                <!-- Container Start -->
+                <div class="container">
+                    <div class="row">
+                        <div class="col-xs-1 col-md-1"></div>
+                        <div id="exitForm" class="col-xs-10 col-sm-12 col-md-10">
+                            <div style="font-size: small; color: black; font-weight: bold; text-align: center;">
+                                <p> STUDENT AFFAIRS DIVISION<br>
+                                    AHMADU BELLO UNIVERSITY, ZARIA<br>
+                                    EXIT/CLEARANCE FORM</p>
+                            </div>
+                            <table style="color: black; font-size: smaller;">
+                                <tr>
+                                    <td colspan="4">
+                                        <div style="text-align: center; font-weight: bold">(To be completed in
+                                            Duplicate)
+                                        </div>
+                                        <p>
+                                            All students should complete the Exit/Clearance Form in duplicate at the end
+                                            of the session and when leaving the University finally, that all University
+                                            properties are returned in good shape. A copy of the completed and duty
+                                            signed form should be left with the Hall Administration for record purpose.
+                                        </p>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th style="width: 25%">NAME:</th>
+                                    <td>{{$student->getFullName()}}</td>
+                                    <th style="width: 15%">ROOM NO:</th>
+                                    <td>
+                                        ..........................................................................................
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>COURSE:</th>
+                                    <td>{{ $student->programme()->name }}</td>
+                                    <th>REG NO.:</th>
+                                    <td>{{ $student->matric_number }}</td>
+                                </tr>
+                                <tr>
+                                    <th>DEPARTMENT:</th>
+                                    <td colspan="3">{{ $student->department()->name }}</td>
+                                </tr>
+                                <tr>
+                                    <th>DESTINATION:</th>
+                                    <td colspan="3">
+                                        ..................................................................................................................................................................
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>PURPOSE:</th>
+                                    <td colspan="3">
+                                        ..................................................................................................................................................................
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>CONTACT ADDRESS:</th>
+                                    <td colspan="3">{{ $student->biodata()->contact_address }}</td>
+                                </tr>
+
+                                {{--Department--}}
+                                <tr>
+                                    <th>ACADEMIC HEAD:</th>
+                                    <td colspan="3">
+                                        <p>
+                                            Department of {{ $student->department()->name }}.<br>
+                                            This is to certify that <b>{{ $student->getFullName() }}</b> has been
+                                            cleared by
+                                            this Department.
+                                        </p>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td colspan="2">
+                                        ......................................................<br>
+                                        <div style="text-align: center; width: 50%;">Date</div>
+                                    </td>
+                                    <td colspan="2" style="text-align: end">
+                                        ......................................................<br>
+                                        HOD's Signature and Stamp
+                                    </td>
+                                </tr>
+
+                                {{--Faculty--}}
+                                <tr>
+                                    <th>FACULTY:</th>
+                                    <td colspan="3">
+                                        <p>
+                                            Faculty of {{ $student->department()->faculty()->name }}.<br>
+                                            This is to certify that <b>{{ $student->getFullName() }}</b> has been
+                                            cleared by
+                                            the Faculty.
+                                        </p>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td colspan="2">
+                                        ......................................................<br>
+                                        <div style="text-align: center; width: 50%;">Date</div>
+                                    </td>
+                                    <td colspan="2" style="text-align: end">
+                                        ......................................................<br>
+                                        Dean's Signature and Stamp
+                                    </td>
+                                </tr>
+
+                                {{--Dept Lib--}}
+                                <tr>
+                                    <th>DEPARTMENTAL LIBRARY:</th>
+                                    <td colspan="3">
+                                        <p>
+                                            Department of {{ $student->department()->name }}.<br>
+                                            This is to certify that <b>{{ $student->getFullName() }}</b> has returned
+                                            all the
+                                            Departmental Library Books, checked and are in good shape.
+                                        </p>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td colspan="2">
+                                        ......................................................<br>
+                                        <div style="text-align: center; width: 50%;">Date</div>
+                                    </td>
+                                    <td colspan="2" style="text-align: end">
+                                        ......................................................<br>
+                                        Librarian's Signature and Stamp
+                                    </td>
+                                </tr>
+
+                                {{--KIL--}}
+                                <tr>
+                                    <th>KASHIM IBRAHIM LIBRARY:</th>
+                                    <td colspan="3">
+                                        <p>
+                                            This is to certify that <b>{{ $student->getFullName() }}</b> has returned
+                                            all Library Books, checked and are in good condition.
+                                        </p>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td colspan="2">
+                                        ......................................................<br>
+                                        <div style="text-align: center; width: 50%;">Date</div>
+                                    </td>
+                                    <td colspan="2" style="text-align: end">
+                                        ......................................................<br>
+                                        K.I.L. Signature and Stamp
+                                    </td>
+                                </tr>
+
+                                {{--Sport--}}
+                                <tr>
+                                    <th>SPORT:</th>
+                                    <td colspan="3">
+                                        <p>
+                                            This is to certify that <b>{{ $student->getFullName() }}</b> is not in
+                                            possession of sports equipment.
+                                        </p>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td colspan="2">
+                                        ......................................................<br>
+                                        <div style="text-align: center; width: 50%;">Date</div>
+                                    </td>
+                                    <td colspan="2" style="text-align: end">
+                                        ......................................................<br>
+                                        Sports Unit Signature and Stamp
+                                    </td>
+                                </tr>
+
+                                {{--Accommodation--}}
+                                <tr>
+                                    <th>HALL OF RESIDENCE:</th>
+                                    <td colspan="3">
+                                        <p>
+                                            This is to certify that <b>{{ $student->getFullName() }}</b> has submitted
+                                            the items indicated below checked and found correct and in good condition.
+                                        </p>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td colspan="4" style="padding: 0px;">
+                                        <table style="color: black; font-size: smaller;">
+                                            <tr>
+                                                <th>ITEM</th>
+                                                <th style="width: 50%">REMARK</th>
+                                                <th>RECEIVER'S SIGNATURE</th>
+                                            </tr>
+                                            <tr>
+                                                <td>BED</td>
+                                                <td>____________________________________</td>
+                                                <td>______________________________________________</td>
+                                            </tr>
+                                            <tr>
+                                                <td>MATTRESS</td>
+                                                <td>____________________________________</td>
+                                                <td>______________________________________________</td>
+                                            </tr>
+                                            <tr>
+                                                <td>KEY</td>
+                                                <td>____________________________________</td>
+                                                <td>______________________________________________</td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td colspan="2">
+                                        ......................................................<br>
+                                        <div style="text-align: center; width: 50%;">Date</div>
+                                    </td>
+                                    <td colspan="2" style="text-align: end">
+                                        ......................................................<br>
+                                        Hall Administrators' Signature and Stamp
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="mt-15" style="text-align: center">
+                        <button id="print" onclick="printContent();" class="btn btn-primary">Print Form</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+@endsection
+<script>
+    function printContent() {
+        var restorePage = $('body').html();
+        var printContent = $('#exitForm').clone();
+        $('body').empty().html(printContent.html());
+        window.print();
+        $('body').html(restorePage);
+    }
+</script>
+

@@ -1,0 +1,321 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
+
+class Employee extends Model
+{
+    public function coursegroups()
+    {
+        return $this->belongsToMany(CourseGroup::class, 'course_lecturers');
+    }
+
+    public function department()
+    {
+       //return Department::find($this->department_id);
+       return $this->belongsTo(Department::class, 'department_id');
+    }
+
+    public function faculty() {
+         return Faculty::find($this->department->faculty_id);
+    }
+
+    public function nationality() {
+        return $this->belongsTo(Country::class, 'country_id')->first();
+    }
+
+
+
+    public function courseLecturers()
+    {
+        return $this->hasMany(CourseLecturer::class);
+    }
+
+    public function majorsupervision()
+    {
+        return $this->hasMany(Supervision::class)->orderBy('year','ASC');
+    }
+
+    public function minorsupervision()
+    {
+        return $this->hasMany(Supervision::class)->orderBy('year','ASC');
+    }
+
+    public function mystudents($supervisortype)
+    {
+        return $this->belongsToMany(Student::class, 'supervisions', 'employee_id', 'student_id')
+            ->wherePivot('supervisortype', '=', $supervisortype)->orderBy('year','ASC');
+    }
+
+    public function picture()
+    {
+        $matric = strtoupper($this->user()->username);
+        $matric1 = strtolower($this->user()->username);
+        if(file_exists(public_path() .'/images/staff/'. $matric . '.jpg')) {
+            $pathToFile = public_path()."/images/staff/".$matric.".jpg";
+//            return $matric;
+        }elseif (file_exists(public_path() .'/images/staff/'. $matric1 . '.jpg')){
+            $pathToFile = public_path()."/images/staff/".$matric1.".jpg";
+//            return $matric1;
+        }else{
+//            return "elsepath";
+            $pathToFile = public_path()."/studentpics/user.png";
+        }
+        return response()->file($pathToFile);
+    }
+
+    public static function picture2Base64($pNumber)
+    {
+        $matric = str_replace("/", "_", strtoupper($pNumber));
+        if (file_exists(public_path() . '/images/staff/' . $matric . '.JPG')) {
+            $pathToFile = public_path() . "/images/staff/" . $matric . ".JPG";
+            $data = file_get_contents($pathToFile);
+            return str_replace("\/", "/", base64_encode($data));
+        } else {
+            return "";
+        }
+    }
+
+    public function coursesIn($session)
+    {
+        return $this->coursegroups()->where("session", "=", $session)
+            ->join('courses', 'courses.id', "=", "course_groups.course_id")
+            ->select(["courses.coursecode", "courses.coursetitle", "courses.courseunit", "course_groups.groupno", "courses.id AS course_id", "course_groups.id AS course_group_id", "course_groups.session", "grouptype"]);
+    }
+
+    public function hoursPerWeek($session)
+    {
+        return $this->coursegroups()->where("session", "=", $session)
+            ->join('courses', 'courses.id', "=", "course_groups.course_id")
+            ->groupBy("course_groups.id")
+            ->sum("courses.courseunit");
+    }
+
+    public function supervision($session)
+    {
+        return Supervision::where(["session" => $session, "employee_id" => $this->id])->orderBy('year','ASC');
+    }
+
+
+    public function timeTable($session, $semester = 0)
+    {
+        $result = $this->coursegroups()->where("session", "=", $session)
+            ->join('courses', 'courses.id', "=", "course_groups.course_id")
+            ->join("course_periods", "course_periods.course_group_id", "=", "course_groups.id")
+            ->join("facilities", "facilities.id", "=", "course_periods.facility_id")
+            ->select(["courses.coursecode", "courses.coursetitle", "facilities.facility_name", "course_periods.day",
+                "course_periods.start", "course_periods.end", "course_groups.groupno", "course_groups.grouptype"])
+            ->orderBy("course_periods.start", "ASC");
+
+        if ($semester > 0)
+            return $result->where(["semester" => $semester]);
+
+        return $result;
+    }
+
+
+    public function fullName()
+    {
+        return strtoupper($this->surname) . " " . ucfirst(strtolower($this->firstname)) . " " . ucfirst(strtolower($this->othernames));
+    }
+
+    public function getFullName() {
+        return $this->title . " " . $this->surname . ", " . $this->firstname . " " . $this->othernames;
+    }
+
+    //Staff Profile
+    public function contactAddresses()
+    {
+        return $this->hasMany(EmployeeContactAddress::class);
+    }
+
+    public function awards()
+    {
+        return $this->hasMany(EmployeeAward::class)->orderBy('year','ASC');
+    }
+
+    public function citations()
+    {
+        return $this->hasMany(EmployeeCitation::class)->orderBy('date','ASC');
+    }
+
+    public function communityServices()
+    {
+        return $this->hasMany(EmployeeCommunityService::class)->orderBy('to','ASC');
+    }
+
+    public function conferences()
+    {
+        return $this->hasMany(EmployeeConference::class)->orderBy('end_date','ASC');
+    }
+
+    public function hobbies()
+    {
+        return $this->hasMany(EmployeeHobby::class);
+    }
+
+    public function languageSpoken()
+    {
+        return $this->hasMany(EmployeeLanguageSpoken::class);
+    }
+
+    public function positionsHeld()
+    {
+        return $this->hasMany(EmployeePositionHeld::class)->orderBy('to','ASC');
+    }
+
+    public function postings()
+    {
+        return $this->hasMany(EmployeePosting::class)->orderBy('to','ASC');
+    }
+
+    public function professionalBodies()
+    {
+        return $this->hasMany(EmployeeProfessionalBody::class);
+    }
+
+    public function publications()
+    {
+        return $this->hasMany(EmployeePublication::class)->orderBy('date','ASC');
+    }
+
+    public function reserachextentions()
+    {
+        return $this->hasMany(EmployeeResearchExtension::class)->orderBy('date','ASC');
+    }
+
+    public function qualifications()
+    {
+        return $this->hasMany(EmployeeQualification::class)->orderBy('date','DESC');
+    }
+
+
+    public function workExperiences(){
+        return $this->hasMany(EmployeeWorkExperience::class)->orderBy('to','ASC');
+    }
+
+    public function referees()
+    {
+        return $this->hasMany(EmployeeReferee::class)->orderBy('to','ASC');
+    }
+
+    public function supervisions()
+    {
+        return $this->hasMany(EmployeeSupervision::class)->orderBy('year','ASC');
+
+    }
+
+    public function externalsupervisions()
+    {
+        return $this->hasMany(EmployeeExternalSupervision::class)->orderBy('department','ASC');
+    }
+
+    public function country(){
+        return $this->belongsTo(Country::class);
+    }
+
+
+    public function state() {
+        return $this->belongsTo(State::class);
+    }
+
+    public function lga(){
+        return $this->belongsTo(Lga::class);
+    }
+
+    public function rank(){
+        return $this->belongsTo(Rank::class);
+    }
+
+    public function rankOnEmployment(){
+        return $this->belongsTo(Rank::class, "rank_on_employment");
+    }
+
+    public function cadre(){
+        return $this->belongsTo(Cadre::class);
+    }
+
+    public function teachings(){
+        return $this->hasMany(EmployeeTeaching::class)->orderBy('session','ASC');
+    }
+
+    public function user()
+    {
+        return User::where(['employee_id'=>$this->id])->first();
+    }
+
+    public function taughtCourses()
+    {
+        return Employee::join("employee_teachings",'employee_id','=','employees.id')
+            ->join('courses','courses.id','=','employee_teachings.course_id')
+            ->where("employee_id","=",$this->id)
+            ->select(['courses.coursecode AS course','courses.coursesemester AS coursesemester',DB::raw("CONCAT(employee_teachings.session,'/',employee_teachings.session+1) AS session")])->get();
+    }
+
+    public function department1()
+    {
+        return Department::find($this->department_id);
+    }
+
+    public function salaryGrade(){
+        return $this->belongsTo(SalaryGradeLevel::class, 'salary_grade_level_id');
+    }
+
+    public function orderedQualification()
+    {
+        return EmployeeQualification::join("qualifications","qualifications.id","=","employee_qualifications.type")
+            ->orderBy('ordering','DESC')
+            ->where(['employee_id'=>$this->id])
+            ->select(['qualification','course',DB::raw("YEAR(date) AS year")])
+            ->get();
+    }
+
+    public function splitSupervision()
+    {
+        $supervision = EmployeeSupervision::join("students","students.id","=","employee_supervisions.student_id")
+            ->where(['employee_id'=>$this->id])->whereIn("mode_of_entry",["PG","UG"])
+            ->groupBy(["employee_id","mode_of_entry"])
+            ->select([DB::raw("COUNT(students.id) as supervisions"),"mode_of_entry"])->get();
+        $supx = [];
+        foreach ($supervision as $sup){
+            $supx[strtoupper($sup->mode_of_entry)]=$sup->supervisions;
+        }
+        return ["PG"=>(isset($supx['PG'])?$supx['PG']:0),"UG"=>(isset($supx['UG'])?$supx['UG']:0)];
+
+    }
+
+    public function splitPublication()
+    {
+        $supervision = EmployeePublication::where(['employee_id'=>$this->id])
+            ->whereIn("type",["Journal","Conference",'Book','Monograph','Play'])
+            ->groupBy(["employee_id","type"])
+            ->select([DB::raw("COUNT(employee_publications.id) as publications"),"type"])->get();
+        $supx = [];
+        foreach ($supervision as $sup){
+            $supx[ucwords($sup->type)]=$sup->supervisions;
+        }
+        return [
+            "Journal"=>(isset($supx['Journal'])?$supx['Journal']:0),
+            "Conference"=>(isset($supx['Conference'])?$supx['Conference']:0),
+            "Book"=>(isset($supx['Book'])?$supx['Book']:0),
+            "Monograph"=>(isset($supx['Monograph'])?$supx['Monograph']:0),
+            "Play"=>(isset($supx['Play'])?$supx['Play']:0),
+        ];
+
+    }
+
+    public function promotionRecommendation($year=null)
+    {
+        if($year==null){
+            $year=date("Y");
+        }
+         return PromotionRecomendation::where(['year' => $year, 'employee_id'=>$this->id])->with('rank')->first();
+    }
+
+
+    public function highestQualification(){
+
+    }
+}

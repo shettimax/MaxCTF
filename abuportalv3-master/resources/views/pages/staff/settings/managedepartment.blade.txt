@@ -1,0 +1,262 @@
+@extends("layout.staff.master")
+@section("css")
+    <link rel="stylesheet" href="{{ asset('js/datatables/jquery.dataTables.min.css')}}"/>
+    <style>
+        label {
+            width: 100%;
+            color: #0f1824;
+            text-align: left;
+        }
+    </style>
+@endsection
+@section("pageTitle")
+    Manage Departments
+@endsection
+@section("content")
+    <section>
+        <div class="main-section">
+            <div class="container">
+                <div class="row justify-content-center">
+                    <div class="col-md-12">
+                        <div class="card">
+                            <div class="card-body">
+                                @if (session('status'))
+                                    <div class="alert alert-success" role="alert">
+                                        {{ session('status') }}
+                                    </div>
+                                @endif
+                                @if (isset($errors))
+                                    <ul>
+                                        @foreach($errors as $error)
+                                            <li>{{$error}}</li>
+                                        @endforeach
+                                    </ul>
+                                @endif
+                                @if(Session::has('flash_message'))
+                                    <div class="alert alert-success">
+                                        {{ Session::get('flash_message') }}
+                                    </div>
+                                @endif
+                                {{--                                <ul class="nav nav-tabs">--}}
+                                {{--                                    <li class="nav-item"><a class="nav-link" href="{{route('faculty')}}">Manage--}}
+                                {{--                                            Faculties</a></li>--}}
+                                {{--                                    <li class="nav-item active"><a class="nav-link" href="{{route('department')}}">Manage--}}
+                                {{--                                            Departments</a></li>--}}
+                                {{--                                    <li class="nav-item"><a class="nav-link" href="{{route('programme')}}">Manage--}}
+                                {{--                                            Programmes</a></li>--}}
+                                {{--                                    <li class="nav-item"><a class="nav-link" href="{{route('course')}}">Manage--}}
+                                {{--                                            Courses</a>--}}
+                                {{--                                    </li>--}}
+                                {{--                                </ul>--}}
+                                {{--                                <br/>--}}
+                                {{--                                <h3>Manage Departments</h3>--}}
+                                {{--                                    --}}
+                                @php if(!isset($model))
+                                    $model = null
+                                @endphp
+                                <div class="row mb-30 ml-30 mr-30 mt-30">
+                                    <!-- Button trigger modal -->
+                                    <button type="button" class="btn btn-primary pull-right add" data-toggle="modal"
+                                            data-target="#addEdit">
+                                        Add New
+                                    </button>
+
+                                    <!-- Modal -->
+                                    <div class="modal fade" id="addEdit" tabindex="-1" role="dialog"
+                                         aria-labelledby="myModalLabel">
+                                        <div class="modal-dialog" role="document">
+                                            <div class="modal-content">
+                                                <div class="modal-header">
+                                                    <button type="button" class="close" data-dismiss="modal"
+                                                            aria-label="Close"><span aria-hidden="true">&times;</span>
+                                                    </button>
+                                                    <h4 class="modal-title text-left" id="myModalLabel">Add new
+                                                        Department
+                                                        <div class="double-line-bottom-theme-colored-2"></div>
+                                                    </h4>
+                                                </div>
+                                                @php if(!isset($model))
+                                                      $model = null
+                                                @endphp
+                                                <form class="form" action="{{route('department.store')}}"
+                                                      method="POST"
+                                                      style="width: 100%; margin-top: 3vh;">
+                                                    @csrf
+                                                    <div class="modal-body">
+                                                        <input type="hidden" id="department_id" value="0"
+                                                               name="department_id"/>
+                                                        <div class="row">
+                                                            <div class="form-group col-md-6">
+                                                                <label for="faculty">Faculty Name:</label>
+                                                                <select
+                                                                    class="form-control {{ $errors->has('faculty')?'is-invalid':'is-valid' }}"
+                                                                    name="faculty" id="facultyM"
+                                                                    placeholder="Faculty Name" required>
+                                                                    <option value="0">Select Faculty</option>
+                                                                    @foreach(\App\Models\Faculty::select('*')->orderby('name')->get() as $faculty)
+                                                                        <option
+                                                                            value="{{$faculty->id}}" {{(isset($model)?$model->facultyid:0)==$faculty->id?"selected":""}}>{{$faculty->name}}</option>
+                                                                    @endforeach
+                                                                </select>
+                                                                {{--                                                                @if($errors->has('faculty'))--}}
+                                                                {{--                                                                    <div class="invalid-feedback" style="color:red;">--}}
+                                                                {{--                                                                        {{ $errors->first('faculty')}}--}}
+                                                                {{--                                                                    </div>--}}
+                                                                {{--                                                                @endif--}}
+                                                            </div>
+                                                            <div class="form-group col-md-6">
+                                                                <label for="department">Name:</label>
+                                                                <input type="text" id="department"
+                                                                       class="form-control {{ $errors->has('department')?'is-invalid':'is-valid' }}"
+                                                                       name="department"
+                                                                       value=""
+                                                                       placeholder="Department Name" required>
+                                                                {{--                                                                @if($errors->has('faculty'))--}}
+                                                                {{--                                                                    <div class="invalid-feedback">--}}
+                                                                {{--                                                                        {{ $errors->first('faculty')}}--}}
+                                                                {{--                                                                    </div>--}}
+                                                                {{--                                                                @endif--}}
+                                                            </div>
+                                                            <div class="form-group col-md-6">
+                                                                <label for="nature">Department Type:</label>
+                                                                <select
+                                                                    class="form-control {{ $errors->has('nature')?'is-invalid':'is-valid' }}"
+                                                                    id="nature" name="nature" required>
+                                                                    <option value="-1">Select Type</option>
+                                                                    <option value="2"> Degree Awarding</option>
+                                                                    <option value="1"> Non Degree Awarding</option>
+                                                                    <option value="0"> Others</option>
+                                                                </select>
+                                                                @if($errors->has('nature'))
+                                                                    <div class="invalid-feedback">
+                                                                        {{ $errors->first('nature')}}
+                                                                    </div>
+                                                                @endif
+                                                            </div>
+                                                            <div class="form-group col-md-6">
+                                                                <label for="nature">HOD P.No.:</label>
+                                                                <input type="text" class="form-control" name="p_number"
+                                                                       id="p_number">
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <div class="form-group">
+                                                            <button type="button" class="btn btn-flat btn-danger"
+                                                                    data-dismiss="modal">
+                                                                Close
+                                                            </button>
+                                                            <button type="submit" name="add" id="addbtn"
+                                                                    class="btn btn-flat btn-success">
+                                                                <span
+                                                                    class="icon icon_floppy"></span> &nbsp;Save
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row mb-30 ml-30 mr-30" id="display">
+                                    <table id="departments" align="center"
+                                           class="table table-bordered table-striped table-responsive"
+                                           style="font-size:16px;font-family: Calibri; text-align: left; color: #000000">
+                                        <thead>
+                                        <tr>
+                                            <th>S/N</th>
+                                            <th>Name</th>
+                                            <th>HOD/HOU</th>
+                                            <th>Faculty</th>
+                                            <th>Nature</th>
+                                            <th>Action</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        @php $i =1; @endphp
+                                        @foreach(\App\Models\Department::select('*')->orderby('name')->get() as $department)
+                                            <tr>
+                                                <td>{{$i++}}</td>
+                                                <td>{{$department->name}}</td>
+                                                <td>
+                                                    <strong>{{ ucfirst($department->head_pno) }}</strong> {{$department->hodName()}}
+                                                </td>
+                                                <td>{{\App\Models\Department::find($department->id)->faculty()->name}}</td>
+                                                <td>
+                                                    @if($department->depttype==2)
+                                                        {{"Degree Awarding"}}
+
+                                                    @elseif($department->depttype==1)
+                                                        {{"Non Degree Awarding"}}
+                                                    @else
+                                                        {{"Others"}}
+                                                    @endif
+                                                </td>
+                                                <td>
+                                                    @if($user->canDo('admin.department'))
+                                                        <a class="btn btn-primary btn-sm edit"
+                                                           href="#" data-toggle="modal"
+                                                           data-target="#addEdit" data-id="{{$department->id}}"
+                                                           data-faculty="{{$department->faculty()->id}}"
+                                                           data-name="{{$department->name}}"
+                                                           data-nature="{{$department->depttype}}"
+                                                           data-pnumber="{{$department->head_pno}}">
+                                                            Edit <span class="icon icon_pencil-edit"></span></a>
+                                                    @endif
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+@endsection
+
+@section("js")
+    <script src="{{asset('js/datatables/jquery.dataTables.min.js')}}"></script>
+    <script>
+        $(document).ready(function () {
+            $('#faculty').change(function () {
+                let department = $(this).val();
+                $('#display').empty();
+                $('#display').html("<h4>Please wait while departments loading...</h4>");
+                $.ajax({
+                    type: "GET",
+                    url: "{{ url('staff/settings/department/show')}}/" + department
+                }).done(function (data) {
+                    $('#display').html(data);
+                });
+            });
+            $('#close').click(function () {
+                window.location.href = '{{ url('staff/settings/department') }}';
+            });
+        });
+        $(document).on('click', '.add', function () {
+            $(".modal-body #department").val('');
+            $(".modal-body #department_id").val(0);
+            $(".modal-body #facultyM").val("");
+            $(".modal-body #nature").val(-1);
+        });
+
+        $(document).on('click', '.edit', function () {
+            const id = $(this).data('id'),
+                name = $(this).data('name'),
+                faculty = $(this).data('faculty'),
+                nature = $(this).data('nature'),
+                p_number = $(this).data('pnumber');
+
+            $(".modal-body #nature").val(nature);
+            $(".modal-body #facultyM").val(faculty);
+            $(".modal-body #department").val(name);
+            $(".modal-body #department_id").val(id);
+            $(".modal-body #p_number").val(p_number);
+        });
+        $('#departments').DataTable()
+    </script>
+@endsection

@@ -1,0 +1,171 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class Programme extends Model
+{
+    //
+    public function getstudents()
+    {
+        return $this->hasMany(Student::class);
+    }
+
+    public static function iDProgramme($pname)
+    {
+        $prog_name = $pname;
+        if (strlen($prog_name) > 21) {
+            $pgArr = explode(' ', $prog_name);
+            $prog_name = "";
+            foreach ($pgArr as $p) {
+                if (strlen($p) > 4) {
+                    $prog_name .= substr($p, 0, 1) . ". ";
+                } else {
+                    $prog_name .= "$p ";
+                }
+            }
+        }
+
+        return $prog_name;
+    }
+
+    public function department()
+    {
+        return $this->belongsTo(Department::class)->first();
+    }
+
+    public function faculty()
+    {
+        return $this->department()->faculty();
+    }
+
+    public function getdepartment()
+    {
+        return $this->belongsTo(Department::class);
+    }
+
+    public function programmetype()
+    {
+        return $this->belongsTo(ProgrammeType::class, "programme_type_id");
+    }
+
+    public function degreeplan()
+    {
+        return $this->hasMany(DegreePlan::class)->orderBy("plansession", "DESC")->first();
+    }
+
+    public function level()
+    {
+        switch ($this->programme_type_id) {
+            case 3:
+                return 7;
+                break;
+            case 4:
+                return 8;
+                break;
+            case 5:
+                return 9;
+                break;
+            case 10:
+                return 9;
+                break;
+            default:
+                return 8;
+                break;
+        }
+    }
+
+    public function getConfig($config)
+    {
+        $c = Configuration::
+        whereDate('effective_date', '<=', today())
+            ->where(['name' => $config, 'unit_id' => $this->id, "unit_type" => "Programme"])
+            ->orderBy('effective_date', 'DESC')->first();
+        if (!$c) {
+            if ($progTyp = ProgrammeType::find($this->programme_type_id)) {
+                $cg = $progTyp->getConfig($config);
+                if ($cg) {
+                    return $cg;
+                }
+            }
+            if ($dept = $this->department()) {
+                $cg = $dept->getConfig($config);
+                if ($cg) {
+                    return $cg;
+                }
+            }
+            return null;
+        }
+        return $c;
+    }
+
+    public function entrySession($formSession)
+    {
+        $department = $this->department();
+        $session = SessionMapping::where([
+            "form_session" => $formSession, 'faculty_id' => $department->faculty_id,
+            "programme_type_id" => $this->programme_type_id
+        ])->first();
+        if ($session) {
+            return $session->session;
+        } else {
+            $session = SessionMapping::where([
+                "form_session" => $formSession, 'faculty_id' => 0,
+                "programme_type_id" => $this->programme_type_id
+            ])->first();
+            if ($session) {
+                return $session->session;
+            }
+        }
+
+
+        return $formSession;
+    }
+
+    public function activeSession($level_id)
+    {
+        $reg = RegistrationPeriod::where(["programme_id" => $this->id, 'level_id' => $level_id])->orderBy('session', 'DESC')->first();
+
+        return $reg ? $reg->session : 0;
+    }
+
+    public function availableSessions($session)
+    {
+        return RegistrationPeriod::where(['programme_id' => $this->id])
+            ->where('session', '>=', $session)
+            ->pluck('session')
+            ->toArray();
+    }
+
+    public function lowestFormSession($session)
+    {
+        return FormSetting::where(['candidate_form_type_id' => 10])
+            ->where('session', '>=', $session)
+            ->where('start_date', '<', today())
+            ->where('end_date', '>=', today())
+            ->orderBy('session', 'DESC')
+            ->first();
+    }
+
+    public function currentRegistrationPeriod()
+    {
+        return RegistrationPeriod::where('programme_id', $this->id)->orderBy('session', 'DESC')->first();
+    }
+
+    public function typeCode()
+    {
+        return $this->programmetype->prog_type_code;
+    }
+
+    public function isPG()
+    {
+        return strtoupper($this->typeCode())=='PG';
+    }
+
+    // Add this relationship for Eloquent compatibility
+    public function students()
+    {
+        return $this->hasMany(Student::class, 'programme_id');
+    }
+}

@@ -1,0 +1,83 @@
+<?php
+
+return [
+    /*
+    |--------------------------------------------------------------------------
+    | External File Storage Configuration
+    |--------------------------------------------------------------------------
+    |
+    | This file contains configuration for external file storage via HTTP API
+    |
+    */
+
+    'api_url' => env('EXTERNAL_FILE_API_URL', 'https://your-external-server.com/api'),
+    'api_key' => env('EXTERNAL_FILE_API_KEY'),
+    'timeout' => env('EXTERNAL_FILE_TIMEOUT', 30),
+    'retry_attempts' => env('EXTERNAL_FILE_RETRY_ATTEMPTS', 3),
+
+    // Default paths for different file types
+    'paths' => [
+        'student_photos' => env('EXTERNAL_FILE_STUDENT_PHOTOS_PATH', 'student/photos'),
+        'candidate_photos' => env('EXTERNAL_FILE_CANDIDATE_PHOTOS_PATH', 'candidate/photos'),
+        'student_signatures' => env('EXTERNAL_FILE_STUDENT_SIGNATURES_PATH', 'student/signatures'),
+        'candidate_documents' => env('EXTERNAL_FILE_CANDIDATE_DOCUMENTS_PATH', 'candidate/documents'),
+        'student_documents' => env('EXTERNAL_FILE_STUDENT_DOCUMENTS_PATH', 'student/documents'),
+        'staff_photos' => env('EXTERNAL_FILE_STAFF_PHOTOS_PATH', 'staff/photos'),
+        'system_files' => env('EXTERNAL_FILE_SYSTEM_FILES_PATH', 'system'),
+        'excel_files' => env('EXTERNAL_FILE_EXCEL_FILES_PATH', 'excel'),
+        'payslips' => env('EXTERNAL_FILE_PAYSLIPS_PATH', 'payslips'),
+    ],
+
+    // File size limits (in KB)
+    'limits' => [
+        'student_photos' => env('EXTERNAL_FILE_STUDENT_PHOTOS_LIMIT', 120),
+        'candidate_photos' => env('EXTERNAL_FILE_CANDIDATE_PHOTOS_LIMIT', 120),
+        'student_signatures' => env('EXTERNAL_FILE_STUDENT_SIGNATURES_LIMIT', 120),
+        'candidate_documents' => env('EXTERNAL_FILE_CANDIDATE_DOCUMENTS_LIMIT', 200),
+        'student_documents' => env('EXTERNAL_FILE_STUDENT_DOCUMENTS_LIMIT', 200),
+        'excel_files' => env('EXTERNAL_FILE_EXCEL_FILES_LIMIT', 2048),
+        'payslips' => env('EXTERNAL_FILE_PAYSLIPS_LIMIT', 2048),
+    ],
+
+    // Allowed file types
+    'allowed_types' => [
+        'student_photos' => ['jpg', 'jpeg', 'png'],
+        'candidate_photos' => ['jpg', 'jpeg', 'png'],
+        'student_signatures' => ['jpg', 'jpeg', 'png'],
+        'candidate_documents' => ['jpg', 'jpeg', 'png', 'pdf'],
+        'student_documents' => ['jpg', 'jpeg', 'png', 'pdf'],
+        'excel_files' => ['xlsx', 'xls', 'csv'],
+        'payslips' => ['pdf', 'jpg', 'jpeg', 'png'],
+    ],
+
+    // CDN configuration
+    'cdn' => [
+        'enabled' => env('EXTERNAL_FILE_CDN_ENABLED', false),
+        'url' => env('EXTERNAL_FILE_CDN_URL'),
+        'fallback' => env('EXTERNAL_FILE_CDN_FALLBACK', true),
+    ],
+
+    // Migration settings
+    'migration' => [
+        'mode' => env('EXTERNAL_FILE_MIGRATION_MODE', 'gradual'), // gradual, immediate, disabled
+        'use_external_first' => env('EXTERNAL_FILE_USE_EXTERNAL_FIRST', true),
+        'auto_migrate_on_upload' => env('EXTERNAL_FILE_AUTO_MIGRATE', false),
+        'fallback_to_local' => env('EXTERNAL_FILE_FALLBACK_LOCAL', true),
+        'batch_size' => env('EXTERNAL_FILE_MIGRATION_BATCH_SIZE', 50),
+    ],
+
+    // Backup configuration
+    'backup' => [
+        'enabled' => env('EXTERNAL_FILE_BACKUP_ENABLED', true),
+        'local_copy' => env('EXTERNAL_FILE_LOCAL_COPY', false),
+        'retention_days' => env('EXTERNAL_FILE_RETENTION_DAYS', 30),
+    ],
+
+    // Logging configuration
+    'logging' => [
+        'enabled' => env('EXTERNAL_FILE_LOGGING_ENABLED', true),
+        'level' => env('EXTERNAL_FILE_LOGGING_LEVEL', 'info'),
+        'upload_log' => env('EXTERNAL_FILE_UPLOAD_LOG', true),
+        'error_log' => env('EXTERNAL_FILE_ERROR_LOG', true),
+    ],
+];

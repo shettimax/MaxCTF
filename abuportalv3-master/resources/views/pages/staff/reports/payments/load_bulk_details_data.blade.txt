@@ -1,0 +1,51 @@
+
+<div id="" style="position: relative; padding-top: 25px;" class="table-responsive">
+    <table id="loadAreaTableList" class="table table-striped table-bordered table-hover table-condensed nowrap">
+        <thead>
+        <tr>
+            <th>S/N</th>
+            <th>Matric Number</th>
+            <th>Full Name</th>
+            <th>Transaction Code</th>
+            <th>Amount</th>
+            <th>Date</th>
+            <th>Faculty</th>
+            <th>Department</th>
+            <th>Programme</th>
+            <th>Level</th>
+        </tr>
+        </thead>
+
+        <tfoot>
+        <tr>
+            <th></th>
+            <th></th>
+            <th></th>
+            <th></th>
+            <th></th>
+            <th></th>
+            <th></th>
+            <th></th>
+            <th></th>
+            <th></th>
+        </tr>
+        </tfoot>
+
+        <tbody>
+        @foreach ($students as $stud)
+            <tr>
+                <td>{{$loop->index+1}}</td>
+                <td>{{ $stud->matric_number}}</td>
+                <td>{{ $stud->fullname }}</td>
+                <td>{{ $stud->transaction_code }}</td>
+                <td>{{ number_format($stud->amount, 0) }}</td>
+                <td>{{ $stud->date }}</td>
+                <td>{{ $stud->faculty }}</td>
+                <td>{{ $stud->department }}</td>
+                <td>{{ $stud->programme}} </td>
+                <td>{{  $stud->level }}</td>
+            </tr>
+        @endforeach
+        </tbody>
+    </table>
+</div>

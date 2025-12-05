@@ -1,0 +1,24 @@
+
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Generating RRR</title>
+    </head>
+    <body>
+        <p style="margin-top:100px; margin-left: auto; margin-right: auto; padding:10px; text-align: center; border-style:solid; border-color:#333333; border-width: 2px; border-radius: 10px; width: 200px; font-style: italic;">Generating RRR.......</p>
+        <form action="{{$transaction::GATEWAYURL}}" id="remita_form" name="remita_form" method="POST">
+            <input id="merchantId" name="merchantId" value="{{$transaction::MERCHANTID}}" type="hidden"/>
+            <input id="serviceTypeId" name="serviceTypeId" value="{{$transaction::SERVICETYPEID}}" type="hidden"/>
+            <input id="amt" name="amt" value="{{$transaction->transamount}}" type="hidden"/>
+            <input id="responseurl" name="responseurl" value="{{$responseurl}}" type="hidden"/>
+            <input id="hash" name="hash" value="{{$hash}}" type="hidden"/>
+            <input id="payerName" name="payerName" value="{{$user->getFullName()}}" type="hidden"/>
+            <input id="paymenttype" name="paymenttype" value="RRRGEN" type="hidden"/>
+            <input id="payerEmail" name="payerEmail" value="{{$user->biodata()->email}}" type="hidden"/>
+            <input id="payerPhone" name="payerPhone" value="{{$user->biodata()->gsm}}" type="hidden"/>
+            <input id="orderId" name="orderId" value="{{$transaction->transcode}}" type="hidden"/>
+        </form>
+        <script type="text/javascript">document.getElementById("remita_form").submit();</script>
+    </body>
+</html>
+

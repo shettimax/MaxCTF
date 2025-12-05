@@ -1,0 +1,63 @@
+<?php
+
+namespace App\Http\Controllers\Staff;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Session;
+use App\Models\FeeItem;
+class FeeItemController extends Controller
+{
+    public function __construct()
+    {
+        $this->middleware('auth:staff');
+
+    }
+
+    public function index()
+    {
+        $items = FeeItem::all();
+        return view('pages.staff.settings.feeitem', compact('items'));
+    }
+
+    public function store(Request $request)
+    {
+        try {
+
+            $this->validate(request(), FeeItem::$rules);
+            $itemname = $request->itemname;
+            $code = $request->code;
+            if (!$request->has('itemid')) {
+                $db = new FeeItem();
+                $db->item_name = $itemname;
+                $db->code = $code;
+                $db->save();
+                Session::flash('status', 'Record successfully saved!');
+                Session::flash('alert-class', 'alert-info');
+            }
+            if ($request->has('itemid')) {
+                $itemid = $request->itemid;
+                FeeItem::where(['id' => $itemid])->update(['item_name' => $itemname, 'code' => $code]);
+                Session::flash('status', 'Record successfully updated!');
+                Session::flash('alert-class', 'alert-info');
+            }
+
+            return redirect()->route('feeitem');//view('pages.staff.student.settings.feeitem');
+        } catch (\Exception $e) {
+            $message = $e;
+            return view("pages.errors.failed", compact('message'));
+        }
+
+    }
+
+    public function fetchItems()
+    {
+        return FeeItem::all();
+    }
+    public function edit($id)
+    {
+        $item = FeeItem::find($id);
+        $items = $this->fetchItems();
+        return view('pages.staff.settings.feeitem', compact('item','items'));
+    }
+}

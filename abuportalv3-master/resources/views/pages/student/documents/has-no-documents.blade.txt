@@ -1,0 +1,71 @@
+@extends("layout.student.master")
+
+@section("content")
+
+@php
+    $user = \Auth::user();
+    $biodata = $user->biodata();
+@endphp
+
+<section class="py-5 full-height">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-2"></div>
+            <div class="col-md-8">
+                <div class="card shadow-lg border-0 rounded-lg">
+                    <div class="card-body px-4 py-5">
+                        <h3 class="text-danger text-center font-weight-bold mb-4">
+                            📢 Important Notice
+                        </h3>
+
+                        <p class="lead text-muted">
+                            Please upload the following documents before printing your exam card. Additionally, you are required to upload any other documents relevant to you.
+                        </p>
+
+                        <hr class="my-4">
+                        <div class="row">
+                            <div class="col-md-4"></div>
+                            <div class="col-md-6">
+                                <div>
+                                    <h4 class="mb-3 text-left" style="margin-left: -35px !important">📎 Mandatory Documents to be uploaded</h4>
+                                    <ol class="text-left">
+                                        <li>JAMB Admission Letter</li>
+                                        <li>PUT ME Result / A' Level Result</li>
+                                        <li>O'Level Result</li>
+                                        <li>NIN Slip</li>
+                                        <li>Birth Certificate</li>
+                                        <li>Indigene Certificate</li>
+                                    </ol>
+                                </div>
+
+                                <div>
+                                    <h4 class="mb-3 text-left" style="margin-left: -35px !important">📎  Document(s) you have uploaded</h4>
+                                </div>
+                                @if (!empty($documentTypes))
+                                    <div>
+                                        <ol class="text-left">
+                                            @foreach ($documentTypes as $doc)
+                                                <li>{{ ucwords($doc) }}</li>
+                                            @endforeach
+                                        </ol>
+                                    </div>
+                                @else
+                                    <div class="text-left text-danger p-3">
+                                        You have not yet uploaded any mandatory document.
+                                    </div>
+                                @endif
+
+                                <div class="text-left" style="padding-bottom: 15px; padding-top: 15px;">
+                                    <a href="/notification/documents" class="btn btn-success btn-lg px-5 py-3 shadow">
+                                        Upload Documents
+                                    </a>
+                                </div>
+                        </div>
+                    </div> <!-- /.card-body -->
+                </div> <!-- /.card -->
+            </div>
+        </div>
+    </div>
+</section>
+
+@endsection

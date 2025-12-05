@@ -1,0 +1,195 @@
+<?php
+
+namespace App\Models;
+
+use Dotenv\Validator;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Support\Facades\DB;
+
+class Candidate extends Authenticatable
+{
+
+    public static $signuprules = [
+        "surname" => "required|string|min:2",
+        "firstname" => "required|string|min:2",
+        "gender" => "required|in:Female,Male",
+        "email" => "required|email|unique:candidates,username",
+        "password" => "required|min:6|confirmed",
+    ];
+    public static $passwordrules = [
+        "currentpassword" => "required|min:6",
+        "newpassword" => "required|min:6|confirmed"
+    ];
+
+    public static $menu = [
+//        "My Forms"=>"candidateform.index",
+        "Biodata" => "candidatebiodata.index",
+        "Contact" => "candidatecontact.index",
+        "O-level" => "candidateolevel.index",
+        "A-Level" => "candidatealevel.index",
+        "Project/Thesis" => "candidatethesis.index",
+        "Publications" => "candidateresearchpublication.index",
+        "Professional Qualification" => "candidateprofessionalqualification.index",
+        "Awards" => "candidateaward.index",
+        "Work Experience" => "candidateworkexperience.index",
+        "Soft Skills" => "candidatesoftskill.index",
+        "Password" => "candidate.password.change",
+        "Picture" => "photoupload.index",
+    ];
+
+    //
+    public function enroll()
+    {
+
+    }
+
+    public function biodata()
+    {
+        return $this->hasOne(CandidateBiodata::class, 'candidate_id')->first();
+    }
+
+    public function contact()
+    {
+        return $this->hasOne(CandidateContact::class, 'candidate_id')->first();
+    }
+
+    public function getFullName()
+    {
+        return "{$this->biodata()->surname}, {$this->biodata()->firstname} {$this->biodata()->othernames}";
+    }
+
+    public function candidateForms()
+    {
+        return CandidateForm::where("candidate_id", "=", $this->id)->get();
+    }
+
+    public function admittedForms()
+    {
+        return CandidateForm::where(['candidate_id' => $this->id, 'admission_status' => 'admitted'])->get();
+    }
+
+    public function olevels()
+    {
+        return CandidateOlevel::where("candidate_id", "=", $this->id)->get();
+    }
+
+    public function alevels()
+    {
+        return CandidateAlevel::where("candidate_id", "=", $this->id)->get();
+    }
+
+    public function documents()
+    {
+        return CandidateDocument::where('candidate_id', $this->id)->value('documents') ?? [];
+    }
+
+    public function completedBiodata()
+    {
+        $checks = ["surname", "firstname", "gender", "date_of_birth", "place_of_birth", "home_town", "country_id"];
+        $biodata = $this->biodata();
+        foreach ($checks as $check) {
+            if ($biodata->$check == "") {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public function completedContact()
+    {
+        $checks = ["gsm", "nok_name", "relationship", "nok_gsm", "current_contact"];
+        $contact = $this->contact();
+        if (!$contact) return false;
+
+        foreach ($checks as $check) {
+            if ($contact->$check == "") {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public function completedOlevel()
+    {
+        $olevels = $this->olevels();
+        if (empty($olevels)) {
+            return false;
+        }
+
+        if (!isset($olevels[0]))
+            return false;
+
+
+        $results = count($olevels[0]->results()) > 0 ? true : false;
+
+        if (isset($olevels[1])) {
+            $results = count($olevels[1]->results()) > 0 ? true : ($results || false);
+        }
+
+        return $results;
+
+    }
+
+    public function completedAlevel()
+    {
+        $alevel = $this->alevels();
+        return count($alevel);
+    }
+
+    public function candidateJAMB()
+    {
+        return CandidateJamb::where(["candidate_id" => $this->id])->join("subjects", "subjects.id", "=", "candidate_jambs.subject_id")->get();
+    }
+
+    public function uploadedDocuments(): bool
+    {
+        return CandidateDocument::where('candidate_id', $this->id)->exists();
+    }
+
+    public function admitted(): bool
+    {
+        return $this->candidateForms()->contains('admission_status', 'admitted');
+    }
+
+    public function screenedQualified()
+    {
+        $forms = $this->admittedForms();
+        return $forms->count() > 0 && $forms->where('screening_status', 'Qualified')->count() === $forms->count();
+
+        //  return $this->candidateForms()->contains('screening_status', 'Qualified');
+    }
+
+    public function uploadedThis(string $type): bool
+    {
+        $docs = CandidateDocument::where('candidate_id', $this->id)->first();
+        return $docs && collect($docs->documents)->contains('type', $type);
+    }
+
+    public function transactions()
+    {
+        $ids = $this->hasMany(CandidateForm::class)
+            ->join("transactions", "transactions.student_id", "=", "candidate_forms.id")
+            ->where("code", "=", "FRM")->pluck("transactions.id");
+        return Transaction::whereIn("id", $ids)->get();
+    }
+
+    public function getUtme()
+    {
+        return $applications = Candidate::join("candidate_forms", "candidate_forms.candidate_id", "=", "candidates.id")
+            ->join("form_settings", "form_settings.id", "=", "candidate_forms.form_setting_id")
+            ->join("programmes", "programmes.id", "=", "form_settings.programme_id")
+            ->select(["form_settings.*", "programmes.*", "candidate_forms.*", "candidates.*"])
+            ->where(['candidate_forms.candidate_id' => $this->id, "form_settings.candidate_form_type_id" => 1])->first();
+    }
+
+    public function adjustProgramme($prog_id, $session, $type)
+    {
+        $candidateForm = CandidateForm::where(['candidate_id' => $this->id])->first();
+        if ($candidateForm) {
+            $frmsess = FormSetting::where(['session' => $session, 'programme_id' => $prog_id, 'candidate_form_type_id' => $type])->first();
+            $candidateForm->form_setting_id = $frmsess->id;
+            $candidateForm->save();
+        }
+    }
+}

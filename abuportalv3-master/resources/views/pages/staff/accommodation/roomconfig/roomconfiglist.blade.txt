@@ -1,0 +1,41 @@
+
+<table class="table table-bordered table-hover table-sm table-striped">
+    <thead class='thead-dark'>
+        <tr>
+            <th>S/N</th>
+            <th>Room No.</th>
+            <th>Session</th>
+            <th>Bedspace</th>
+            <th>Occupied</th>
+            <th>Reserved (SAD)</th>
+            <th>Owner</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @forelse($rooms as $room)
+        @if($room && $room->session == $accommodation->session)
+        <tr>
+            <td>{{$loop->iteration}}</td>
+            <td><a href='#' class='viewroom' data-id='{{$room->id}}'>{{strtoupper($room->room_no)}}</a></td>
+            <td>{{$room->session}}</td>
+            <td>{{$room->bed_space}}</td>
+            <td>{{$room->occupied}}</td>
+            <td>{{($room->reserved==1)?('Yes'):('No')}}</td>
+            <td>{{$room->owner}}</td>
+            <td>
+                <a href="#" class="viewroom btn btn-default btn-sm" data-id='{{$room->id}}'>View</a>
+                <a href="#" class="modifyroomaction btn btn-default btn-sm" data-id='{{$room->id}}'>Modify</a>
+                <a href="#" class="togglesadaction btn btn-default btn-sm" data-id='{{$room->id}}'>{{($room->reserved==1)?('Open for all'):('Make SAD')}}</a>
+            </td>
+        </tr>
+        @endif
+        @empty
+        <tr>
+            <td colspan='7' class='text-center'>
+                <i>No matching room configuration found!</i>
+            </td>
+        </tr>
+        @endforelse
+    </tbody>
+</table>

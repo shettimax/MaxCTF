@@ -1,0 +1,583 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Candidate;;
+use App\Models\CandidateBiodata;;
+use App\Models\CandidateForm;;
+use App\Models\FormSetting;;
+use App\Models\Programme;;
+use App\Models\Transaction;
+
+use App\Models\Student;
+use Excel;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Symfony\Component\Console\Input\Input;
+use Yajra\DataTables\Facades\DataTables;
+
+class CandidateFormController extends Controller
+{
+
+    public function __construct()
+    {
+        return $this->middleware(['auth:staff']);
+    }
+
+    //show admission upload page
+    public function uploadAdmittedApplicant()
+    {
+        return view('pages.staff.form.applicant.uploadadmittedapplicant');
+    }
+
+    /**
+     * @param Request $request
+     * @return false|string
+     */
+    public function previewAdmittedApplicant(Request $request)
+    {
+
+        try {
+
+            $file = $request->file('filename')->getRealPath();
+            /** Load $inputFileName to a Spreadsheet Object  **/
+            $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($file);
+            $sheetData = $spreadsheet->getActiveSheet()->toArray(null, true, true, true);
+            //var_dump($sheetData);
+            $allProgrammes = [];
+            $allAppNumbers = [];
+            $start_row = intval($request->row);
+            $row_count = 0;
+//            print('<pre>');
+            foreach ($sheetData as $row) {
+                if ($start_row <= $row_count) {
+
+                    $allAppNumbers[] = $row['A'];
+                    $allProgrammes[] = $row['B'];
+
+
+                    $row_count++;
+                }
+
+//                print_r($row['A'].' '. $row['B'] .'<br>');
+            }
+//            print_r($allAppNumbers);
+            $success = $allAppNumbers;
+            $failed = $allAppNumbers;
+            $duplicate = $allAppNumbers;
+            return view('pages.staff.form.applicant.uploadadmittedapplicant', compact('success', 'failed', 'duplicate', '  '));
+//            print('<pre>');
+//            print_r(array_count_values($appno));
+
+//            return $path;
+            /*$data = Excel::load($path, function ($reader) {
+            })->get();
+            $start_row = intval($request->row);
+            $row_count = 0;
+            $foundAppNumbs = [];
+            $content = array();
+            $failed = array();
+            $staffid = Auth::id();
+            $loopedProgrammes = [];
+            $all = [];
+            foreach ($data as $row) {
+                if ($start_row <= $row_count) {
+                    $appno = intval(substr($row['application_number'], 0, -4));
+                    $programme = trim($row['programme']);
+//                if(isset($loopedProgrammes[$programme])){
+//                    $programme_id = $loopedProgrammes[$programme];
+//                }else{
+                    $prog = Programme::where('name', 'like', '%' . str_replace("%", "", $programme) . '%')->first();
+                    $programme_id = $prog ? $prog->id : null;
+                    $loopedProgrammes[strtolower($programme)] = [$programme_id];
+//                }
+
+                    if ($programme_id) {
+                        #Check for duplicates in_array cost O(n) this cost O(1)
+                        if (isset($foundAppNumbs["APP_$appno"])) {
+                            $foundAppNumbs["APP_$appno"]['is_duplicate'] = true;
+                            if ($foundAppNumbs["APP_$appno"]["names"] != trim($row['full_name']) || $foundAppNumbs["APP_$appno"]["programme_id"] != $programme_id) {
+                                $foundAppNumbs["APP_$appno"]['duplicates'][] = ["appno" => $row['application_number'], "names" => trim($row['full_name']), "programme" => $programme, "programme_id" => $programme_id];
+                                unset($content[strtolower($programme)]["APP_$appno"]);
+                            }
+                        } else {
+                            $content[strtolower($programme)]["APP_$appno"] = [$appno, $programme_id];
+                            $foundAppNumbs["APP_$appno"] = ["appno" => $row['application_number'], "names" => trim($row['full_name']), "programme" => $programme, "programme_id" => $programme_id, "is_duplicate" => false, "duplicates" => []];
+                        }
+                    } else {
+                        $failed[] = ["appno" => $row['application_number'], "programme" => $programme, "full_name" => trim($row['full_name'])];
+                    }
+
+                }
+                $row_count++;
+            }
+            $uploadable = [];
+            foreach ($content as $key => $con) {
+//            $uploadable[$key] = $con;
+                foreach ($con as $k => $v) {
+                    $uploadable[$key]["programme_id"] = $v[1];
+                    $uploadable[$key]["app_nos"][] = $v[0];
+                }
+//            $uploadable[$key]["app_nos"] = $uploadable[$key]["app_nos"].",";
+            }*/
+//            return $uploadable;//compact(['uploadable', 'failed', 'foundAppNumbs', 'content']);
+//        return $uploadable;
+//            return view('pages.staff.forms.applicants.confirmupload', compact(['uploadable', 'failed', 'foundAppNumbs', 'content']));
+        } catch (\Exception $e) {
+            return $e->getMessage();
+        }
+
+    }
+
+    public function admission(Request $request)
+    {
+        return view('pages.staff.form.applicant.uploadadmittedapplicant');
+    }
+
+
+    public function uploadAdmission(Request $request)
+    {
+        try {
+            $user = Auth::user();
+            $programmesX = $user->accessibleProgrammes("staff.student.uploadadmission")->get();
+            $this->validate($request, [
+                    "type" => "required|in:UTME,OTHERS",
+                "filename" => "required|mimes:excel,xls,xlsx"
+            ]);
+            $excel = Excel::toCollection(null, request()->file('filename'));
+            $excel = $excel[0];
+            $programmes = [];
+
+            foreach ($programmesX as $programme) {
+                $programmes[strtolower($programme->name)] = $programme->id;
+            }
+            $form_ids = [];
+            $candidate_jambs = [];
+            $candidatesByProgramme = [];
+//            return $programmes;
+
+            $i = 0;
+            foreach ($excel as $row) {
+                if ($i == 0) {
+                    $i++;
+                    continue;
+                }
+                $appno = $row[0];
+                if ($request->type == "UTME") {
+                    $candidate_jambs[] = $row[0];
+//                $candidatesByProgramme[$programmes[strtolower($row[1])]][] = $row[0];
+                }
+            }
+
+            $candidates = Candidate::whereIn("username", $candidate_jambs)->get();
+            $candidatesJambIds = [];
+            foreach ($candidates as $candidate) {
+                $candidatesJambIds [$candidate->username] = $candidate->id;
+            }
+            $updatesArray = [];
+            $invalidProgrammes = [];
+            $invalidJambNos = [];
+            $added = [];
+            $duplicate = [];
+            $conflicts = [];
+            $i = 0;
+            $insertCount = 0;
+            foreach ($excel as $row) {
+                if ($i++ == 0)
+                    continue;
+                if ($request->type == "UTME") {
+                    if (isset($candidatesJambIds[$row[0]])) {
+                        if (isset($programmes[strtolower($row[1])])) {
+                            if(isset($added[$row[0]])){
+                                if($added[$row[0]]==$programmes[strtolower($row[1])]){
+                                    $duplicate [$row[0]] = $row[1];
+                                }else{
+                                    $conflicts[$candidatesJambIds[$row[0]]] = [
+                                        "programmeOne"=>$row[1],
+                                        "programmeTwo"=>"",
+                                        "programme_id"=>$programmes[strtolower($row[1])],
+                                        "jamb_number"=>$row[0],
+                                    ];
+                                }
+                            }else{
+                                $updatesArray[$programmes[strtolower($row[1])]][] = $candidatesJambIds[$row[0]];
+                                $added[$row[0]] = $programmes[strtolower($row[1])];
+                                $insertCount++;
+                            }
+                        } else {
+                            //$invalidProgrammes[$row[1]][] = $row[0];
+                        }
+                    }else{
+                        $invalidJambNos[] = $row[0];
+                    }
+                } else {
+                    if (isset($programmes[strtolower($row[1])])) {
+                        $updatesArray[$programmes[strtolower($row[1])]][$row[2]][] = $row[0];
+                    } else {
+                        $invalidProgrammes[$row[1]][] = $row[0];
+                    }
+                }
+            }
+
+           // return [$updatesArray,$invalidProgrammes];
+
+            $fs = FormSetting::whereIn("candidate_form_type_id", [1, 2])->pluck('id');
+            foreach ($updatesArray as $key => $value) {
+                if ($request->type == 'UTME') {
+                    CandidateForm::whereIn("candidate_id", $value)
+                        ->whereIn("form_setting_id", $fs)
+                        ->update(["programme_admitted_id" => $key, "admission_status" => "admitted", "admitted_by" => Auth::id(), "date_admitted" => today()]);
+                } else {
+                    foreach ($value as $lvl=>$ids){
+
+                        CandidateForm::whereIn("id", $ids)
+                            ->update([
+                                "programme_admitted_id" => $key, "admission_status" => "admitted",
+                                "admitted_by" => Auth::id(), "date_admitted" => today(),
+                                "level_admitted_index"=>$lvl
+                            ]);
+                    }
+
+                }
+            }
+
+          //  return compact('invalidProgrammes','invalidJambNos','duplicate','conflicts','insertCount');
+            return view("pages.staff.form.applicant.uploadreport",compact('invalidProgrammes','invalidJambNos','duplicate','conflicts','insertCount'));
+        } catch (\Exception $e) {
+            return $e->getMessage() . $e->getTraceAsString();
+        }
+
+
+    }
+
+    public function examScore(Request $request)
+    {
+        return view('pages.staff.form.applicant.uploadcandidateexamscore');
+    }
+
+    public function uploadPutmeScore(Request $request)
+    {
+
+        $this->validate($request, [
+            "type" => "required|in:UTME,OTHERS",
+            "filename" => "required|mimes:excel,xls,xlsx"
+        ]);
+        $excel = Excel::toCollection(null, request()->file('filename'));
+        $excel = $excel[0];
+        $programmes = [];
+
+        foreach (Programme::all() as $programme) {
+            $programmes[strtolower($programme->name)] = $programme->id;
+        }
+        $candidate_jambs = [];
+        $candidatesJambScore = [];
+
+
+        $i = 0;
+        foreach ($excel as $row) {
+            if ($i == 0) {
+                $i++;
+                continue;
+            }
+            if ($request->type == "UTME") {
+                $candidate_jambs[] = $row[0];
+                $candidatesJambScore[$row[0]] = $row[1];
+            }
+
+        }
+
+        $candidates = Candidate::whereIn("username", $candidate_jambs)->get();
+        $candidatesJambIds = [];
+        $fs = FormSetting::whereIn("candidate_form_type_id", [1])->pluck('id');
+        foreach ($candidates as $candidate) {
+            $candidatesJambIds[] = CandidateForm::where("candidate_id", "=", $candidate->id)
+                ->whereIn("form_setting_id", $fs)
+//                ->where("payment_status", "=", "Paid")
+                ->update(["exam_score" => $candidatesJambScore[$candidate->username]]);
+        }
+
+        return $candidatesJambIds;
+    }
+
+    public function search()
+    {
+
+        $user = Auth::user();
+        $permission = "candidate.search";
+        //added
+        //if (!$this->access($user,$permission))
+        //return view("pages.errors.nopermission",array("message"=>"You have no permission to view this page"));
+
+        return view("pages.staff.form.applicant.search.index");
+    }
+
+    public function show(Request $request, $username)
+    {
+        try {
+            //
+            $user = Auth::user();
+            $permission = "candidate.view";
+
+            //if (!$this->access($user,$permission))
+            //  return view("pages.errors.nopermission",array("message"=>"You have no permission to view this page"));
+
+            // Check if the input is an email address
+            if (filter_var($username, FILTER_VALIDATE_EMAIL)) {
+                $candidate = Candidate::where(["email" => $username])->first();
+            } else {
+                $candidate = Candidate::where(["username" => $username])->first();
+            }
+            
+            if (!$candidate) {
+                return redirect()->back()->with("error", "Candidate not found!");
+            }
+            
+            $candidateForm = CandidateForm::where(["candidate_id" => $candidate->id])->get();
+            return view("pages.staff.form.applicant.search.view", compact("candidate", "user", "candidateForm"));
+        } catch (\Exception $e) {
+            return $e->getMessage();
+        }
+    }
+
+    public function searchCandidate(Request $request)
+    {
+
+
+        $user = Auth::user();
+        $permission = "candidate.search";
+        //added
+
+        $by = "username";
+        switch ($request->by) {
+            case 'surname':
+                $by = "surname";
+                break;
+            case 'firstName':
+                $by = "firstname";
+                break;
+            case 'username':
+                $by = "username";
+                break;
+        }
+        $candidates = DB::table("candidates")
+            ->select(["candidates.id", 'candidates.username', 'candidate_biodatas.surname',
+                'candidate_biodatas.firstname', 'candidate_biodatas.othernames', 'candidate_contacts.gsm'
+            ])
+            ->leftJoin("candidate_biodatas", "candidate_biodatas.candidate_id", "=", "candidates.id")
+            ->leftJoin("candidate_contacts", "candidate_contacts.candidate_id", "=", "candidates.id")
+            ->whereRaw("$by LIKE '%" . $request->detail . "%'");
+        return DataTables::of($candidates)
+            ->addIndexColumn()
+            ->addColumn('operations', function ($candidate) use ($user, $permission) {
+                $st = Candidate::find($candidate->id);
+                return $st->username;
+                return "";
+            })
+            ->make(true);
+    }
+
+    public function changePassword()
+    {
+        if (!$this->access(Auth::user(), "candidate.password.change"))
+            return view("pages.errors.nopermission");
+        return view("pages.staff.form.applicant.changepassword");
+    }
+
+
+    public function updatePassword(Request $request)
+    {
+        $this->validate($request, [
+            "username" => "required",
+            "password" => "required|min:3|confirmed"
+        ]);
+        $candidate = Candidate::where(['username' => $request->username])->first();
+        if ($candidate) {
+            $candidate->password = bcrypt($request->password);
+            $candidate->save();
+            return redirect()->back()->withErrors(['message' => "<span><span><strong>Password Reset </strong></span><span> for {$request->username} to </span><br/><span><strong> {$request->password}</strong></span></span>"]);
+        }
+        return redirect()->back()->withErrors(["error" => "Invalid UserName"]);
+    }
+
+    public function candRecordUpdate(Request $request)
+    {
+
+        try {
+//
+            $candidate = CandidateBiodata::where('candidate_id',$request->candidate_id)->first();
+
+
+            if ($candidate) {
+                // $stud = new Student();
+                $candidate->surname = $request->surname;
+                $candidate->firstname = $request->firstname;
+                $candidate->othernames = $request->other_names;
+                $candidate->gender = $request->gender;
+                $candidate->date_of_birth = $request->dob;
+                $candidate->save();
+                return response()->json(["status" => 1, "message" => "Candidate record successfully updated."]);
+            }
+
+
+            return response()->json(["status" => 0, "message" => "Failed to update record."]);
+
+        } catch (\Exception $e) {
+            $message = $e->getMessage();
+            return response()->json(["status" => 0, "message" => "Something went horribly wrong.(" . $e->getTraceAsString() . ")."]);;
+        }
+
+    }
+
+    public function updateCandidatetRecord(Request $request)
+    {
+
+        try {
+
+            $candidate = CandidateForm::find($request->candidate_form_id);
+
+            if ($candidate) {
+                // $stud = new Student();
+                $candidate->form_setting_id = $request->programme;
+                $candidate->save();
+            }
+
+
+            return response()->json(["status" => 1, "message" => "Candidate record successfully updated."]);
+
+        } catch (\Exception $e) {
+            $message = $e->getMessage();
+            return response()->json(["status" => 0, "message" => "Something went horribly wrong.(" . $e->getTraceAsString() . ")."]);;
+        }
+
+    }
+
+    public function updateCandidatetRecord1(Request $request)
+    {
+
+        try {
+
+            $candidate = CandidateForm::find($request->candidate_form_id);
+            $newpid = FormSetting::where("id","=","$request->programme")->pluck('programme_id')->first();
+
+            if ($candidate) {
+                // $stud = new Student();
+
+                $candidate->programme_admitted_id = $newpid;
+                $candidate->save();
+            }
+
+
+            return response()->json(["status" => 1, "message" => "Candidate record successfully updated."]);
+
+        } catch (\Exception $e) {
+            $message = $e->getMessage();
+            return response()->json(["status" => 0, "message" => "Something went horribly wrong.(" . $e->getTraceAsString() . ")."]);;
+        }
+
+    }
+
+    public function candidateFormEdit(Request $request, $id)
+    {
+        $cf = CandidateForm::find($id);
+        return view("pages.staff.form.applicant.editrecord", compact('cf'));
+
+    }
+
+    public function candidateFormEdit1(Request $request, $id)
+    {
+        $cf1 = CandidateForm::find($id);
+        return view("pages.staff.form.applicant.editadmitprog", compact('cf1'));
+
+    }
+
+    public function profileImage(Request $request, $id)
+    {
+        $candidate = Candidate::find($id);
+        $fileName = str_replace("/", "_", strtoupper($candidate->id));
+        if (file_exists(public_path() . '/candidatepics/' . $fileName . '.JPG')) {
+            $pathToFile = public_path() . "/candidatepics/" . $fileName . ".JPG";
+        } else {
+            $pathToFile = public_path() . "/studentpics/user.png";
+        }
+
+        return response()->file($pathToFile);
+    }
+
+    //delete candidate picture
+    public function destroyCandPhoto(Request $request)
+    {
+        $user = Auth::user();
+        $data = $request->candUsername;
+        $cand = Candidate::where("username", "=", $data)->first();
+       /* if (!$user->canAccess("student.search.picture", $cand)) {
+            return redirect('', 403);
+        }*/
+        $candUsername = $cand->username;
+
+        $image_path = public_path() . '/candidatepics/' . $candUsername . '.JPG';
+        if (file_exists($image_path)) {
+            
+            unlink($image_path);
+
+            if ($candUsername) {
+                session()->flash('success', 'Candidate photo deleted successfully!');
+
+            } else {
+                session()->flash('error', 'Something is wrong while deleting photo!');
+            }
+        }
+        return redirect()->back();
+    }
+
+    public function deleteCandidateForm($id)
+    {
+        try {
+            // Find the candidate form
+            $candidateForm = CandidateForm::find($id);
+            
+            if (!$candidateForm) {
+                return response()->json([
+                    'status' => 0,
+                    'message' => 'Candidate form not found'
+                ], 404);
+            }
+
+            // Check if payment status is 'Not Paid'
+            if ($candidateForm->payment_status !== 'Not Paid') {
+                return response()->json([
+                    'status' => 0,
+                    'message' => 'Cannot delete form. Payment status is not "Not Paid"'
+                ], 400);
+            }
+
+            // Check if there are any transactions with payment_status='Not Paid' for this candidate form
+            $transactions = Transaction::where([
+                'student_id' => $candidateForm->id,
+                'code' => 'FRM',
+                'payment_status' => 'Not Paid'
+            ])->get();
+
+            if ($transactions->count() > 0) {
+                // Delete the transactions first
+                foreach ($transactions as $transaction) {
+                    $transaction->delete();
+                }
+            }
+
+            // Delete the candidate form
+            $candidateForm->delete();
+
+            return response()->json([
+                'status' => 1,
+                'message' => 'Candidate form deleted successfully'
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 0,
+                'message' => 'Error deleting candidate form: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+}

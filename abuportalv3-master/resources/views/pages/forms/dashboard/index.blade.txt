@@ -1,0 +1,126 @@
+@extends("layout.candidate.master")
+@section('content')
+
+<section>
+    <div class="container">
+        <div class="page-inner bg-white">
+            <div class="row row-projects">
+                @if($applications)
+                    <div class="col-md-12">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <h3>PostUTME Registration</h3>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="pull-right">
+                                    @if(!$candidate->wallet_number)
+                                        <a class="btn btn-sm btn-warning" href="{{route("candidate.wallet.create")}}">Create Wallet</a>
+                                    @else
+                                        <a class="btn btn-sm btn-primary" href="{{route('candidate.wallet.view')}}">Fund Wallet</a>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    @foreach($applications as $application)
+                        @php
+                            $candidateForm = App\Models\CandidateForm::find($application->id);
+                        @endphp
+                        @if(!$candidateForm)
+                            @continue
+                        @endif
+
+                        <div class="col-sm-6 col-lg-4">
+                            <div class="card">
+                                <div class="p-2">
+                                    <img class="card-img-top rounded" src="{{ asset("utme.jpg")}}" alt="Product 1" width="160">
+                                </div>
+                                <div class="card-body pt-2">
+                                    <h4 class="mb-1 fw-bold"></h4>
+                                    <div class="text-muted text-danger"><strong>{{$application->username}}</strong></div>
+                                    <div class="text-muted small"><strong>{{$application->name}}</strong></div>
+                                    <div class="text-muted small"><strong>{{$application->session}}/{{$application->session+1}}</strong></div>
+
+                                    @php
+                                        $bioBool = $candidate->completedBiodata();
+                                        $conBool = $candidate->completedContact();
+                                        $olvBool = $candidate->completedOlevel();
+                                    @endphp
+                                    @if(!$bioBool || !$conBool || !$olvBool)
+                                    <div class="text-muted small  {{ 0==0?'text-danger':'text-success' }}">
+                                        <strong>Pending Actions:</strong>
+                                        <ul style="list-style: none;">
+                                            @if(!$bioBool)
+                                            <li> - Incomplete Biodata
+                                                <a class="btn btn-danger btn-xs" href="{{ route("forms.profile.biodata") }}">
+                                                    Update
+                                                </a>
+                                            </li>
+                                            @endif
+                                            @if(!$conBool)
+                                            <li> - Incomplete Contact
+                                                <a class="btn btn-danger btn-xs" href="{{ route("form.profile.contact") }}">
+                                                    Update
+                                                </a>
+                                            </li>
+                                            @endif
+                                            @if(!$olvBool)
+                                            <li> - Incomplete Olevel &nbsp;&nbsp;
+                                                <a class="btn btn-danger btn-xs" href="{{ route("candidate.addolevel") }}">Update </a>
+                                            </li>
+                                            @endif
+                                        </ul>
+                                    </div>
+                                    @endif
+                                    <hr>
+
+                                    <div class="row mb-10" style="padding: 8px;">
+                                            <div class="col-md-12 text-center">
+
+                                                @if($bioBool && $conBool && $olvBool && $candidateForm)
+                                                    @if($candidateForm && $candidateForm->isPaid())
+                                                        <a class="btn btn-info btn-xs" href="{{ route("form.buy.pay",[$candidateForm->id]) }}">View Transaction Slip <i class="fa fa-print"></i></a>
+                                                        <a class="btn btn-info btn-xs" href="{{ route("form.buy.completed",[$candidateForm->id]) }}">View Completed Form <i class="fa fa-print"></i></a>
+                                                        @if($candidateForm->candidateFormType()->name=="PUTME")
+                                                             <a class="btn btn-danger btn-xs" href="http://196.220.67.98//scheduler/process_scheduling.php?faculty1={{ $query->faculty }}&statename={{ $query->statename }}&RegNum={{ $query->RegNum }}&gsm={{ $query->gsm }}&email={{ $query->email }}&prog={{ $query->prog }}"> Print Scheduling Slip</a>
+                                                        @endif
+                                                    @else
+                                                        <a class="btn btn-default btn-xs" href="{{ route("form.buy.pay",[$candidateForm->id]) }}">Pay Online <i class="fa fa-credit-card-alt"></i></a>
+                                                    @endif
+                                                @else
+                                                    <a class="btn btn-warning btn-sm" id="payNotEnabled">
+                                                        Pay <i class="fa fa-exclamation"></i>
+                                                    </a>
+                                                @endif
+                                    </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    @endforeach
+                @endif
+            </div>
+        </div>
+    </div>
+</section>
+<style>
+    ul>li{
+        margin: 4px 0;
+    }
+</style>
+@endsection
+
+@section('js')
+<script src="{{ asset('assets/js/swal.js') }}"></script>
+<script>
+    $(function(){
+        $("#payNotEnabled").on("click",function(){
+            Swal.fire({
+                    icon: 'error',  // 'error' instead of 'false'
+                    title: 'Attention',
+                    text: 'Please Update Biodata,Contact and Olevel to pay!'
+                });
+        });
+    })
+</script>
+@endsection

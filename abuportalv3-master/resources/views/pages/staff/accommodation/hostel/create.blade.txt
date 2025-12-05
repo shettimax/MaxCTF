@@ -1,0 +1,129 @@
+@inject('Accommodation', 'App\Models\Accommodation')
+@extends('layout.staff.master')
+@section('css')
+<style rel="text/css">
+    .table tr td:first-child {
+        font-weight: bold;
+    }
+    .hostelaction{
+        margin:5px;
+        margin-right:7px;
+        min-width: 100px;
+    }
+    .widgeterror{
+        color:#EC391B;
+    }
+    .show{
+        display: inline;
+    }
+    .hidden{
+        display: none;
+    }
+</style>
+@endsection
+@section('content')
+    <section class="">
+
+        <div class="container">
+            <div class='row'>
+                <div class='col-xs-12 col-md-10'>
+                    <div class='row'>
+                        <div class='col-xs-1 col-md-3'></div>
+                        <div class ='col-xs-10 col-md-6'>
+                            <div class='row'>
+                                <div class='col-12 text-center'>
+                                    <h2 class="text-theme-colored2 font-20">New Hostel</h2>
+                                </div>
+                            </div>
+
+                            <form name='newhostelfrm' id='newhostelfrm' action='{{route('accommodation.admin.hostel.store')}}' method='POST'>
+                                @if ($errors->any())
+                                    <div class="alert alert-danger">
+                                        Fix the errors highlighted.
+                                    </div>
+                                @endif
+                                <div class="form-controls">
+                                    <label for="hostelname">Hostel Name:
+                                        <input type="text" name='hostelname' class="form-control @if($errors->has('hostelname')) is-invalid @endif" id="hostelname"  placeholder="Name of Hostel"></label>
+                                    <small id="hostelnameerror" class="widgeterror @if($errors->has('hostelname')) show @else hidden @endif">Name of hostel is required and must be unique</small>
+                                </div>
+                                <div class="form-controls">
+                                    <label for="hostelshortname">Short Name:
+                                        <input type="text" name='hostelshortname' class="form-control @if($errors->has('hostelshortname')) is-invalid @endif" id="hostelshortname" placeholder="Short Name of Hostel"></label>
+                                    <small id="hostelshortnameerror" class="widgeterror @if($errors->has('hostelshortname')) show @else hidden @endif">Short name of hostel is required and must be unique</small>
+                                </div>
+                                <div class="form-controls">
+                                    <label for="campus">Campus:
+                                        <select name='campus' id='campus' class='form-control'>
+                                            <option value='main'>Main Campus</option>
+                                            <option value='kongo'>Kongo Campus</option>
+                                            <option value='tudun-wada'>Tudun-Wada Campus</option>
+                                            <option value='shika'>Shika Campus</option>
+                                            <option value='site-II'>Site-II Campus</option>
+                                        </select></label>
+                                </div>
+                                <div class="form-controls">
+                                    <label>Gender: </label> <br />
+                                    <label class='checkbox-inline'><input class='@if($errors->has('gender')) is-invalid @endif' type='radio' name='gender' value='male' /> Male</label>
+                                    <label class='checkbox-inline'><input class='@if($errors->has('gender')) is-invalid @endif' type='radio' name='gender' value='female' /> Female</label>
+                                    <label class='checkbox-inline'><input class='@if($errors->has('gender')) is-invalid @endif' type='radio' name='gender' value='combined' /> Combined</label>
+                                    <small id="gendererror" class="widgeterror @if($errors->has('gender')) show @else hidden @endif">Gender is required.</small>
+                                </div>
+                                <div class=' '>
+                                    <label>Student Type:</label> <br />
+                                    <div class='checkbox'><label><input class='@if($errors->has('studtype')) is-invalid @endif' type='checkbox' name='allstudtype' value='' id='allstudtype' /> All </label></div>
+                                    <div class='checkbox'><label><input class='@if($errors->has('studtype')) is-invalid @endif' type='checkbox' name='studtype[]' value='ug' class='stdtype' /> Undergraduate</label></div>
+                                    <div class='checkbox'><label><input class='@if($errors->has('studtype')) is-invalid @endif' type='checkbox' name='studtype[]' value='ugd' class='stdtype' /> Undergraduate Diploma</label></div>
+                                    <div class='checkbox'><label><input class='@if($errors->has('studtype')) is-invalid @endif' type='checkbox' name='studtype[]' value='lv' class='stdtype' /> Long Vocational Course</label></div>
+                                    <div class='checkbox'><label><input class='@if($errors->has('studtype')) is-invalid @endif' type='checkbox' name='studtype[]' value='pgd' class='stdtype' /> Postgraduate Diploma</label></div>
+                                    <div class='checkbox'><label><input class='@if($errors->has('studtype')) is-invalid @endif' type='checkbox' name='studtype[]' value='msc' class='stdtype' /> Postgraduate (Masters & PhD)</label></div>
+                                    <small id="studtypeerror" class="widgeterror @if($errors->has('studtype')) show @else hidden @endif">Select student category for the hostel.</small>
+                                </div>
+                                <div class="form-controls">
+                                    <label for="hostelfee">Hostel Fee (&#8358;):</label>
+                                    <div class="input-group">
+                                        <div class="input-group-prepend">
+                                            <div class="input-group-text">&#8358;</div>
+                                        </div>
+                                        <input type="text" name='hostelfee' class="form-control @if($errors->has('hostelfee')) is-invalid @endif" id="hostelfee"  placeholder="Hostel Fee">
+                                    </div>
+                                    <small id="hostelfeeerror" class="widgeterror @if($errors->has('hostelfee')) show @else hidden @endif">Specify hostel fee.</small>
+                                </div>
+                                <div class="form-controls">
+                                    <label>Status</label> <br />
+                                    <label class='checkbox-inline'><input type='radio' name='status' value='1' checked /> Available</label>
+                                    <label class='checkbox-inline'><input type='radio' name='status' value='0' /> Unavailable</label>
+                                </div>
+                                <input type='hidden' name='_token' value='{{csrf_token()}}' />
+                                <input type='submit' name='submit' value='Add Hostel' class='btn btn-primary'/>
+                                <br /><br />
+                            </form>
+                        </div>
+                        <div class='col-xs-1 col-md-3'></div>
+                    </div>
+                </div>
+                <div class='col-xs-12 col-md-1'>
+                    <a href="{{route('accommodation.admin.hostel.index')}}" class="hostelaction btn btn-sm btn-default"><i class='icon icon-list6 icon-2x'></i> Back to Hostels</a> <br />
+                </div>
+            </div>
+        </div>
+    </section>
+@endsection
+@section('js')
+<script type='text/javascript'>
+    $(document).on('click', '#allstudtype', function (event) {
+        dis = $(this);
+        $('.stdtype').prop('checked', dis.prop('checked'));
+    });
+    $(document).on('click', '.stdtype', function (event) {
+        dis = $(this);
+        if (dis.prop('checked') == false) {
+            $('#allstudtype').prop('checked', false);
+        } else {
+            $('#allstudtype').prop('checked', ($('.stdtype').filter(function (index) {
+                return !($(this).prop('checked'));
+            })).size() == 0);
+        }
+    })
+</script>
+@endsection

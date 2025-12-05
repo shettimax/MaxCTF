@@ -1,0 +1,53 @@
+<div class="modal fade" id="readmissionModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+    <div class="modal-dialog" role="document" style="min-width: 1024px;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span>
+                </button>
+                <h4 class="modal-title" id="myModalLabel">
+                    Student Re-admission
+                    <div class="double-line-bottom-theme-colored-2"></div>
+                </h4>
+            </div>
+            <form class="form-horizontal" action="{{ route("student.re_admission") }}" method="post"
+                  id="readmsissionForm">
+                <div class="modal-body">
+                    @csrf
+                    <input type="hidden" name="student_id" value="{{ encrypt($student->id) }}" id="jybuygwu">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="">
+                                    New Matric No.
+                                </label>
+                                <input type="text" class="form-control" name="matric_number"
+                                       value="{{$student->matric_number}}" required/>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="">
+                                    New Entry Session
+                                </label>
+                                <input type="number" class="form-control" name="entry_session"
+                                       value="{{$student->entry_session}}" required/>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="">
+                                    New Form No.
+                                </label>
+                                <input type="number" class="form-control" name="candidate_form_id" value="" required/>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default btn-flat" data-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-success btn-flat" >Proceed</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

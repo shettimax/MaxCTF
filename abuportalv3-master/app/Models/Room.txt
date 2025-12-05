@@ -1,0 +1,27 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class Room extends Model {
+
+    //
+    protected $table = 'rooms';
+
+    public function block() {
+        return $this->belongsTo('App\Models\Block', 'block_id', 'id');
+    }
+
+        public function roomconfig() {
+        return $this->hasOne('App\Models\RoomConfig','room_id', 'id');
+    }
+
+    public function getFee() {
+        if ($this->fee == 0) {
+            return $this->block->getFee();
+        }
+        return $this->fee;
+    }
+
+}

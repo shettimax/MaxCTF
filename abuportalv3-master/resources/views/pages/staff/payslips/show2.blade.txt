@@ -1,0 +1,372 @@
+<html lang="en">
+<head>
+    <title>E-Payslip</title>
+
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+     <!-- Google Font: Source Sans Pro -->
+     <!-- disable googleapis url: <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
+     -->
+     
+     <link rel="stylesheet" href="{{ asset('assets/css/bootstrap.min.css') }}">
+     <link rel="stylesheet" href="{{ asset('assets/css/all.min.css') }}">
+     <link rel="stylesheet" href="{{ asset('assets/css/themify-icons.css') }}">
+
+    <style>
+
+        .row {
+            flex-wrap: nowrap;
+        }
+
+        @media print {
+
+            @page {
+                size: A4;   /* auto is the current printer page size */
+                margin-top: 0mm;
+                margin-bottom: 0mm;
+                margin-left: auto;
+                margin-right: auto;
+            }
+
+            .btn-print {
+                visibility: hidden;
+            }
+
+            .container {
+                page-break-inside: avoid;
+                page-break-after: always;
+            }
+
+            .container:last-child {
+                page-break-after: auto;
+            }
+
+            .header-text-1 {
+                font-size: 18px;
+                text-align: center;
+                margin-top: 30px;
+                margin-bottom: 0px;
+                padding: 0px;
+            }
+
+            .header-text-2 {
+                font-size: 18px;
+                text-align: center;
+                margin-top: 0px;
+                margin-bottom: 0px;
+                padding: 0px;
+            }
+
+            .header-text-3 {
+                font-size: 14px;
+                text-align: center;
+                margin-top: 0px;
+                margin-bottom: 0px;
+                padding: 0px;
+            }
+
+        }
+
+        p {
+            margin-top: 2px;
+            margin-bottom: 2px;
+        }
+
+        .watermark {
+            position: absolute;
+            opacity: 0.25;
+            font-size: 60px;
+            width: 100%;
+            text-align: center;
+            z-index: 1000;
+            -webkit-transform: rotate(-45deg);
+            -moz-transform: rotate(-45deg);
+        }
+
+
+    </style>
+
+</head>
+<body>
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-12" style="text-align: right;font-size:10px;margin-bottom: -10px;"><a
+                href="javascript:window.print()" style="border: 1px  #0c5460 solid;font-size:10px; "
+                class="btn btn-default btn-print">Print</a></div>
+    </div>
+    
+    <div class="row mb-1">
+         <div class="col-md-12" style="text-align: center;"><img src="{{ asset('images/logo64.png') }}" style="width: 75px; height: 75px;" /></div>
+     </div>
+    <div class="col-md-12" style="text-align: center;"><h1>Ahmadu Bello University, Zaria</h1></div>
+    <div class="col-md-12" style="text-align: center;"><h4>Pay Statement</h4></div>
+    <div class="col-md-12 mb-1" style="text-align: center;"><p
+            style="margin-top: 12px; font-weight: bold; font-size: 24px;font-family: sans-serif;">{{ $payslip->month . " " . $payslip->year}}
+            [Month End]</p>
+    </div>
+    
+    <!--
+    <div class="row mb-1">
+        <div class="col-md-3"></div>
+        <div class="col-md-1"><img src="{{ asset('images/logo64.png') }}" style="width: 75px; height: 75px;" /></div>
+        <div class="col-md-8"><p style="font-size: 18px;"><span style="font-weight: bolder;">Ahmadu Bello University, Zaria</span><br/>Pay Statement 
+            <br /> {{ $payslip->month . ", " . $payslip->year}}
+            [Month End]</p></div>
+    </div>
+-->
+    <div class="row">
+        <div class="col-md-3"></div>
+        <div class="col-md-2"><p>Personnel No: </p></div>
+        <div class="col-md-4"><p style="font-weight: bold;">{{ $payslip->personnelno }} </div>
+        <div class="col-md-3"></div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-3"></div>
+        <div class="col-md-2"><p>Name: </p></div>
+        <div class="col-md-4"><p style="font-weight: bold;">{{ $payslip->name }}</div>
+        <div class="col-md-3"></div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-3"></div>
+        <div class="col-md-2"><p>Grade:</p></div>
+        <div class="col-md-4"><p style="font-weight: bold;">{{ $payslip->grade }}</p></div>
+        <div class="col-md-3"></div>
+    </div>
+    <div class="row">
+        <div class="col-md-3"></div>
+        <div class="col-md-2"><p>Designation:</p></div>
+        <div class="col-md-4"><p style="font-weight: bold;">{{ $payslip->designation }}</p></div>
+        <div class="col-md-3"></div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-3"></div>
+        <div class="col-md-2"><p>Faculty: </p></div>
+        <div class="col-md-4"><p style="font-weight: bold;">{{ $payslip->faculty }}</div>
+        <div class="col-md-3"></div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-3"></div>
+        <div class="col-md-2"><p>Department: </p></div>
+        <div class="col-md-4"><p style="font-weight: bold;">{{ $payslip->department }}</div>
+        <div class="col-md-3"></div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-3"></div>
+        <div class="col-md-2"><p>Bank: </p></div>
+        <div class="col-md-4"><p style="font-weight: bold;">{{ $payslip->bank }}</div>
+        <div class="col-md-3"></div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-3"></div>
+        <div class="col-md-2"><p>Account No.: </p></div>
+        <div class="col-md-4"><p style="font-weight: bold;">{{ $payslip->accountno }}</div>
+        <!-- <div class="col-md-4"><p style="font-weight: bold;">{{ rand(1111111111,9999999999) }} </div> -->
+        <div class="col-md-3"></div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-3"></div>
+        <div class="col-md-2"><p>TIN: </p></div>
+        <div class="col-md-4"><p style="font-weight: bold;">{{ $payslip->tin }}</div>
+        <div class="col-md-3"></div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-3"></div>
+        <div class="col-md-2"><p>NHF No.: </p></div>
+        <div class="col-md-4"><p style="font-weight: bold;">{{ $payslip->nhfno }}</div>
+        <div class="col-md-3"></div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-3"></div>
+        <div class="col-md-4" style="border-top:solid; border-bottom: solid;"><p style="font-weight: bold;">
+                Earnings </p></div>
+        <div class="col-md-2" style="text-align: right; border-top:solid; border-bottom: solid;"><p
+                style="font-weight: bold;">Amount </p></div>
+        <div class="col-md-3"></div>
+    </div>
+
+    @php
+    $earningsEndsWithColumns= $payslip->earnings.':';
+        $earnings = explode(":", $earningsEndsWithColumns);
+        $earnings=array_slice($earnings,0,-1);
+        $len = count($earnings);
+    @endphp
+
+    @for ($j=0; $j < $len; $j++)
+        @php
+            $earning=isset($earnings[$j])?$earnings[$j]:'';
+            $arrearns = preg_split("/[\s]+/", trim($earning));
+
+            $sliced = array_slice($arrearns, 0, -1);
+            $stringearnings = implode(" ", $sliced);
+           // dd($ss);
+            $earnamount = end($arrearns);
+            $earnamount=($earnamount!="")?$earnamount:"";
+        @endphp
+        <div class="row">
+            <div class="col-md-3"></div>
+            <div class="col-md-4"><p>{{ $stringearnings }}</p></div>
+            <div class="col-md-2" style="text-align: right;"><p> &#8358; {{ $earnamount }}</p></div>
+            <div class="col-md-3"></div>
+        </div>
+    @endfor
+
+    <div class="row">
+        <div class="col-md-3"></div>
+        <div class="col-md-4" style="border-top: solid; border-bottom: solid;"><p style="font-weight: bold;">
+                Dedcutions </p></div>
+        <div class="col-md-2" style="text-align: right; border-top: solid; border-bottom: solid;"><p
+                style="font-weight: bold;">Amount </p></div>
+        <div class="col-md-3"></div>
+    </div>
+
+    @php
+    $deductionsEndsWithColumns= $payslip->deductions.':';
+        $deductions = explode(":", $deductionsEndsWithColumns );
+        $deductions=array_slice($deductions,0,-1);
+        $len = count($deductions);
+    @endphp
+
+    @for ($j=0; $j < $len; $j++)
+        @php
+            $deduction=isset($deductions[$j])?$deductions[$j]:'';
+            $arrdeducts = preg_split("/[\s]+/", trim($deduction));
+
+            $sliced = array_slice($arrdeducts, 0, -1);
+            $stringdeductions = implode(" ", $sliced);
+            $deductamount = end($arrdeducts);
+            $deductamount=($deductamount!="")?$deductamount:"";
+        @endphp
+        <div class="row">
+            <div class="col-md-3"></div>
+            <div class="col-md-4"><p>{{ $stringdeductions }}</p></div>
+            <div class="col-md-2" style="text-align: right"><p> &#8358; {{ $deductamount }} </p></div>
+            <div class="col-md-3"></div>
+        </div>
+    @endfor
+
+
+    @php
+        $netpay=isset($payslip->netpay )?$payslip->netpay:'';
+        $arrnetpay = preg_split("/[\s]+/", trim($netpay));
+
+        $sliced = array_slice($arrnetpay, 0, -1);
+        $stringnetpay = implode(" ", $sliced);
+        $netpayamount = end($arrnetpay);
+        $netpayamount=($netpayamount!="")?$netpayamount:"";
+
+        $totalamountpayable=isset($payslip->totalamountpayable)?$payslip->totalamountpayable:'';
+        $arrtotalamountpayable = preg_split("/[\s]+/", trim($totalamountpayable));
+
+        $sliced = array_slice($arrtotalamountpayable, 0, -1);
+        $stringtotalamountpayable = implode(" ", $sliced);
+        $totalamountpayableamount = end($arrtotalamountpayable);
+        $totalamountpayableamount=($totalamountpayableamount!="")?$totalamountpayableamount:"";
+    @endphp
+
+
+    <div class="row">
+        <div class="col-md-3"></div>
+        <div class="col-md-4" style="border-top: solid; border-bottom: solid;"><p
+                style="font-weight: bold;">{{ $stringnetpay }}</p></div>
+        <div class="col-md-2" style="text-align: right; border-top: solid; border-bottom: solid;">
+            <p> &#8358; {{ $netpayamount }} </p></div>
+        <div class="col-md-3"></div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-3"></div>
+        <div class="col-md-4" style="border-bottom: solid;"><p
+                style="font-weight: bold;">{{ $stringtotalamountpayable }} </p></div>
+        <div class="col-md-2" style="text-align: right; border-bottom: solid;"><p> &#8358; {{ $totalamountpayableamount }} </p>
+        </div>
+        <div class="col-md-3"></div>
+    </div>
+
+    @if($payslip->loansrepaymenthistory!="")
+        <div class="row">
+            <div class="col-md-3"></div>
+            <div class="col-md-4" style="border-bottom: solid;"><p style="font-weight: bold;">Loans Repayment
+                    History</p></div>
+            <div class="col-md-2" style="text-align: right; border-bottom: solid;"><p style="font-weight: bold;"></p>
+            </div>
+            <div class="col-md-3"></div>
+        </div>
+
+        @php
+            $loansrepaymenthistorys = explode(":", $payslip->loansrepaymenthistory);
+            $loansrepaymenthistorys = array_slice($loansrepaymenthistorys, 0, -1);
+            $len = count($loansrepaymenthistorys);
+        @endphp
+        @for ($j = 0; $j < $len; $j++)
+            @php
+                $loansrepaymenthistory = isset($loansrepaymenthistorys[$j]) ? $loansrepaymenthistorys[$j] : '';
+                $arrloansrepaymenthistorys = preg_split("/[\s]+/", trim($loansrepaymenthistory));
+
+                $sliced = array_slice($arrloansrepaymenthistorys, 0, -1);
+                $stringloansrepaymenthistorys = implode(" ", $sliced);
+                $loansrepaymenthistoryamount = end($arrloansrepaymenthistorys);
+                $loansrepaymenthistoryamount = ($loansrepaymenthistoryamount != "") ? $loansrepaymenthistoryamount : "";
+            @endphp
+            <div class="row">
+                <div class="col-md-3"></div>
+                <div class="col-md-4"><p> {{ $stringloansrepaymenthistorys }} </p></div>
+                <div class="col-md-2" style="text-align: right"><p> &#8358; {{$loansrepaymenthistoryamount}} </p>
+                </div>
+                <div class="col-md-3"></div>
+            </div>
+        @endfor
+    @endif
+
+    @if($payslip->balanceonloans !="")
+
+        <div class="row">
+            <div class="col-md-3"></div>
+            <div class="col-md-4" style="border-top: solid; border-bottom: solid;"><p style="font-weight: bold;">Balance
+                    on Loans</p></div>
+            <div class="col-md-2" style="text-align: right;border-top: solid; border-bottom: solid;"><p
+                    style="font-weight: bold;"></p></div>
+            <div class="col-md-3"></div>
+        </div>
+
+        @php
+            $balanceonloans = explode(":", $payslip->balanceonloans);
+            //$balanceonloans = array_slice($balanceonloans, 0, -1);
+            $len = count($balanceonloans);
+        @endphp
+        @for ($j = 0; $j < $len; $j++)
+            @php
+                $balanceonloan = isset($balanceonloans[$j]) ? $balanceonloans[$j] : '';
+                $arrbalanceonloans = preg_split("/[\s]+/", trim($balanceonloan));
+
+                $sliced = array_slice($arrbalanceonloans, 0, -1);
+                $stringbalanceonloans = implode(" ", $sliced);
+                $balanceonloanamount = end($arrbalanceonloans);
+                $balanceonloanamount = ($balanceonloanamount != "") ? $balanceonloanamount : "";
+
+            @endphp
+            <div class="row">
+                <div class="col-md-3"></div>
+                <div class="col-md-4"><p> {{ $stringbalanceonloans }} </p></div>
+                <div class="col-md-2" style="text-align: right"><p> &#8358; {{ $balanceonloanamount }} </p>
+                </div>
+                <div class="col-md-3"></div>
+            </div>
+        @endfor
+    @endif
+</div>
+ 
+<script class="noprint" src="{{ asset('assets/js/jquery-3.4.1.min.js') }}"></script>
+<script class="noprint" src="{{ asset('assets/js/bootstrap.min.js') }}"></script>
+ 
+</body>
+</html>

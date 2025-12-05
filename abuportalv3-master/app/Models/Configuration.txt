@@ -1,0 +1,143 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class Configuration extends Model
+{
+    //
+
+    static $map = [
+        "NOA"=>"Notification of Admission",
+        "ADL"=>"Admission Letter",
+        "IDC"=>"ID Card",
+        "SCF"=>"Screening Form",
+        "CSF"=>"Course Form",
+        "EXC"=>"Exam Card",
+        "SEM"=>"Exam Card",
+        "SES"=>"Exam Card",
+        "HOD"=>"Head of Department",
+        "DEAN"=>"Dean of Faculty",
+        "CCH"=>"Complex Chairman",
+        "current_session"=>"Current Session",
+        "PRL"=>"Promotion Letter",
+    ];
+
+    const NOTIFICATION_OF_ADMISSION='NOA';
+    const ADMISSION_LETTER='ADL';
+    const ID_CARD='IDC';
+    const SCREENING_FORM='SCF';
+    const COURSE_FORM='CSF';
+    const EXAM_CARD='EXC';
+    const PROMOTION_LETTER='PRL';
+
+    public static function currentSession()
+    {
+        return self::where(["name"=>"current_session"])->orderBy("id","DESC")->first();
+    }
+
+    public static function secretary($session = 0)
+    {
+        if($session == 0)
+            $session =  self::currentSession()->config;
+        $sec = self::where(["name"=>"spgs_secretary","session"=>$session])->orderBy("id","DESC")->first();
+        return $sec->config;
+    }
+
+    public static function lateReg($session = 0)
+    {
+        if($session == 0)
+            $session = self::currentSession()->config;
+        $lateReg = self::where(["name"=>"late_registration_starts","session"=>$session])->orderBy("id","DESC")->first();
+        return $lateReg->config;
+    }
+
+    public static function regStarts($session = 0)
+    {
+        if($session == 0)
+            $session = self::currentSession()->config;
+        $lateReg = self::where(["name"=>"screening_starts","session"=>$session])->orderBy("id","DESC")->first();
+        return $lateReg->config;
+    }
+
+    public static function regEnds($session = 0)
+    {
+        if($session == 0)
+            $session = self::currentSession()->config;
+        $lateReg = self::where(["name"=>"screening_ends","session"=>$session])->orderBy("id","DESC")->first();
+        return $lateReg->config;
+    }
+
+    public function unit()
+    {
+        switch ($this->unit_type){
+            case 'Faculty': return Faculty::find($this->unit_id);break;
+            case 'Department': return Department::find($this->unit_id);break;
+            case 'Programme': return Programme::find($this->unit_id);break;
+            case 'Programme Type':$pt = ProgrammeType::find($this->unit_id); return (object)['id'=>$pt->id,'name'=>$pt->prog_type_name];break;
+            case 'Complex': return Complex::find($this->unit_id);break;
+            case 'University': return (object)['id'=>1,'name'=>'Ahmadu Bello University'];break;
+        }
+
+    }
+
+    public function configName()
+    {
+        return self::$map[$this->name];
+    }
+
+    public function unitName()
+    {
+        $unit = $this->unit();
+        return $unit?$unit->name:"N.A";
+    }
+
+    public static function getConfig($config,Model $model)
+    {
+        $instance = "";
+        if($model instanceof Faculty){
+            $instance = "Faculty";
+//            $config =
+        }else if($model instanceof Department){
+            $instance = "Department";
+        }else if($model instanceof ProgrammeType){
+            $instance = "Programme Type";
+        }else if($model instanceof Programme){
+            $instance = "Programme";
+        }else if($model instanceof Complex){
+            $instance = "Complex";
+        }else{
+            $instance = "University";
+        }
+
+
+    }
+
+    public static function activeSemester($programme_id,$session)
+    {
+         $sess = $session."/".($session+1);
+        $where = ['name'=>'SEM','position'=>$sess];
+        $programme = Programme::find($programme_id);
+        if($programme){
+            if($config = Configuration::where(['name'=>'SEM','position'=>$sess,'unit_type'=>'Programme','unit_id'=>$programme->id])->first()){
+                return $config->config;
+            }
+
+            $programmeType = ProgrammeType::find($programme->programme_type_id);
+            if($config = Configuration::where(['name'=>'SEM','position'=>$sess,'unit_type'=>'Programme Type','unit_id'=>$programmeType->id])->first()){
+                return $config->config;
+            }
+            $department = Department::find($programme->department_id);
+            if($config = Configuration::where(['name'=>'SEM','position'=>$sess,'unit_type'=>'Department','unit_id'=>$department->id])->first()){
+                return $config->config;
+            }
+            $faculty = Faculty::find($department->faculty_id);
+            if($config = Configuration::where(['name'=>'SEM','position'=>$sess,'unit_type'=>'Faculty','unit_id'=>$faculty->id])->first()){
+                return $config->config;
+            }
+        }
+        return 1;
+    }
+
+}

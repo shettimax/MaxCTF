@@ -1,0 +1,38 @@
+<?php 
+
+namespace App\Exports\Events;
+
+use Maatwebsite\Excel\Events\AfterSheet;
+use PhpOffice\PhpSpreadsheet\Cell\DataValidation;
+
+class ReservationTemplateEvent
+{
+    public static function afterSheet(AfterSheet $event)
+    {
+        $sheet = $event->sheet->getDelegate();
+
+        // Hostels dropdown in column B
+        for ($row = 2; $row <= 100; $row++) {
+            $validation = $sheet->getCell("B{$row}")->getDataValidation();
+            $validation->setType(DataValidation::TYPE_LIST);
+            $validation->setErrorStyle(DataValidation::STYLE_INFORMATION);
+            $validation->setAllowBlank(true);
+            $validation->setShowInputMessage(true);
+            $validation->setShowErrorMessage(true);
+            $validation->setShowDropDown(true);
+            $validation->setFormula1("'Hostel List'!A1:A100");
+        }
+
+        // Rooms dropdown in column C
+        for ($row = 2; $row <= 100; $row++) {
+            $validation = $sheet->getCell("C{$row}")->getDataValidation();
+            $validation->setType(DataValidation::TYPE_LIST);
+            $validation->setErrorStyle(DataValidation::STYLE_INFORMATION);
+            $validation->setAllowBlank(true);
+            $validation->setShowInputMessage(true);
+            $validation->setShowErrorMessage(true);
+            $validation->setShowDropDown(true);
+            $validation->setFormula1("'Room List'!A1:A100");
+        }
+    }
+}

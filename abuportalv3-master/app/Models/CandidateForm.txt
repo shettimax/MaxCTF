@@ -1,0 +1,342 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
+
+class CandidateForm extends Model
+{
+
+    //
+    public function candidate()
+    {
+        return $this->belongsTo('App\Models\Candidate', 'candidate_id');
+    }
+
+    public function formSetting()
+    {
+
+        return $this->belongsTo(FormSetting::class, 'form_setting_id');
+//        return FormSetting::find($this->form_setting_id);
+    }
+
+    public function programme()
+    {
+        return $this->formSetting ? $this->formSetting->programme() : null;
+    }
+
+    public function department()
+    {
+        return $this->programme()->department();
+    }
+
+    public function faculty()
+    {
+        return $this->department()->faculty();
+    }
+
+    public function candidateFormType()
+    {
+        return $this->formsetting->candidateFormType();
+    }
+
+    public function referee()
+    {
+        return $this->hasMany(CandidateReferee::class, 'formid');
+    }
+
+    public function getAmountPaid()
+    {
+        $transactions = $this->transactions();
+        $sumpaid = 0;
+        foreach ($transactions as $trans) {
+            if ($trans->payment_status == "Paid") {
+                $sumpaid += $trans->transaction_amount;
+            }
+        }
+        return $sumpaid;
+    }
+
+    public function paidSundry($asArr = false)
+    {
+        $fees = FeeManager::computeSundryCharges($this);
+        $amount = 0;
+        foreach ($fees as $fee) {
+            $amount += $fee->amount;
+        }
+        $details = SundryTransaction::paySundry($this, $amount);
+        if ($asArr)
+            return ["status" => $amount <= $details["totalAmountPaid"], "payable" => $amount, "paid" => $details["totalAmountPaid"], "outstanding" => $amount - $details["totalAmountPaid"], "transactions" => $details['transactions']];
+        return $amount <= $details["totalAmountPaid"];
+
+    }
+
+    public function migrateToStudent()
+    {
+        $model = DB::table("candidate_forms")
+            ->select('candidate_biodatas.*', 'programme_admitted_id', 'candidate_forms.id AS formid',
+                "candidate_forms.jamb_number", "candidate_forms.level_admitted_index"
+                , 'form_settings.session', 'gender', 'date_of_birth', 'lga_id', 'country_id', 'session'
+                , "form_settings.candidate_form_type_id","candidates.wallet_number","candidates.nin")
+            ->join('candidates', 'candidates.id', 'candidate_forms.candidate_id')
+            ->join('candidate_biodatas', 'candidate_biodatas.candidate_id', 'candidate_forms.candidate_id')
+            ->join('form_settings', 'form_settings.id', 'candidate_forms.form_setting_id')
+            ->where(["candidate_forms.id" => $this->id, "payment_status" => "Paid"])
+            ->first();
+//        if(!$model)return;
+//        return $this->candidate()->first();
+        $matric = $this->id;//. $model->session;#str_pad(, 9, '0', STR_PAD_LEFT)
+        $appno = $this->id;//. $model->session;
+        $programmeid = $model->programme_admitted_id;
+        $degree_plan_id = $this->getDegreePlan($programmeid);
+        $surname = $model->surname;
+        $jamb_number = $this->candidate()->first()->username;//$model->jamb_number;
+        $firstname = $model->firstname;
+        $othernames = $model->othernames;
+        $nin = $model->nin;
+        $wallet_number = $model->wallet_number;
+        $gender = $model->gender;
+        $dob = $model->date_of_birth;
+        $lga_id = $model->lga_id == 0 ? 785 : $model->lga_id;
+        $residency = $model->country_id == 156 ? 1 : 2;
+        $countryid = $model->country_id;
+        $programme = Programme::find($programmeid);
+        $progtype = $programme->programmetypeid;
+        $entrylevel = "";
+        $entrysession = $programme->entrySession($model->session);
+        $fmSt = FormSetting::where(['session' => $model->session, "programme_id" => $model->programme_admitted_id])->first();
+        if (in_array($model->candidate_form_type_id, [1, 2])) {
+            $candFormType = $model->candidate_form_type_id;
+        } else {
+            if ($fmSt) {
+                $candFormType = $fmSt->candidate_form_type_id;
+            } else {
+                $candFormType = $model->candidate_form_type_id;
+            }
+        }
+
+
+        switch ($candFormType) {
+            case 1:
+                $entrylevel = 3;
+                break;
+            case 2:
+                $entrylevel = 4;
+                break;
+            case 3:
+                $entrylevel = $model->level_admitted_index == 0 ? 1 : ($model->level_admitted_index == 1 ? 1 : 2);
+                break;#
+            case 4:
+                $entrylevel = 11;
+                break;
+            case 5:
+                $entrylevel = 9;
+                break;
+            case 6:
+                $entrylevel = $model->level_admitted_index == 0 ? 15 : ($model->level_admitted_index == 1 ? 15 : 16);
+                break;#
+            case 8:
+                $entrylevel = $model->level_admitted_index == 0 ? 18 : ($model->level_admitted_index == 1 ? 18 : 20);
+                break;#
+            case 11:
+                $entrylevel = 5;
+                break;
+            case 12:
+                $entrylevel = $model->level_admitted_index == 0 ? 21 : ($model->level_admitted_index == 1 ? 21 : 22);
+                break;#
+            case 10:
+                $entrylevel = 9;
+                break;
+            case 13:
+                $entrylevel = 27;
+                break;
+            case 14:
+                $entrylevel = 28;
+                break;
+            case 15:
+                $entrylevel = 29;
+                break;
+            case 16:
+                $entrylevel = 30;
+                break;
+            default:
+                $entrylevel = 2;
+                break;
+        }
+        $modeofentry = ProgrammeType::find($programme->programme_type_id)->prog_type_code;
+        $password = bcrypt("Student_1");
+//        if(Lga::find($lga_id)->first()){
+//            $password = bcrypt(strtolower(Lga::find($lga_id)->getstate()->first()->name));
+//        }
+        if ($cand = Candidate::find($this->candidate_id)) {
+            $password = $cand->password;
+        }
+
+
+//        $DB = new Student();
+//        if(!$DB = Student::where('matric_number','=',$matric)->first())
+        $DB = new Student();
+
+        $DB->matric_number = strtoupper($modeofentry) == 'UG' ? $jamb_number : $matric;
+        $DB->application_number = $appno;
+        $DB->jamb_number = str_contains($jamb_number, "@") ? $appno : $jamb_number;
+        $DB->surname = $surname;
+        $DB->firstname = $firstname;
+        $DB->other_names = $othernames;
+        $DB->degree_plan_id = $degree_plan_id;
+        $DB->programme_id = $programmeid;
+        $DB->gender = $gender;
+        $DB->dob = $dob;
+        $DB->lga_id = $lga_id;
+        $DB->residency = $residency;
+        $DB->country_id = $countryid;
+        $DB->entry_level_id = $entrylevel;
+        $DB->entry_session = $entrysession;
+        $DB->mode_of_entry = $modeofentry;
+        $DB->password = $password;
+        $DB->wallet_number = $wallet_number;
+        $DB->nin = $nin;
+        $DB->matric_gen = "no";
+        $DB->status = "Cleared";
+        $DB->enabled = "Yes";
+        $DB->save();
+        return $DB->id;
+
+    }
+
+    public function getDegreePlan($programme_id)
+    {
+        $model = DegreePlan::where(['programme_id' => $programme_id])
+            ->orderby('plansession', 'DESC')
+            ->first();
+        return $model == null ? 0 : $model->id;
+    }
+
+    public function migrateOlevel($studentid)
+    {
+        $cid = Candidate::find($this->candidate_id);
+//        $candolvls = CandidateOlevel::where(["candidate_id"=>$this->candidate_id])->get();
+        $candolvls = CandidateOlevel::where(["candidate_id" => $cid->id])->get();
+        foreach ($candolvls as $candolvl) {
+            $studentolvl = new StudentOlevel();
+            $studentolvl->student_id = $studentid;
+            $studentolvl->exam_type_id = $candolvl->exam_type_id;
+            $studentolvl->exam_year = $candolvl->exam_year;
+            $studentolvl->exam_number = $candolvl->exam_number;
+            $studentolvl->center_number = $candolvl->center_number;
+            $studentolvl->center_name = $candolvl->center_name;
+            $studentolvl->sitting = $candolvl->sitting;
+            $studentolvl->save();
+            foreach (CandidateOlevelResult::where("candidate_olevel_id", "=", $candolvl->id)->get() as $result) {
+                $studentolvlresult = new StudentOlevelResult();
+                $studentolvlresult->student_olevel_id = $studentolvl->id;
+                $studentolvlresult->subject_id = $result->subject_id;
+                $studentolvlresult->olevel_grade_id = $result->grade_id;
+                $studentolvlresult->save();
+
+            }
+        }
+    }
+
+    public function migrateAlevel($studentid)
+    {
+        $cid = Candidate::find($this->candidate_id);
+//        $candalvls = CandidateAlevel::where(["candidate_id"=>$this->candidate_id])->get();
+        $candalvls = CandidateAlevel::where(["candidate_id" => $cid->id])->get();
+
+        foreach ($candalvls as $candalvl) {
+            $studentalvl = new StudentAlevel();
+            $studentalvl->student_id = $studentid;
+            $studentalvl->institution_name = $candalvl->institution_name;
+            $studentalvl->from_year = $candalvl->fromyear;
+            $studentalvl->to_year = $candalvl->toyear;
+            $studentalvl->qualification_id = $candalvl->qualification_id;
+            $studentalvl->degreeclass_id = $candalvl->degree_class_id;
+            $studentalvl->course = $candalvl->course;
+            $studentalvl->cgpa = $candalvl->cgpa;
+            $studentalvl->save();
+        }
+
+
+    }
+
+    public function migrateBiodata($studentid)
+    {
+        //if (!$studentid)
+        $candbio = CandidateBiodata::where(["candidate_id" => $this->candidate_id])->first();
+        $candcon = CandidateContact::where(["candidate_id" => $this->candidate_id])->first();
+        $cand = Candidate::find($this->candidate_id);
+        if (!StudentBiodata::where('student_id', $studentid)->first()) {
+            $bio = new StudentBiodata();
+            $bio->student_id = $studentid;
+            $bio->home_address = !$candcon ? "" : $candcon->permanent_address;
+            $bio->contact_address = !$candcon ? "" : $candcon->current_contact;
+            $bio->gsm = !$candcon ? "" : $candcon->gsm;
+            $bio->email = $cand->email;
+            $bio->abu_mail = "";
+            $bio->place_of_birth = $candbio->place_of_birth;
+            $bio->home_town = $candbio->home_town;
+            $bio->nok_name = !$candcon ? "" : $candcon->nok_name;
+            $bio->nok_address = !$candcon ? "" : $candcon->nok_email;
+            $bio->nok_gsm = !$candcon ? "" : $candcon->nok_gsm;
+            $bio->other_phone = !$candcon ? "" : $candcon->other_phone;
+            $bio->blood_group = null;
+            $bio->genotype = null;
+            $bio->disability = null;
+            $bio->health_record = null;
+            $bio->sponsor = null;
+            $bio->other_sponsor = null;
+            $bio->sport = null;
+            return $bio->save();
+        }
+        return 0;
+
+    }
+
+    public function transactions()
+    {
+        return Transaction::where(["student_id" => $this->id, "code" => "FRM"])->get();
+    }
+
+    public function isPaid()
+    {
+        $fs = $this->formSetting;
+        //if($fs->session > 2022){
+
+        if ($fs->form_price <= $this->getAmountPaid()) {
+            $this->payment_status = "Paid";
+            $this->save();
+        } else {
+            //$this->payment_status="Not Paid";
+            // $this->save();
+        }
+        return $this->payment_status == "Paid";
+        //}
+    }
+
+    public static function getCF($applicationNumber)
+    {
+//        $firstCharacter = substr($applicationNumber,0,1);
+        if (is_numeric($applicationNumber)) {
+            $cf1 = CandidateForm::where("id", "=", $applicationNumber)->first();
+            if ($cf1) {
+                return $cf1;
+            }
+        } else {
+            $cd = Candidate::where('username', $applicationNumber)->first();
+            if ($cd) {
+                return $cdf = CandidateForm::where(["candidate_id" => $cd->id, 'admission_status' => 'admitted', 'screening_status' => 'Qualified'])
+//                    ->whereNotNull('jamb_score')
+                    ->whereNotNull('programme_admitted_id')
+                    ->orderBy('created_at', 'DESC')->first();
+            }
+        }
+        return null;
+    }
+
+    public function admittedProgramme()
+    {
+        return $this->belongsTo(Programme::class, 'programme_admitted_id');
+    }
+}

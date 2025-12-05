@@ -1,0 +1,82 @@
+<?php
+
+namespace App\Http\Controllers\Student;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
+use Auth;
+use Illuminate\Support\Facades\DB;
+use App\Models\CourseGroup;
+use App\Models\Employee;
+use App\Models\SetConfig;
+use App\Models\SetResponse;
+
+class EvaluationController extends Controller
+{
+    public function __construct()
+    {
+        $this->middleware(["auth:student","mmode"]);
+    }
+
+    public function index()
+    {
+        $student = Auth::user();
+        $session = $student->currentSemester()->session;
+        $cgs2 = DB::table("course_registrations")
+                ->join("course_groups","course_groups.id","=","course_registrations.course_group_id")
+                ->join("courses","course_groups.course_id","=","courses.id")
+                ->join("course_lecturers","course_lecturers.course_group_id","=","course_groups.id")
+                ->join("employees","employees.id","=","course_lecturers.employee_id")
+                ->where("course_registrations.student_id","=",$student->id)
+                ->where("course_groups.session","=",$session)
+//                ->where("course_registrations.set","=")
+                ->get();
+        $cgs = [];
+        foreach ($cgs2 as $cg){
+            $cgs[$cg->coursecode]["name"] = $cg->coursecode ." | ".$cg->coursetitle;
+            $cgs[$cg->coursecode]["details"][] = $cg;
+        }
+
+        return view('pages.student.evaluation.index',compact("cgs","student"));
+    }
+
+    public function evaluate(Request $request,$courseGroupId,$employeeId)
+    {
+        $student = Auth::user();
+        $courseGroup =  CourseGroup::find($courseGroupId);
+        $course = $courseGroup->course()->first();
+        $employee = Employee::find($employeeId);
+        $config = SetConfig::whereRaw("programme_type='All' OR programme_type='{$student->mode_of_entry}'")->orderBy("session","DESC")->first();
+        $questionsX = DB::table("set_default_questions")
+                        ->join("set_questions","set_questions.id","=","set_default_questions.question_id")
+                        ->join("set_question_categories","set_question_categories.id","=","set_questions.question_category_id")
+                        ->where(["set_default_questions.lab_lecture"=>$courseGroup->grouptype,"set_default_questions.config_id"=>$config->id])
+                        ->select(["set_questions.id","set_questions.question","set_question_categories.category"])
+                        ->groupBy("set_questions.id")
+                        ->get();
+        $questions = [];
+        foreach ($questionsX as $question){
+            $questions[$question->category][] = $question;
+        }
+//        return $questions;
+        return view("pages.student.evaluation.evaluate",compact("courseGroup","course","student","employee","questions"));
+    }
+
+    public function evaluatePost(Request $request)
+    {
+        $student = Auth::user();
+        $responses = [];
+        foreach ($request->response as $key =>$value) {
+            $responses[] = ["student_id"=>$student->id,"course_group_id"=>$request->course_group_id,"question_id"=>$key,"responsecode"=>$value,"comment"=>$request->comment[$key]?$request->comment[$key]:"","course_lecturer_id"=>$request->employee_id];
+        }
+        $val = SetResponse::insert($responses);
+        if($val){
+            $cr = $student->courseRegistration(["course_group_id"=>$request->course_group_id])->first();
+            $cr->set = 1;
+            $cr->save();
+            return redirect(route("evaluation.index"));
+        }
+
+        return redirect()->back()->withErrors(["message"=>"Evaluation Failed"]);
+    }
+}

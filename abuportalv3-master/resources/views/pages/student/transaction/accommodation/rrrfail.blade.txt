@@ -1,0 +1,20 @@
+@extends('layouts.frontmaster')
+@section('content')
+<div class="main-section">
+    <div  class="container" >
+        <div class="text-right">
+            <a class="btn btn-sm btn-primary" href ="{{route('accommodation.reservation')}}">Back to reservation</a> <a class="btn btn-sm btn-primary" href ="{{route('dashboard.index')}}">Dashboard</a>
+        </div>
+        <br />
+
+        <div class="row">
+            <div class="col">
+                <div class="alert alert-danger" role="alert" style="margin-left: auto; margin-right: auto; text-align: center;">
+                    <i class='icon icon-cross2'> </i> <br /> Failed to generate RRR code. <br />
+                    Click <a href="{{route('transaction.accommodation.pay', array("id"=>$reservation->id))}}">here</a> to try again.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+@endsection

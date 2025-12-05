@@ -1,0 +1,259 @@
+
+@extends("layout.student.master")
+
+@section("content")
+
+    @php
+        $color=[
+                "green"=>["name"=>"green","bg"=>"#FFFFFF","trackcolor"=>"#008822","scalecolor"=>"#FFFFFF"],
+                "red"=>["name"=>"reder","bg"=>"#FFFFFF","trackcolor"=>"#FFA500","scalecolor"=>"#FFA500"]
+            ];
+        $student = Auth::user();
+
+    @endphp
+    <section class="">
+        <div class="main-section">
+            <div class="container"
+                 style="padding: 10px 25px;box-shadow: 0 0 5px rgba(0,0,0,0.2);background-color: #fff;">
+                <div class="row">
+                    <h3>Registration Fees</h3>
+                    <section id="cd-timeline" class="cd-container">
+                        @foreach($fees as $fee)
+                            @php
+                                $perc = $fee["content"]["percentage"];
+                                $config = $perc >=100?"green":"red";
+                                $config = $color[$config];
+                                $session = $fee["session"];
+                                $ret = $student->entry_session == $session ? "New" : "Returning";
+                                $reg = App\Models\RegistrationPeriod::where(["session" => $session, "programme_id" => $student->sessionProgramme($session)->id, "nature" => "FEE", "new_returning" => $ret])->orderBy('session','DESC')->orderBy('end_date','DESC')->first();
+                            @endphp
+                            <div class="cd-timeline-block {{ $config["name"] }}">
+                                <div class="cd-timeline-img is-hidden">
+                                    <div class="piechart" data-barcolor="{{ $config["bg"] }}"
+                                         data-trackcolor="{{ $config["trackcolor"] }}"
+                                         data-scalecolor="{{ $config["scalecolor"] }}" data-percent="{{$perc}}"
+                                         data-linewidth="10" data-size="80">
+                                        <span class="percent text-white bold"></span>
+                                    </div>
+                                </div> <!-- cd-timeline-img -->
+
+                                <div class="cd-timeline-content is-hidden" style="">
+                                    <h2 class="mt-0">Payment Period</h2>
+                                    {{--@if($reg)--}}
+                                        <div>
+                                            <ul class="list angle-double-right text-black-333">
+                                                <li>
+                                                    <strong>Start
+                                                        Date: {{ \Carbon\Carbon::parse($reg->start_date)->format('M d Y') }}</strong>
+                                                </li>
+                                                <li>
+                                                    <strong>End Date
+                                                        : {{ \Carbon\Carbon::parse($reg->end_date)->format('M d Y') }}</strong>
+                                                </li>
+                                                <li>
+                                                    <table>
+                                                        <tr>
+                                                            <th style="min-width:120px; ">
+
+                                                            </th>
+                                                            <td></td>
+                                                        </tr>
+                                                        <tr>
+                                                            <th class="text-info">Amount Due:</th>
+                                                            <td>₦
+                                                                <strong>{{ number_format($fee["content"]['total'],2) }}</strong>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <th class="text-success">Paid:</th>
+                                                            <td>₦
+                                                                <strong>{{ number_format($fee["content"]['amountpaid'],2) }}</strong>
+                                                            </td>
+                                                        </tr>
+                                                        @if($student->isPGStudent())
+                                                            <tr>
+                                                                <th class="text-warning">Waived</th>
+                                                                <td>₦
+                                                                    <strong>{{ number_format( $fee["content"]['waived'],2) }}</strong>
+                                                                </td>
+                                                            </tr>
+                                                        @endif
+                                                        <tr>
+                                                            <th class="text-danger">Pending</th>
+                                                            @php $pending = $fee["content"]['total'] - ($fee["content"]['amountpaid']+$fee["content"]['waived']); @endphp
+                                                            <td>₦
+                                                                <strong>{{ number_format($pending>=0?$pending:0,2) }}</strong>
+                                                            </td>
+                                                        </tr>
+                                                    </table>
+                                                </li>
+                                            </ul>
+
+
+                                        </div>
+                                        @php
+                                            $date = \Carbon\Carbon::parse($reg->end_date);
+                                            $btnShow = $student->paymentBtnToShow($session)
+                                        @endphp
+
+                                        @if($btnShow==2)
+                                            <a class="btn btn-danger"
+                                               href="{{ route('fees.pay.sundry',[$session]) }}">
+                                                Pay Sundry Charges
+                                            </a>
+                                        @endif
+                                            @if($btnShow==3)
+                                                @if($student->isPGStudent())
+                                                <a class="btn btn-info btn-sm"
+                                                href="{{ route('fees.pay.sundry',[$session]) }}">
+                                                    View Sundry
+                                                </a>
+                                            @endif
+                                            <a href="{{ route("fees.session",[$fee["session"]]) }}"
+                                            class="btn btn-theme-colored2 btn-sm pull-right">
+                                                View Details
+                                            </a>
+                                        @endif
+                                        @if($btnShow==1)
+                                            @if($student->isPGStudent())
+                                                <a class="btn btn-info btn-sm"
+                                                href="{{ route('fees.pay.sundry',[$session]) }}">
+                                                    View Sundry
+                                                </a>
+                                            @endif
+                                            <a href="{{ route("fees.session",[$fee["session"]]) }}"
+                                            class="btn btn-primary btn-sm pull-right" done="1">
+                                                Pay Fee
+                                            </a>
+                                        @endif
+                                        @if($btnShow==0)
+                                            <span class="pull-right bold" done="1">
+                                                <strong>Payment Closed</strong>
+                                            </span>
+                                        @endif
+
+                                    <span class="cd-date" style="">{{ $session }}/{{$session+1}}</span>
+                                </div> <!-- cd-timeline-content -->
+                            </div> <!-- cd-timeline-block -->
+                        @endforeach
+
+
+                    </section>
+
+                </div>
+
+            </div>
+        </div>
+    </section>
+@endsection
+@section("css")
+    <style>
+        .parallelogram {
+            display: inline-block;
+            padding: 4px 16px;
+            color: #F0F0F0;
+            font-size: 20px;
+            width: 120px;
+            height: 36px;
+        }
+
+        .red {
+            background: #D94C42;
+            box-shadow: inset 3px 2px 2px 3px #E94C4233;
+        }
+
+        .teal {
+            background: #32525F;
+            box-shadow: inset 3px 2px 2px 3px #32626F33;
+        }
+
+        .yellow {
+            background: #FEC538;
+            box-shadow: inset 3px 2px 2px 3px #DEC53833;
+        }
+
+        .blue {
+            background: #59B200;
+            box-shadow: inset 3px 2px 2px 3px #59B20033;
+        }
+
+        .orange {
+            color: orange;
+        }
+
+        .greeen {
+            background: #008822;
+            box-shadow: inset 3px 2px 2px 3px #00882233;
+        }
+
+        .green {
+            color: #0e773d;
+        }
+
+        .parallelogram:hover {
+            color: aliceblue;
+            text-decoration: underline;
+            text-shadow: #FDFDFF;
+        }
+
+        .session a + a {
+            display: inline-block;
+            height: 36px;
+            font-weight: bolder;
+            padding-left: 12px;
+        }
+
+        .session {
+            padding: 0;
+            height: 38px;
+        }
+
+        .session > span {
+            display: inline-block;
+            border: 1px solid #4e5b6c;
+            margin-bottom: 12px;
+            padding: 0;
+            height: 38px;
+        }
+
+        .ulfee {
+            list-style-type: none;
+            list-style: none;
+        }
+
+        .cd-timeline-img {
+            left: 12%;
+            width: 80px;
+            height: 80px;
+
+        }
+
+        .cd-timeline-img + .cd-timeline-content {
+            width: 45%;
+            padding: 8px 16px;
+        }
+
+        .green .cd-timeline-img {
+            box-shadow: 0 0 0 4px #43b14b, inset 0 2px 0 rgba(0, 0, 0, 0.08), 0 3px 0 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .reder .cd-timeline-img {
+            box-shadow: 0 0 0 4px #ffa500, inset 0 2px 0 rgba(0, 0, 0, 0.08), 0 3px 0 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .cd-timeline-img + .cd-timeline-content .cd-date {
+            right: 45%;
+            top: 8px;
+            font-weight: 900;
+            color: #333333;
+        }
+
+        .reder .cd-timeline-img {
+            background: #c03b44;
+        }
+
+        .green .cd-timeline-img {
+            background: #75ce66;
+        }
+    </style>
+@endsection

@@ -1,0 +1,314 @@
+﻿* {
+	margin: 0;
+	padding: 0;
+}
+body {
+	color: #444;
+	font: 13px Arial, Helevtica;
+}
+#lean_overlay {
+	position: fixed;
+	z-index: 100;
+	top: 0px;
+	left: 0px;
+	height: 100%;
+	width: 100%;
+	background: #000;
+	display: none;
+}
+h1#title {
+	font-size: 37px;
+	margin-bottom: 50px;
+	color: #666;
+}
+h2 {
+	font-size: 21px;
+	margin-bottom: 20px;
+}
+h3 {
+	font-size: 16px;
+}
+p {
+	margin-bottom: 20px;
+}
+a {
+	color: #980905;
+}
+em {
+	font-style: italic;
+}
+h1, h2, h3, h4, h5 {
+	color: #980905;
+}
+h1 {
+   /*	letter-spacing: -2px;    */
+	text-transform: uppercase; /* text-shadow: 2px 4px 3px rgba(0,0,0,0.3); */;
+	text-shadow: 0 1px 0 #ccc, 0 2px 0 rgb(251, 253, 255), 0 3px 0 rgba(189, 189, 189, 0.23), 0 4px 0 rgba(185, 185, 185, 0.35), 0 5px 0 rgba(170, 170, 170, 0.21), 0 6px 1px rgba(0, 0, 0, 0), 0 0 5px rgba(0, 0, 0, 0), 0 1px 3px rgba(0, 0, 0, 0), 0 3px 5px rgba(0, 0, 0, 0), 0 5px 10px rgba(0, 0, 0, 0), 0 10px 10px rgba(0, 0, 0, 0.1), 0 20px 20px rgba(0, 0, 0, 0);
+}
+.notice {
+	background-color: #FFF9D8;
+	margin-top: 20px;
+	padding: 10px;
+	-webkit-border-radius: 6px;
+	-moz-border-radius: 6px;
+	border-radius: 6px;
+}
+.ribbon {
+	position: absolute;
+	top: 0;
+	right: 0;
+	border: 0;
+}
+#page {
+	min-height: 480px;
+	height: 100% !important;
+	background-color: #fff;
+	width: 960px;
+	margin: 0px auto 0px auto;
+	padding: 15px;
+    border: 1px solid #dfdfdf;
+	border-top-left-radius: 5px;
+	border-top-right-radius: 5px;
+}
+#header {
+	clear: both;
+}
+#site-nav {
+	float: right;
+	display: block;
+}
+#site-nav ul {
+	list-style: none;
+}
+#site-nav ul li {
+	list-style: none;
+	float: left;
+	padding-right: 10px;
+}
+table {
+	border-collapse: collapse;
+	width: 100%;
+	margin: 20px auto 20px auto;
+}
+th {
+	font-weight: bold;
+}
+td, th {
+	border: 1px solid #ccc;
+	padding: 5px;
+}
+.slim {
+	width: 88px;
+}
+.hover {
+	background-color: #eee;
+}
+.right {
+	float: right;
+}
+.left {
+	float: left;
+}
+.clear {
+	float: clear;
+}
+.red {
+	color: #ff0000;
+}
+.block {
+	display: block;
+}
+.small-nav-task {
+	margin: 2px 0;
+	font-size: 11px;
+	padding: 4px;
+	height: 35px;
+	border: 1px solid #f2f2f2;
+}
+.small-nav-task h3 {
+	margin-bottom: 0px;
+	font-size: 13px;
+}
+.small-nav-task p {
+	margin-top: 0px;
+}
+.small-nav-task a {
+	text-decoration: none;
+}
+/* Styles for validation helpers
+-----------------------------------------------------------*/
+.field-validation-error {
+	color: #ff0000;
+}
+.field-validation-valid {
+	display: none;
+}
+.input-validation-error {
+	border: 1px solid #ff0000;
+	background-color: #ffeeee;
+}
+.validation-summary-errors {
+	font-weight: bold;
+	color: #ff0000;
+}
+.validation-summary-valid {
+	display: none;
+}
+/* Styles for basic forms
+-----------------------------------------------------------*/
+.footer {
+	font-size: 0.9em;
+	margin: 0px 0 0px 0;
+	padding: 15px 0px 0px 0px;
+	height: auto; /*border-top: 1px dotted #c7ccd3;*/;
+	border-top: 1px solid #c7ccd3;
+	overflow: auto;
+}
+.footer a {
+	text-decoration: none;
+}
+.footerGroup {
+	position: relative;
+	float: left;
+	width: 200px;
+}
+.footerGroup ul {
+	position: relative;
+	float: left;
+	width: 100%;
+	height: auto;
+}
+.footerGroup ul li {
+	position: relative;
+	float: left;
+	width: 100%;
+	height: auto;
+	text-align: left;
+	color: #999;
+}
+.footerGroup ul li a img {
+	position: relative;
+	float: left;
+	padding-top: 5px;
+	border: none;
+}
+/* #endregion */
+/* #Region "Form Elements" */
+fieldset {
+	border: 1px solid #ddd;
+	padding: 0 1.4em 1.4em 1.4em;
+	margin: 0 0 1.5em 0;
+}
+legend {
+	font-size: 1.2em;
+	font-weight: bold;
+}
+textarea {
+	min-height: 75px;
+}
+.editor-label {
+	margin: 1em 0 0 0;
+	float: left;
+	text-align: right;
+	min-width: 350px;
+	min-width: 350px;
+}
+.editor-field {
+	margin: 0.5em 0 0 0;
+	float: left;
+}
+input[type=submit], input[type=reset] {
+	position: relative;
+	float: left;
+	margin: 10 2 1 2;
+	margin-top: 10px;
+	padding: 4px;
+	font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+form table {
+	border: none;
+}
+form td {
+	border: none;
+}
+form tr {
+	border: none;
+}
+input[type=text] {
+	padding: 3px;
+	border: 1px solid #999;
+	width: 200px;
+	width: 250px;
+	border: 1px solid #CCC;
+	position: relative;
+	font-size: 13px;
+	color: #333;
+	float: left;
+	margin-bottom: 1px;
+	font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+select {
+	padding: 3px;
+	margin-bottom: 1px;
+	width: 159px;
+	border: 1px solid #ccc;
+	height: 25px;
+	position: relative;
+	float: left;
+	font-size: 13px;
+	color: #333;
+	font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+input[type=checkbox] {
+	border: none;
+	position: relative;
+	float: left;
+	clear: none;
+	margin: 0;
+	padding: 0;
+	margin-top: 3px;
+	width: auto;
+	margin-left: 5px;
+	margin-right: 15px;
+	position: relative;
+	float: left;
+}
+.altcolors {
+	/*background-color:#F1F0EE;*/
+    background-color: #F9FDEE;
+}
+.focusField {
+	border: 1px solid #73A6FF;
+	background: #F2FFCA;
+	color: #000;
+}
+.idleField {
+	background: #EEE;
+	color: #6F6F6F;
+	border: 1px solid #DFDFDF;
+}
+.normalField {
+	background: #FFF;
+	color: #555;
+	border: 1px solid #ccc;
+}
+.errorField {
+	border: 1px solid #FF5000 !important;
+	background: #FCB99A;
+	color: #6F6F6F;
+	margin: 0;
+	padding: 0;
+}
+.errormessage {
+	position: relative;
+	float: left;
+	color: Red;
+	font-size: 11px;
+	margin-top: 5px;
+	margin-left: 5px;
+}
+.red {
+	color: red !important;
+	width: auto;
+	float: none;
+}

@@ -1,0 +1,133 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class AccommodationConfig extends Model
+{
+    use HasFactory;
+    protected $fillable = [
+        'type', 'parent_id', 'programme_type', 'faculty_id',
+        'department_id', 'level_id'
+    ];
+
+    // Child configurations for this config
+    public function children()
+    {
+        return $this->hasMany(AccommodationConfig::class, 'parent_id');
+    }
+
+    // Get the entire hierarchy of configurations (parent + children)
+    public function getFullHierarchy()
+    {
+        $configurations = [];
+
+        // Include the current config
+        $configurations[] = $this;
+
+        // If the current config has children, fetch them recursively
+        if ($this->children()->exists()) {
+            foreach ($this->children as $child) {
+                $configurations = array_merge($configurations, $child->getFullHierarchy());
+            }
+        }
+
+        return $configurations;
+    }
+
+    public function interpretConfigs()
+    {
+        $output = [];
+        $configText = '';
+
+        // Handle the Include/Exclude Type
+        if ($this->type === 'Include') {
+            $configText .= "Include ";
+        } elseif ($this->type === 'Exclude') {
+            $configText .= "Exclude ";
+        }
+
+        // Describe the scope of the configuration
+        $scope = [];
+
+        if ($this->campus) {
+            $scope[] = "campus " . $this->campus;
+        }
+        if ($this->faculty_id) {
+            $scope[] = "faculty of " . Faculty::find($this->faculty_id)->name;
+        }
+        if ($this->department_id) {
+            $scope[] = "department of " . Department::find($this->department_id)->name;
+        }
+        if ($this->level_id) {
+            $scope[] = "in " . Level::find($this->level_id)->name;
+        }
+        if ($this->programme_id) {
+            $scope[] = "studying " . $this->programme_id;
+        }
+        if ($this->mode_of_entry) {
+            $scope[] = "under programme type " . $this->mode_of_entry;
+        }
+
+        // Combine scope into readable sentence
+        if (count($scope) > 0) {
+            $configText .= " students in " . implode(", ", $scope);
+        } else {
+            $configText .= "for all students";
+        }
+
+        // Add more details for exclusions (if any)
+        if ($this->parent_id) {
+            // $parent = "based on configuration with ID " . $this->parent_id;
+            // $configText .= " (" . $parent . ")";
+        }
+
+        // Add the final output to the list
+        $output[] = $configText . ".";
+
+
+        return implode("\n", $output);
+    }
+
+    public function isEligible($studentDetails,$depth=0){
+        //get condition matches
+
+        if($this->matchesConditions($studentDetails)){
+            $isEligible  = $depth.($this->type=="Exclude"?"0":"1");
+        }else{
+            $isEligible  = $depth.($this->type=="Include"?"":"1");
+        }
+
+        // echo "\n".implode(',',$studentDetails)." == $isEligible(";
+        $children = $this->children;
+
+        if($children->count()){//if has children get theirs'
+            $max = 0;
+            //loop through the children and get their eligibility, at same level , eligible take precedence
+            foreach($children as $child){
+                $value= intval($child->isEligible($studentDetails,$depth+1));
+                // echo $value.")\n";
+                $max = ($value>$max?$value:$max)."";
+            }
+
+            $isEligible = $isEligible>$max?$isEligible:$max;
+        }
+        //no children use parent's
+        return $isEligible;
+    }
+
+    protected function matchesConditions($studentDetails)
+    {
+        return (
+            ($this->campus == 0 || $this->campus == $studentDetails['campus']) &&
+            ($this->faculty_id == 0 || $this->faculty_id == $studentDetails['faculty_id']) &&
+            ($this->department_id == 0 || $this->department_id == $studentDetails['department_id']) &&
+            ($this->programme_id == 0 || $this->programme_id == $studentDetails['programme_id']) &&
+            ($this->level_id == 0 || $this->level_id == $studentDetails['level_id']) &&
+            ($this->mode_of_entry == 0 || $this->mode_of_entry == $studentDetails['mode_of_entry'])
+        );
+    }
+
+}

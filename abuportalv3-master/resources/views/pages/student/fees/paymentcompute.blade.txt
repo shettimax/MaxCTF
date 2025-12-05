@@ -1,0 +1,431 @@
+@extends("layout.student.master")
+@section('css')
+    <style type='text/css'>
+        .disableit {
+            opacity: 0.3;
+        }
+
+        a > i.disableit:hover, a > i.disableit:link {
+            cursor: default;
+        }
+
+        #refactions a {
+            margin-left: 3px;
+            margin-right: 3px;
+        }
+
+        #payShow {
+            display: none;
+        }
+
+        @media print {
+            .main-nav, nav.navigation, ul.nav, #candformnav, div.bottom-footer, div.txnslipactions, div.right-side, img#remita-logo {
+                display: none;
+            }
+
+            h3#txnid {
+                text-align: right !important;
+            }
+
+            @page {
+                margin: 0cm;
+            }
+
+            #main-features {
+                padding: 0;
+            }
+
+            footer, header, #payV, nav {
+                display: none !important;
+            }
+
+            #cont {
+                background-color: white;
+                height: 100%;
+                width: 100%;
+                top: 0;
+                left: 0;
+                margin: auto auto;
+                padding: 15px;
+                font-size: 14px;
+                line-height: 18px;
+            }
+
+            .logo, #print {
+                display: none;
+            }
+
+            #inner {
+                width: 100%;
+            }
+
+            #footer-widget {
+                display: none;
+            }
+
+            #payShow {
+                display: inline-block;
+            }
+
+            #footer-widget, #main-status, #main-header, footer {
+                display: none;
+            }
+        }
+
+        progress {
+            -webkit-appearance: none;
+            appearance: none;
+            border: none;
+            height: 12px;
+            width: 100%;
+            margin: 50px 0;
+        }
+
+        progress::-webkit-progress-bar {
+            background: #ccc;
+            box-shadow: inset 0px 0px 10px 5px #aaa;
+            border-radius: 20px;
+        }
+
+        progress::-webkit-progress-value {
+            background-image: repeating-linear-gradient(45deg, #19b68c, #19b68c 8px, #19b68c 8px, #19b68c 16px);
+            border-radius: 20px;
+        }
+
+        progress::before {
+            content: attr(value);
+            position: relative;
+            left: 70%;
+            display: block;
+            margin: 5px;
+            font: caption;
+            font-size: 20px;
+            color: #FF7799;
+        }
+
+        .table > tr > td {
+            padding: 0px;
+        }
+    </style>
+@endsection
+
+@section("content")
+    <section class="">
+
+        @php $perc = 100; @endphp
+        <div class="container">
+
+            @if(!isset($scam))
+                <div class="row">
+                    <div class="col-md-1"></div>
+                    <div class="col-md-10"
+                         style="padding: 10px 25px;box-shadow: 0 0 5px rgba(0,0,0,0.2);background-color: #fff;">
+
+                        <img src="{{ asset("reg_banner.png") }}" alt="">
+                        <div class="element-size-100">
+                            <div class="cs-heading-sec col-md-11">
+                                <div class="inner-sec" style="border-bottom:1px solid #ebebe9 !important;">
+                                    <h1 style="font-size: 30px !important; text-align:left;">
+                                        Payment
+                                    </h1>
+                                    <div style="text-align: left;;">
+                                        @if($errors->has("wrn_message"))
+                                            <p class="alert alert-warning">
+                                                {{$errors->first('wrn_message')}}
+                                            </p>
+                                        @endif
+                                        @if($errors->has("scs_message"))
+                                            <p class="alert alert-success">
+                                                {{$errors->first('scs_message')}}
+                                            </p>
+                                        @endif
+                                        @if($errors->has("err_message"))
+                                            <p class="alert alert-danger">
+                                                {{$errors->first('err_message')}}
+                                            </p>
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                        <div class="element-size-100">
+                            @php
+                                $user = Auth::user();
+                                $programme = $user->programme();
+                                $department = $user->department();
+                                $faculty = $user->faculty();
+
+                            @endphp
+                            <div class="cs-team team-grid" style="margin:0 auto;">
+                                <table class="table table-bordered table-stripped" style="font-size:12px;">
+                                    <tr>
+                                        <th>Names:</th>
+                                        <td>{{ strtoupper($user->surname).", ". $user->firstname." ".$user->othernames }}</td>
+                                        <th>Admission Number:</th>
+                                        <td>{{ $user->matric_number }}</td>
+                                        <th>Session:</th>
+                                        <td>{{ $session."/".($session+1) }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Level:</th>
+                                        <td>{{ \App\Models\Level::find($user->sessionReg()->first()->level_id)->short_name   }}</td>
+                                        <th>Phone Number:</th>
+                                        <td>{{ $user->biodata()->gsm }}</td>
+                                        <th>Email:</th>
+                                        <td>{{ $user->biodata()->email }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Faculty:</th>
+                                        <td>{{ $faculty->name  }}</td>
+                                        <th>Department:</th>
+                                        <td>{{ $department->name }}</td>
+                                        <th>Programme:</th>
+                                        <td>{{ $programme->name }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Transaction ID:</th>
+                                        <td id="transactionId">
+                                            {{ $trans->transaction_code }}
+                                        </td>
+                                        @if($trans->invoice_number !="")
+                                            <th>RRR Number:</th>
+                                            <th>{{ $trans->invoice_number }}</th>
+                                        @endif
+                                        @if($user->wallet_number)
+                                            <th>Wallet Acct. No.:</th>
+                                            <th>{{ $user->wallet_number }}</th>
+                                        @endif
+                                    </tr>
+                                </table>
+                                {{-- <a href="#" class="btn btn-sm btn-primary">show details</a> --}}
+                                <hr>
+                                @php
+                                    $total = 0;
+                                @endphp
+                                <table class="table table-condensed table-bordered" id="trans" style="font-size:12px;">
+                                    <tr>
+                                        <th>S/N</th>
+                                        <th>Fee Item</th>
+                                        <th class="text-right">Amount</th>
+                                    </tr>
+                                    @foreach($fees as $fee)
+                                        @php
+                                            $total += $fee->amount;
+                                        @endphp
+                                        <tr>
+                                            <th>{{ $loop->index+1 }}</th>
+                                            <td>{{ $fee->item_name }}</td>
+                                            <td class="text-right">{{ number_format($fee->amount,"2",".",",") }}</td>
+
+                                        </tr>
+                                    @endforeach
+                                    <tr>
+                                        <td></td>
+                                        <th class="text-right">Total</th>
+                                        <th class="text-right">
+                                            &#8358;{{ number_format($total,"2",".",",") }}
+                                        </th>
+                                    </tr>
+                                </table>
+                                <div class="col-md-12 text-center">
+
+                                    @if($trans->payment_status!="Paid")
+                                        {{--                                            <a id="payV" href="{{ $invoice->ResponseObject->PaymentURL }}" target="_blank" class="btn btn-info">Pay</a>--}}
+                                        @if($user->wallet_number)
+                                            <div class="col-md-12 text-center pt-20">
+                                                <center>
+                                                    <a class="btn btn-primary btn-flat" id="payWallet"
+                                                       data="{{$trans->id}}">
+                                                        Wallet Pay <i class="fa fa-credit-card-alt"></i>
+                                                    </a>
+                                                </center>
+                                            </div>
+                                        @endif
+                                    @endif
+                                    @if($trans->payment_status!="Paid" && $trans->invoice_number!="")
+
+                                        <form action="{{ \App\Models\Transaction::PAYMENTURL }}" method="POST">
+                                            <div class="form-row">
+                                                <div class="col-md-12">
+                                                    <label class="sr-only" for="inlineFormInputGroup">Amount</label>
+                                                    <div class="input-group col-md-12">
+                                                        <input style="height:73px;font-size:54px;text-align:center;"
+                                                               class="form-control border-1px-theme-colored2 btn-flat"
+                                                               disabled name="amount"
+                                                               value="₦{{ number_format($balance,"2",".",",") }}"
+                                                               id="amountId"
+                                                               cost="₦{{number_format($balance+300,"2",".",",")}}">
+                                                        <input type="hidden" name="session" value="{{ $session }}"/>
+                                                        @csrf
+                                                    </div>
+                                                    @if ($errors->has('password'))
+                                                        <span class="-feedback" role="alert">
+                                                        <strong>{{ $errors->first('password') }}</strong>
+                                                    </span>
+                                                    @endif
+                                                </div>
+                                                <div class="col-md-12 text-center pt-20">
+                                                    <center>
+                                                        <button class="btn btn-primary btn-flat">
+                                                            Pay Fee <i class="fa fa-credit-card"></i>
+                                                        </button>
+
+                                                        <button class="btn btn-primary btn-flat">
+                                                            Print Transaction Slip <i class="fa fa-print"></i>
+                                                        </button>
+
+                                                        @if(!$user->wallet_number)
+                                                            <p class="text-danger">
+                                                                Please consider <a
+                                                                    href="{{ route("student.abumfb.create") }}"
+                                                                    class="text-primary">opening a Wallet with
+                                                                    ABUMFB</a>
+                                                            </p>
+                                                        @endif
+                                                    </center>
+                                                </div>
+                                            </div>
+                                            <input name="hash"
+                                                   value="{{ hash("sha512",$trans::MERCHANTID.$trans->invoice_number.$trans::APIKEY) }}"
+                                                   type="hidden">
+                                            <input type="hidden" name="_jtgeh3_g4.lqws-zp_"
+                                                   value="{{ encrypt(substr(base64_encode(mt_rand()), 0, 15)) }}"/>
+                                            <input name="responseurl" value="{{ route("transaction.fees.verifyrrr") }}"
+                                                   type="hidden">
+                                            <input type="hidden" name="_t_ewu6sj4gryj_4r_y"
+                                                   value="{{ encrypt(substr(base64_encode(mt_rand()), 0, 15)) }}"/>
+                                            @foreach(range(1,40) as $number)
+                                                <input type="hidden"
+                                                       name="{{ encrypt(substr(base64_encode(mt_rand()), 0, 8)) }}"
+                                                       value="{{ encrypt(substr(base64_encode(mt_rand()), 0, 15)) }}"/>
+                                            @endforeach
+                                            <input name="rrr" value="{{$trans->invoice_number}}" type="hidden">
+                                            <input type="hidden" name="_g3p8du_xd7_3wyh_i_"
+                                                   value="{{ encrypt($perc."|:|".time()) }}"/>
+                                            <input type="hidden" name="_hu6vqy_46*fgr_i__l"
+                                                   value="{{ encrypt(substr(base64_encode(mt_rand()), 0, 15)) }}"/>
+                                            <input name="merchantId" value="{{ $trans::MERCHANTID }}" type="hidden">
+
+                                            @csrf
+                                        </form>
+
+                                    @else
+                                        <div class="col-md-12 text-center pt-20">
+                                            <center>
+                                                <a href="{{route("fees.payment.generate.rrr",[$trans->id])}}"
+                                                   class="btn btn-primary btn-flat">
+                                                    Generate Invoice
+                                                    <i class="fa fa-archive"></i>
+                                                </a>
+                                                <button class="btn btn-primary btn-flat">
+                                                    Print Transaction Slip
+                                                    <i class="fa fa-print"></i>
+                                                </button>
+                                            </center>
+                                        </div>
+                                    @endif
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            @else
+                <div class="alert alert-danger">
+                    You have no access to this session.
+                    You have been warned. <strong>Anymore attempt will not be forgiven</strong>
+                </div>
+            @endif
+        </div>
+    </section>
+
+
+    <div class="modal fade" id="makePaymentModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header pt-20 pb-20">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+                            aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title" id="viewTermsAndConditionModalTitle">Connecting to ABUMFB</h4>
+                </div>
+                <div class="modal-body" id="viewPMlBody">
+                    <center>
+                        <h4>Are you sure you want to process this payment?
+                            If you approve [<span id="amountLabel"></span>] will be deducted from your account.
+                            You are expected to have a minimum balance of ₦200 in your wallet
+                        </h4>
+                        <img src='{{ asset('images/preloaders/7.gif') }}' alt='loading...' style="display: none;">
+                    </center>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default btn-flat" id="makePayment" rel="">Pay</button>
+                    <button type="button" class="btn btn-default btn-flat" data-dismiss="modal">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="failed" style="display: none;">
+        <p class="alert alert-warning text-bold" style="font-weight: bolder;">
+            Operation Failed. Please try again.
+        </p>
+    </div>
+    <div id="success" style="display: none;">
+        <p class="alert alert-success text-bold" style="font-weight: bolder;">
+            Operation Successful
+        </p>
+    </div>
+@endsection
+
+
+@section('js')
+    <script type='text/javascript'>
+        $(function () {
+            $('body').on('click', '#print', function () {
+                window.print();
+            });
+            $("#payWallet").on("click", function (e) {
+                e.preventDefault();
+                $("#makePaymentModal").modal();
+                $("#amountLabel").text($('#amountId').attr('cost'));
+                $("#makePayment").attr("rel", $(this).attr("data"));
+            });
+
+            $("#makePayment").on("click", function (e) {
+                e.preventDefault();
+                $("#viewPMlBody img").show();
+                $(".alert").hide();
+                $("#viewPMlBody").html("<div class='text-center'><img src='{{ asset('images/preloaders/7.gif') }}' alt='loading...'></div>");
+
+
+                // setTimeout(function () {
+                //     $("#viewPMlBody").html("<div class='text-center'>Please confirm </div>");
+                // },1500);
+                {{--console.log({_token:"{{ csrf_token() }}",trxn56xid77:$("#makePayment").attr("rel")});--}}
+                // $("#").
+
+
+                $.ajax({
+                    url: "{{ route("student.abumfb.pay") }}",
+                    type: "POST",
+                    data: {_token: "{{ csrf_token() }}", trxn56xid77: $("#makePayment").attr("rel")},
+                    success: function (response) {
+                        console.log(response);
+                        if (response.status == 1) {
+                            $("#viewPMlBody").html($("#success").html()).find(".alert").show();
+                            setTimeout(function () {
+                                document.location = '{{route('fees.index')}}';
+                            }, 2000);
+                        } else {
+                            console.log(response.message);
+                            $("#failed").find('.alert').html(response.message);
+                            $("#viewPMlBody").html($("#failed").html()).find(".alert").show();
+                        }
+                    }
+                });
+            });
+
+        });
+    </script>
+@endsection

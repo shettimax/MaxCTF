@@ -1,0 +1,30 @@
+<script type = "text/javascript">
+    $(document).on('click', '.course-info', function(event){
+        //************************Needed to perform ajax request*********************/
+        $.ajaxSetup({headers: {'X-CSRF-TOKEN': $('meta[name="_token"]').attr('content')}});
+        //****************************************************************************/
+        coursecode = $(this).parent().prev().prev().prev().prev().html();
+        coursetitle = $(this).parent().prev().prev().prev().html();
+        $.ajax({
+            url: '@php echo route('courseregistration.getcourseinfo',[$session]) @endphp',
+            type:'POST',
+            data: {course_id: $(this).attr("course_id")},
+            success: function(data){
+                console.log(data);
+                sn = 1
+                thr = "<tr><th>S/N</th><th>Type</th><th>Schedule</th><th>Lecturers</th><th>Enrolment</th><th>Class size</th></tr>";
+                tdr = "";
+                $.each(data, function(idx, val){
+                    grouptype = (val.grouptype == "lt") ? "Lecture":"Lab";
+                    tdr = tdr + "<tr><td>"+sn+"</td><td>"+grouptype+"</td><td>"+getPeriodString(val.courseperiod)+"</td><td>"+getLecturerString(val.courselecturer)+"</td><td>"+val.enrolled+"</td><td>"+val.maxsize+"</td></tr>";
+                    sn = sn + 1;
+                });
+                $("#course-info-table").html(thr + tdr);
+                $("#course-info-details").html(coursecode + " - " + coursetitle);
+                $("#course-info-modal").modal();
+            }
+        });
+        event.preventDefault();
+    });
+
+</script>

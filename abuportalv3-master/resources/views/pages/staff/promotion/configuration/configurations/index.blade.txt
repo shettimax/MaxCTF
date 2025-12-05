@@ -1,0 +1,121 @@
+@extends('layout.staff.master')
+
+@section('title', 'Step Configurations')
+
+@section('content')
+<section>
+<div class="promotion-step-configurations-wrapper">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-12">
+                <div class="page-title-box">
+                    <div class="page-title-right">
+                        <ol class="breadcrumb m-0">
+                            <li class="breadcrumb-item"><a href="{{ route('staff.dashboard') }}">Dashboard</a></li>
+                            <li class="breadcrumb-item"><a href="{{ route('promotion') }}">Promotion</a></li>
+                            <li class="breadcrumb-item"><a href="{{ route('promotion.configuration.index') }}">Configuration</a></li>
+                            <li class="breadcrumb-item active">Step Configurations</li>
+                        </ol>
+                    </div>
+                    <h4 class="page-title">Step Configurations for {{ $exercise->title }}</h4>
+                </div>
+            </div>
+        </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="header-title">Manage Step Configurations</h4>
+                    <a href="{{ route('promotion.configuration.configurations.create', $exercise) }}" class="btn btn-primary">
+                        <i class="mdi mdi-plus"></i> Add Configuration
+                    </a>
+                </div>
+                <div class="card-body">
+                    @if(session('success'))
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            {{ session('success') }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    @endif
+
+                    @if(session('error'))
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            {{ session('error') }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    @endif
+
+                    <div class="table-responsive">
+                        <table class="table table-centered table-striped dt-responsive nowrap w-100" id="configurations-table">
+                            <thead>
+                                <tr>
+                                    <th>Order</th>
+                                    <th>Step</th>
+                                    <th>Organizational Level</th>
+                                    <th>Approver Type</th>
+                                    <th>Approver Role</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse($configurations as $config)
+                                <tr>
+                                    <td>
+                                        <span class="badge bg-primary">{{ $config->order }}</span>
+                                    </td>
+                                    <td><strong>{{ $config->step->name }}</strong></td>
+                                    <td>
+                                        @if($config->complex_id)
+                                            <span class="badge bg-info">Complex: {{ $config->complex->name }}</span>
+                                        @elseif($config->faculty_id)
+                                            <span class="badge bg-warning">Faculty: {{ $config->faculty->name }}</span>
+                                        @elseif($config->department_id)
+                                            <span class="badge bg-success">Department: {{ $config->department->name }}</span>
+                                        @else
+                                            <span class="badge bg-secondary">Global</span>
+                                        @endif
+                                    </td>
+                                    <td>{{ $config->approver_type }}</td>
+                                    <td>{{ $config->approver_role ?: 'N/A' }}</td>
+                                    <td>
+                                        <span class="badge bg-{{ $config->status === 'Active' ? 'success' : 'danger' }}">
+                                            {{ $config->status }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <a href="{{ route('promotion.configuration.configurations.edit', [$exercise, $config]) }}"
+                                           class="btn btn-sm btn-outline-primary">
+                                            <i class="mdi mdi-pencil"></i> Edit
+                                        </a>
+                                    </td>
+                                </tr>
+                                @empty
+                                <tr>
+                                    <td colspan="7" class="text-center">No step configurations found for this exercise.</td>
+                                </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        </div>
+        </div>
+    </div>
+</div>
+</section>
+@endsection
+
+@section('js')
+<script>
+$(document).ready(function() {
+    $('#configurations-table').DataTable({
+        "pageLength": 25,
+        "order": [[0, "asc"]]
+    });
+});
+</script>
+@endsection

@@ -1,0 +1,23 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class EmployeeExternalSupervision extends Model
+{
+    use HasFactory;
+
+   
+
+    protected $table = 'employee_external_supervisions';
+
+    public function employee(){
+        return $this->belongsTo(Employee::class);
+    }
+
+    public function student(){
+        return $this->belongsTo(Student::class);
+    }
+}

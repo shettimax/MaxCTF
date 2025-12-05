@@ -1,0 +1,31 @@
+<?php try{ ?>
+<table class="table table-bordered table-condense">
+    <thead class="bg-black-444 text-white-f1">
+        <tr>
+            <th>S/N</th>
+            <th>P. Number</th>
+            <th>Full Name</th>
+            <th>Unit</th>
+            <th>Action</th>
+        </tr>
+    </thead>
+
+    @forelse($users as $user)
+        @php $user1 = App\Models\User::find($user->id); @endphp
+        <tr>
+            <td>{{ $loop->index+1 }}</td>
+            <td>{{ $user->personnel_no }}</td>
+            <td>{{ $user->full_name }}</td>
+            <td>{{ $user->department }}</td>
+            <td>
+                <a class="btn btn-warning btn-xs revoke" role-id="{{$role->id}}" user-id="{{$user1->id}}" role-name="{{$role->name}}" user-fullname="{{ $user1->employee()->fullName()  }}" >
+                    Revoke Access
+                </a>
+            </td>
+        </tr>
+    @endforeach
+</table>
+
+<?php }catch (\Exception $e){
+    print_r($e->getMessage());
+}

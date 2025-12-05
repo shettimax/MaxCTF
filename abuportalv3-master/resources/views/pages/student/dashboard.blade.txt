@@ -1,0 +1,346 @@
+@extends("layout.student.master")
+
+@section("content")
+
+    <?php $user = \Auth::user();
+    $biodata = $user->biodata();
+    $programe = $user->biodata(); ?>
+
+    @php
+        use App\Http\Controllers\Student\StudentDocumentsController;
+        $studentDoc = new StudentDocumentsController();
+        $response = $studentDoc->hasDocument();
+    @endphp
+
+    <section class="pt-40 pl-5">
+        <div class="section-content">
+            <div class="row">
+                <div class="col-sx-12 col-sm-3 col-md-3">
+                    <div class="doctor-thumb">
+                        <img
+                            src="https://static.abu.edu.ng/uploads/student/photos/{{strtoupper($user->matric_number)}}.JPG"
+                            alt="{{ $user->matric_number }}"
+                            width="432px;" height="302px">
+                    </div>
+                    <div class="info p-20 bg-primary">
+                        <h4 class="text-uppercase text-white">{{$user->getFullname()}}</h4>
+                        <ul class="list angle-double-right m-0">
+                            <li class="mt-0 text-gray-silver"><strong
+                                    class="text-gray-lighter">Matric No:</strong> {{$user->matric_number}}
+                            </li>
+                            <li class="mt-0 text-gray-silver"><strong
+                                    class="text-gray-lighter">Email:</strong> {{$biodata?$biodata->abu_mail:""}}
+                            </li>
+                            <li class="text-gray-silver"><strong
+                                    class="text-gray-lighter">Phone</strong> {{$biodata?$biodata->gsm:""}}</li>
+                            <li class="text-gray-silver"><strong
+                                    class="text-gray-lighter">State</strong> {{$user->state()->name}}</li>
+                            <li class="text-gray-silver"><strong
+                                    class="text-gray-lighter">Gender</strong> {{$user->gender}}</li>
+                            @if($wifi)
+                                <li class="text-gray-silver"><strong class="text-gray-lighter">Wifi
+                                        Username</strong> {{$wifi->wifi_username}}</li>
+                                <li class="text-gray-silver"><strong class="text-gray-lighter">Wifi
+                                        Password</strong> {{$wifi->wifi_passwd}}</li>
+                            @endif
+                        </ul>
+                        <a class="btn btn-danger btn-xm mt-10 mb-sm-30" href="{{ route("logout") }}">Logout</a>
+                    </div>
+                </div>
+                @php
+                    $biodata = $user->biodata();
+                @endphp
+                <div class="col-xs-12 col-sm-9 col-md-9">
+                    <div class="col-md-12">
+                        <div class="heading-line-bottom2">
+                            <h4 class="heading-title"></h4>
+                            @if ($user->mode_of_entry=='DP' || $user->mode_of_entry=='HD' || $user->mode_of_entry=='AD' || $user->mode_of_entry=='' || $user->mode_of_entry=='ND')
+                                @if($user->department()->id=104)
+                                    <a class="btn btn-default btn-sm" href="{{ route("ioe.admission.letter") }}"
+                                       target="_blank"><i class="fa fa-print"></i> Print Admission Letter</a>
+                                @else
+                                    <a class="btn btn-default btn-sm"
+                                       href="{{ route("diploma.student.admission.letter") }}" target="_blank"><i
+                                            class="fa fa-print"></i> Print Admission Letter</a>
+                                @endif
+                            @elseif($user->entry_session >=2016)
+                                @if ($user->mode_of_entry=='PG')
+                                    <a class="btn btn-default btn-sm" href="{{ route("student.admission.pg.letter") }}"
+                                       target="_blank"><i class="fa fa-print"></i> Print Admission Letter</a>
+                                @else
+                                    <a class="btn btn-default btn-sm" href="{{ route("student.admission.letter") }}"
+                                       target="_blank"><i class="fa fa-print"></i> Print Admission Letter</a>
+                                @endif
+                            @endif
+                            @if(!$user->wallet_number )
+                                <a class="btn btn-info btn-sm pull-right" href="{{ route("student.abumfb.create") }}">
+                                    <i class="fa fa-bank"></i> Create ABUMFB Wallet</a>
+                            @endif
+
+                            @if($response == 'not-applied' || $response == 'has-documents')
+                                <a class="btn btn-success" href="/notification/documents">View documents</a>
+                            @elseif($response == 'has-no-documents')
+                                <a class="btn btn-warning" href="/notification/documents">Upload documents</a>
+                            @endif
+                            <hr>
+                        </div>
+                        <div class="panel-group accordion-theme- accordion-icon-left" id="accordion5" role="tablist"
+                             aria-multiselectable="true">
+                            <div class="panel panel-success btn-flat">
+                                <div class="panel-heading bg-success" role="tab" id="headingOne5">
+                                    <h5 class="panel-title">
+                                        <a role="button" data-toggle="collapse" data-parent="#accordion5"
+                                           href="#collapseOne5" aria-expanded="true" aria-controls="collapseOne5">
+                                            History
+                                        </a>
+                                    </h5>
+                                </div>
+                                <div id="collapseOne5" class="panel-collapse collapse in" role="tabpanel"
+                                     aria-labelledby="headingOne5">
+                                    <div class="panel-body">
+                                        <div class="table-responsive">
+                                            <table class="table table-hover">
+                                                <thead>
+                                                <tr>
+                                                    <th>S/N</th>
+                                                    <th>Session</th>
+                                                    <th>Programme</th>
+                                                    <th>level</th>
+                                                    <th>School Fees</th>
+                                                    <th>Course Registration</th>
+                                                    <th>Grad. Status</th>
+                                                    <th>Disciplinary Status</th>
+                                                </tr>
+                                                </thead>
+                                                <tbody>
+                                                @foreach($user->payableSessions(1) as $sessions)
+                                                    <tr>
+                                                        <td>{{$loop->index+1}}</td>
+                                                        <td>{{$sessions->session}}</td>
+                                                        <td>{{ \App\Models\Programme::find($sessions->programme_id)->name }}</td>
+                                                        <td>{{ $user->sessionLevel($sessions->session)->short_name }}</td>
+                                                        <td>{{ $user->feesClearedForSession($sessions->session)?"Paid":"Not Paid" }}</td>
+                                                        <td>{{ count(\App\Models\CourseRegistration::getCourseRegisteredByStudent($user, $sessions->session))?"Registered":"Not Registered" }}</td>
+                                                        <td>{{$user->sessionReg()->where(["session"=>$sessions->session])->first()->graduation_status}}</td>
+                                                        @php
+                                                            $dscp = $user->disciplinaryCases()->where(["session"=>$sessions->session])->first();
+                                                        @endphp
+                                                        <td>{{$dscp?$dscp->nature:""}}</td>
+
+                                                    </tr>
+                                                @endforeach
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="panel-group accordion-theme- accordion-icon-left" id="accordion6" role="tablist"
+                             aria-multiselectable="true">
+                            <div class="panel panel-success btn-flat">
+                                <div class="panel-heading bg-success" role="tab" id="headingOne5">
+                                    <h5 class="panel-title">
+                                        <a role="button" data-toggle="collapse" data-parent="#accordion6"
+                                           href="#collapseOne6" aria-expanded="true" aria-controls="collapseOne6">
+                                            Inter-faculty Transfer
+                                        </a>
+                                    </h5>
+                                </div>
+                                <div id="collapseOne6" class="panel-collapse collapse in" role="tabpanel"
+                                     aria-labelledby="headingOne5">
+                                    <div class="panel-body">
+                                        <div class="table-responsive">
+                                            <table class="table table-hover">
+                                                <thead>
+                                                <tr>
+                                                    <th>S/N</th>
+                                                    <th>Course Applied</th>
+                                                    <th>Session</th>
+                                                    <th>Action</th>
+                                                </tr>
+                                                </thead>
+                                                <tbody>
+                                                @foreach($candidateForms as $cfm)
+                                                    @php
+                                                        $candidateFormSettings = $cfm->formSetting()->first();
+                            //                        @endphp
+                                                    @if($candidateFormSettings)
+                                                        <tr>
+                                                            <td>{{$loop->index+1}}</td>
+                                                            <td>{{ $cfm?$cfm->programme()->name:"" }}</td>
+                                                            <td>{{$candidateFormSettings->session}}</td>
+                                                            <td>
+                                                                @if($cfm->isPaid())
+                                                                    @if(intval($cfm->jamb_score))
+                                                                        <a class="btn btn-info"
+                                                                           href="{{ route("transfers.interfaculty.form.buy.form.post",[$cfm->id]) }}">View
+                                                                            Transaction Slip <i class="fa fa-print"></i></a>
+                                                                        <a class="btn btn-info"
+                                                                           href="{{ route("transfers.interfaculty.form.completed",[$cfm->id]) }}">View
+                                                                            Completed Form <i
+                                                                                class="fa fa-print"></i></a>
+
+                                                                        <form
+                                                                            action="{{route('transfers.interfaculty.updateform')}}"
+                                                                            method="post">
+                                                                            @csrf
+                                                                            @php
+                                                                                $progLists = \App\Models\FormSetting::where(["session"=>$candidateFormSettings->session,"candidate_form_type_id"=>10])
+                                                                                            //->whereDate("end_date","<=",today())
+                                                                                            ->pluck('programme_id');
+                                                                                $programmesXZ= \App\Models\Programme::whereIn("id",$progLists)->get();
+                                                                            @endphp
+                                                                            <input type="hidden" name="session"
+                                                                                   value="{{$candidateFormSettings->session}}">
+                                                                            <input type="hidden" name="cfm"
+                                                                                   value="{{$cfm->id}}">
+                                                                            <div class="form-group">
+                                                                                <label for="">Programme</label>
+                                                                                <select name="programme_id" id=""
+                                                                                        class="form-control">
+                                                                                    <option value="">Select</option>
+                                                                                    @foreach($programmesXZ as $prgs)
+                                                                                        <option
+                                                                                            value="{{$prgs->id}}">{{$prgs->name}}</option>
+                                                                                    @endforeach
+                                                                                </select>
+                                                                                <button value="">Change Programme
+                                                                                </button>
+                                                                            </div>
+                                                                        </form>
+                                                                    @else
+                                                                        <form
+                                                                            action="{{route('student.update.matric.post',[$cfm->id])}}"
+                                                                            method="post">
+                                                                            @csrf
+                                                                            <input type="text" name="cgpa"
+                                                                                   class="form-control"
+                                                                                   value="{{ $cfm->jamb_score }}"
+                                                                                   placeholder="Enter Current CGPA">
+                                                                            <button class="btn btn-success btn-sm">
+                                                                                Update
+                                                                            </button>
+                                                                        </form>
+                                                                    @endif
+                                                                @else
+                                                                    Not Paid
+                                                                @endif
+
+                                                            </td>
+
+                                                        </tr>
+                                                    @endif
+                                                @endforeach
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+
+                        @if(count($resitSession))
+                            <div class="panel-group accordion-theme- accordion-icon-left" id="accordion7" role="tablist"
+                                 aria-multiselectable="true">
+                                <div class="panel panel-success btn-flat">
+                                    <div class="panel-heading bg-success" role="tab" id="headingOne7">
+                                        <h5 class="panel-title">
+                                            <a role="button" data-toggle="collapse" data-parent="#accordion7"
+                                               href="#collapseOne7" aria-expanded="true" aria-controls="collapseOne7">
+                                                Resit
+                                            </a>
+                                        </h5>
+                                    </div>
+                                    <div id="collapseOne7" class="panel-collapse collapse in" role="tabpanel"
+                                         aria-labelledby="headingOne5">
+                                        <div class="panel-body">
+                                            <div class="table-responsive">
+                                                <table class="table table-hover">
+                                                    <thead>
+                                                    <tr>
+                                                        <th>S/N</th>
+                                                        <th>Session</th>
+                                                        <th>Status</th>
+                                                        <th>View</th>
+                                                    </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                    @foreach($resitSession as $rst)
+                                                        @php
+                                                            $status = $rst->amount_due <= $rst->amount_paid;
+                                                        @endphp
+                                                        <tr>
+                                                            <td>{{$loop->index+1}}</td>
+                                                            <td>{{ $rst->session }}</td>
+                                                            <td>{{ $status?"Paid":"Not Paid"}}</td>
+                                                            <td>
+                                                                <a href="{{ route('resit.view',[$rst->session]) }}"
+                                                                   class="btn btn-sm btn-primary">
+                                                                    View
+                                                                </a>
+                                                            </td>
+
+                                                        </tr>
+                                                    @endforeach
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        @endif
+                        <div class="panel-group accordion-theme- accordion-icon-left" id="accordion77" role="tablist"
+                             aria-multiselectable="true">
+                            <div class="panel panel-success btn-flat">
+                                <div class="panel-heading bg-success" role="tab" id="headingOne7">
+                                    <h5 class="panel-title">
+                                        <a role="button" data-toggle="collapse" data-parent="#accordion77"
+                                           href="#collapseOne77" aria-expanded="true" aria-controls="collapseOne77">
+                                            Documents upload
+                                        </a>
+                                    </h5>
+                                </div>
+                                <div id="collapseOne77" class="panel-collapse collapse in" role="tabpanel"
+                                     aria-labelledby="headingOne5">
+                                    <div class="panel-body">
+
+                                        <div class="row">
+
+                                            @if($response=='has-no-documents')
+                                                <div class="col-md-12">
+                                                    <h5 class="alert alert-danger">The university requests you to upload
+                                                        your documents. Click the button below to upload them.</h5>
+                                                    <p class="text-left text-danger">
+                                                        <a class=" btn-sm btn-success" href="/notification/documents">Upload
+                                                            documents</a>
+                                                    </p>
+                                                </div>
+                                            @endif
+
+                                            @if($response=='has-documents' || $response=='not-applied')
+                                                <div class="col-md-12">
+                                                    <h5>Your documents have been uploaded successfully. Click the button
+                                                        below to view them or upload additional documents.</h5>
+                                                    <p class="text-left">
+                                                        <a class="btn btn-sm btn-success"
+                                                           href="/notification/documents">View documents</a>
+                                                    </p>
+                                                </div>
+                                            @endif
+
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+@endsection

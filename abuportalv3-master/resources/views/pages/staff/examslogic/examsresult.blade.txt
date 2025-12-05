@@ -1,0 +1,82 @@
+@extends("layout.staff.master")
+
+@section("pageTitle")
+    upload: Candidate Exams Score
+@endsection
+
+@section("content")
+    <section>
+        <div class="container pt-30 pb-30 pl-30 pr-30">
+            <div class="row">
+                <div class="col-md-12 pull-right flip sm-pull-none">
+                    <div class="blog-posts">
+                        <div class="col-md-12">
+
+                            @if ($message = Session::get('success'))
+                                <div class="alert alert-success" role="alert">
+                                    <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                                    {{ $message }}
+                                </div>
+                            @endif
+                            @if ($message = Session::get('error'))
+                                <div class="alert alert-danger" role="alert">
+                                    <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                                    {{ $message }}
+                                </div>
+                            @endif
+                            <section class="bg-white-f7 pr-30 pl-30 pb-30" style="border-left:2px solid #43B14B;border-right:2px solid #43B14B;">
+                                <div class="row">
+                                    <h2 class="display-6 text-center">Upload Exams Result for Students</h2>
+                                    <div class="double-line-bottom-centered-theme-colored-2"></div>
+                                    <div class="col-md-8 col-md-offset-2">
+                                        <form action="{{route("staff.student.uploadexamsresult.create")}}" method="post" enctype="multipart/form-data">
+                                            <div class="row">
+
+                                                <div class="col-md-12 mb-4">
+                                                    <h3 style="color:red !important;">Upload Format:
+
+                                                    </h3>
+                                                    <p>
+                                                        <small style="color:red !important;">The results must be uploaded as <span style="font-weight:bold;">EXACTLY </span> downloaded from ExamsLOGIC
+                                                        </small>
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <div class="card-body">
+
+                                                @csrf
+                                                <div class="form-row">
+                                                    <div class="col-md-6 mb-20">
+                                                        <input type="file" name="filename" class="form-control" required/>
+                                                    </div>
+
+                                                    <div class="col-md-12 mb-20">
+                                                        <button type="submit" id="submitbtn" class="btn btn-success btn-flat text-right">Upload
+                                                        </button>
+                                                    </div>
+                                                </div>
+
+                                                <div class="form-row">
+
+
+                                                </div>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </section>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+@endsection
+
+@section("js")
+    <script>
+
+    </script>
+@endsection

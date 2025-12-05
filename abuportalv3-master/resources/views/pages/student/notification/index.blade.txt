@@ -1,0 +1,42 @@
+@extends("layout.student.master")
+
+@section('content')
+    <section class="">
+        <div class="main-section">
+            <!-- Page Section -->
+            <div class="page-section"
+                 style="margin-top: 0px;margin-bottom: 0px;border-top: 0px #e0e0e0 solid;border-bottom: 0px #e0e0e0 solid;">
+                <div style="margin: 0 auto;">
+                    <span style="font-size: 43px;font-weight: bolder;">{{$message->header}}</span>
+                </div>
+                <p class="text-center" style="font-weight: bolder;color:maroon;">
+                    I {{ $student->getFullName() }} ({{$student->matric_number}}) undertake to observe strictly the following covid-19 protocols as required by Ahmadu Bello University, Zaria.
+                </p>
+                <div style="height: 320px;overflow-y: scroll;margin: 0 auto; border: 1px solid #999;width:80%;padding-left: 24px;">
+                    @php
+                        echo $message->body;
+                    @endphp
+                </div>
+                @if($message->message_type=="answer")
+                    <div class="row mt-10 pb-10">
+                        <div class="col-md-1"></div>
+                        <div class="col-md-10">
+
+                            <form action="{{ route('notification.accepted') }}" method="post">
+
+                                @csrf
+                                <input type="hidden" name="conditional_message_id" value="{{$message->id}}">
+                                <p class="text-center">
+                                    <button class="btn btn-primary btn-flat">Accept</button>
+                                </p>
+                            </form>
+
+                        </div>
+                    </div>
+
+                @endif
+                </div>
+
+    </section>
+
+@endsection

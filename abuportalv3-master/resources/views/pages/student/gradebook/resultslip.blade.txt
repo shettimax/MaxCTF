@@ -1,0 +1,173 @@
+@extends("layout.student.master")
+
+@section("content")
+@php
+$student= Auth::user();
+@endphp
+@if($results)@endif
+<section class="">
+    <div class="main-section">
+        <div class="container" style="padding: 10px 25px;box-shadow: 0 0 5px rgba(0,0,0,0.2);background-color: #fff;">
+            <div class="row">
+                <div class="col-md-1"></div>
+                <div class="col-md-9" style="padding: 10px 25px;border-radius:0;" id="printId">
+
+                    <table style='margin-bottom:0px; width:600px;' border='0'>
+                        <tr>
+                            <td width='100px'>
+                                <img src={{asset('images/logo-wide.png')}} width='90px' height='73'>
+                            </td>
+                            <td colspan='4'>
+                                <p align='center'><span class="font-18 font-weight-bold">
+                                        DEPARTMENT OF {{strtoupper($student->department()->name)}}<br />
+                                        AHMADU BELLO UNIVERSITY, ZARIA</span><br />
+                                    <span class="font-12 font-italic">STUDENT'S STATEMENT OF RESULT</span>
+                                    <br />
+                                    <span class="font-italic font-12">
+                                        <i><b>This is not a transcript</b></i>
+                                    </span>
+                                </p>
+                            </td>
+                            <td>
+                                <img src="{{ route('studentbiodata.photoupload',[time()]) }}" width='80' height='72' />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Reg.No.:</td>
+                            <td>{{$student->matric_number}}</td>
+                            <td colspan='4'>Name: {{$student->getFullname()}}</td>
+                        </tr>
+                        <tr>
+                            <td>Programme.:</td>
+                            <td>{{isset($student->programme()->name)?$student->programme()->name:""}}</td>
+                            <td>Session: {{ Request::route("session") }}</td>
+                            <td>Level: {{ $student->sessionLevel($session)->name  }}</td>
+                        </tr>
+                    </table>
+                    <div style="width: 400px">
+                        @if($results)
+                        <table border='1' cellpadding='0' cellspacing='0' style='border-collapse: collapse' width='600'
+                            bordercolorlight='#000000' bordercolordark='#000000'>
+                            <thead bgcolor='#C0C0C0'>
+                                <tr>
+                                    <th colspan=7 class="font-2"> Semester</th>
+                                </tr>
+                                <tr>
+                                    <th class="font-2">#</th>
+                                    <th class="font-2">Course Code</th>
+                                    <th class="font-2">Course Title</th>
+                                    <th class="font-2"> Unit</th>
+                                    <th class="font-2">Grade</th>
+                                    <th class="font-2">Total Point</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {{--count($results)--}}
+                                @foreach($results as $key=>$value)
+                                @foreach ($value['data'] as $result)
+                                <tr>
+                                    <td>{{ $loop->index+1 }}</td>
+                                    <td>{{ $result->coursecode }}</td>
+                                    <td>{{ $result->coursetitle }}</td>
+                                    <td>{{ $result->units }}</td>
+                                    <td>{{ ($result->total==1)?"Absent":$result->grade }}</td>
+                                    <td>{{ $result->point*$result->units }}</td>
+                                </tr>
+
+                                @endforeach
+                                @foreach($value['studentlevel'] as $key=>$studentlevel)
+                                <table border="1" cellspacing="0" cellpadding="0" width='600' bordercolorlight="#000000"
+                                    bordercolordark="#000000" style="border-collapse: collapse">
+                                    <tr bgcolor="#C0C0C0">
+                                        <td width="77">&nbsp;</td>
+                                        <td width="61" align="center">TCUR</td>
+                                        <td width="49" align="center">TCUE</td>
+                                        <td width="39" align="center">TCP</td>
+                                        <td width="46" align="center">GPA</td>
+                                        <td align="center">Remark/Outstanding Courses</td>
+                                    </tr>
+                                    <tr>
+                                        <td width="77" height="22">Current</td>
+                                        <td width="61" height="22">{{$studentlevel->tcur}}</td>
+                                        <td width="49" height="22">{{$studentlevel->tcue}}</td>
+                                        <td width="39" height="22">{{$studentlevel->tcp}}</td>
+                                        <td width="46" height="22">{{$studentlevel->gpa}}</td>
+                                        <td rowspan="3"> {{$studentlevel->remark}},{{$studentlevel->carry_over}}</td>
+                                    </tr>
+                                    <tr>
+                                        @php
+                                        $pcgpa=$studentlevel->ptcur?$studentlevel->ptcp/$studentlevel->ptcur:0;
+                                        @endphp
+                                        <td width="77">Previous</td>
+                                        <td width="61">{{$studentlevel->ptcur}}</td>
+                                        <td width="49">{{$studentlevel->ptcue}}</td>
+                                        <td width="39">{{$studentlevel->ptcp}}</td>
+                                        <td width="46">{{$pcgpa}}</td>
+                                    </tr>
+                                    @php
+                                    $ctcue=$studentlevel->tcue + $studentlevel->ptcue;
+                                    $ctcur=$studentlevel->tcur + $studentlevel->ptcur;
+                                    $ctcp=$studentlevel->tcp + $studentlevel->ptcp;
+                                    $ccgpa=$ctcur?$ctcp/$ctcur:0;
+                                    @endphp
+                                    <tr>
+                                        <td width="77" height="23">Cumulative</td>
+                                        <td width="61" height="23">{{$ctcur}}</td>
+                                        <td width="49" height="23">{{$ctcue}}</td>
+                                        <td width="39" height="23">{{$ctcp}}</td>
+                                        <td width="46" height="23">{{number_format($ccgpa,2)}}</td>
+                                    </tr>
+                                </table>
+                                @endforeach
+                                @endforeach
+                                @else
+                                <div class="alert alert-info">
+                                    <h4>Results not available</h4>
+                                </div>
+                                @endif
+                            </tbody>
+                        </table>
+                    </div>
+
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-4"></div>
+                <div class="col-md-4">
+                    <button class="btn btn-default" id="print">Print</button>
+                </div>
+                <div class="col-md-4"></div>
+            </div>
+
+        </div>
+    </div>
+</section>
+@endsection
+@section("js")
+<script>
+$(function() {
+    $("#print").on("click", function() {
+        PrintElem("printId");
+
+    });
+});
+
+function PrintElem(elem) {
+    var mywindow = window.open('', 'PRINT', 'height=400,width=600');
+
+    mywindow.document.write('<html><head><title>' + document.title + '</title>');
+    mywindow.document.write('</head><body >');
+    // mywindow.document.write('<h1>' + document.title  + '</h1>');
+    mywindow.document.write(document.getElementById(elem).innerHTML);
+    mywindow.document.write('</body></html>');
+
+    mywindow.document.close(); // necessary for IE >= 10
+    mywindow.focus(); // necessary for IE >= 10*/
+
+    mywindow.print();
+    mywindow.close();
+
+    return true;
+}
+</script>
+@endsection

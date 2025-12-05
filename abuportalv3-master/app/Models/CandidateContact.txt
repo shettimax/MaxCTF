@@ -1,0 +1,19 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class CandidateContact extends Model
+{
+
+    public  static $rules = [
+        "gsm"=>"required|min:6|max:25",
+        "nok_name"=>"required|min:2",
+        "relationship"=>"required|in:Parent,Spouse,Guardian,Sibling,Others",
+        "nok_gsm"=>"required|min:6|max:25",
+        "current_contact"=>"required|min:4",
+    ];
+
+    protected $guarded = [];
+}

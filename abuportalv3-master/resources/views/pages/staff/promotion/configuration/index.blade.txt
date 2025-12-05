@@ -1,0 +1,276 @@
+@extends('layout.staff.master')
+
+@section('title', 'Promotion Configuration Dashboard')
+
+@section('content')
+<section>
+<div class="promotion-configuration-wrapper">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-12">
+                <div class="page-title-box">
+                    <div class="page-title-right">
+                        <ol class="breadcrumb m-0">
+                            <li class="breadcrumb-item"><a href="{{ route('staff.dashboard') }}">Dashboard</a></li>
+                            <li class="breadcrumb-item"><a href="{{ route('promotion') }}">Promotion</a></li>
+                            <li class="breadcrumb-item active">Configuration</li>
+                        </ol>
+                    </div>
+                    <h4 class="page-title">Promotion Configuration Dashboard</h4>
+                </div>
+            </div>
+        </div>
+
+    <div class="row">
+        <div class="col-xl-3 col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h5 class="text-muted fw-normal mt-0" title="Promotion Exercises">Total Exercises</h5>
+                            <h3 class="mt-3 mb-3">{{ $exercises->count() }}</h3>
+                        </div>
+                        <div class="avatar-sm">
+                            <span class="avatar-title bg-soft-primary rounded">
+                                <i class="fas fa-calendar-alt font-20 text-primary"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h5 class="text-muted fw-normal mt-0" title="Current Exercise">Current Exercise</h5>
+                            <h3 class="mt-3 mb-3">{{ $currentExercise ? $currentExercise->year : 'None' }}</h3>
+                        </div>
+                        <div class="avatar-sm">
+                            <span class="avatar-title bg-soft-success rounded">
+                                <i class="fas fa-play-circle font-20 text-success"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h5 class="text-muted fw-normal mt-0" title="Active Steps">Active Steps</h5>
+                            <h3 class="mt-3 mb-3">{{ \App\Models\PromotionStep::active()->count() }}</h3>
+                        </div>
+                        <div class="avatar-sm">
+                            <span class="avatar-title bg-soft-info rounded">
+                                <i class="fas fa-list-ol font-20 text-info"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h5 class="text-muted fw-normal mt-0" title="Statistics">Statistics</h5>
+                            <h3 class="mt-3 mb-3">
+                                <a href="{{ route('promotion.configuration.statistics') }}" class="text-decoration-none">
+                                    View
+                                </a>
+                            </h3>
+                        </div>
+                        <div class="avatar-sm">
+                            <span class="avatar-title bg-soft-warning rounded">
+                                <i class="fas fa-chart-bar font-20 text-warning"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h4 class="header-title">Quick Actions</h4>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 col-lg-3 mb-3">
+                            <div class="card border">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-calendar-plus fa-3x text-primary mb-3"></i>
+                                    <h5>Manage Exercises</h5>
+                                    <p class="text-muted">Create and manage promotion exercises for each year</p>
+                                    <a href="{{ route('promotion.configuration.exercises') }}" class="btn btn-primary btn-sm">
+                                        Manage Exercises
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6 col-lg-3 mb-3">
+                            <div class="card border">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-list-ol fa-3x text-success mb-3"></i>
+                                    <h5>Manage Steps</h5>
+                                    <p class="text-muted">Configure promotion workflow steps</p>
+                                    <a href="{{ route('promotion.configuration.steps') }}" class="btn btn-success btn-sm">
+                                        Manage Steps
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6 col-lg-3 mb-3">
+                            <div class="card border">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-cogs fa-3x text-info mb-3"></i>
+                                    <h5>Step Configuration</h5>
+                                    <p class="text-muted">Configure steps for specific exercises</p>
+                                    @if($currentExercise)
+                                        <a href="{{ route('promotion.configuration.configurations', $currentExercise) }}" class="btn btn-info btn-sm">
+                                            Configure Steps
+                                        </a>
+                                    @else
+                                        <span class="text-muted">No active exercise</span>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6 col-lg-3 mb-3">
+                            <div class="card border">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-chart-line fa-3x text-warning mb-3"></i>
+                                    <h5>View Statistics</h5>
+                                    <p class="text-muted">Monitor promotion progress and statistics</p>
+                                    <a href="{{ route('promotion.configuration.statistics') }}" class="btn btn-warning btn-sm">
+                                        View Statistics
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if($currentExercise)
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h4 class="header-title">Current Exercise: {{ $currentExercise->title }} ({{ $currentExercise->year }})</h4>
+                        <span class="badge bg-{{ $currentExercise->isActive() ? 'success' : 'secondary' }}">
+                            {{ $currentExercise->isActive() ? 'Active' : 'Inactive' }}
+                        </span>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Start Date:</strong> {{ $currentExercise->start_date->format('M d, Y') }}</p>
+                            <p><strong>End Date:</strong> {{ $currentExercise->end_date->format('M d, Y') }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Status:</strong> {{ $currentExercise->status }}</p>
+                            <p><strong>Days Remaining:</strong>
+                                @if($currentExercise->isOpen())
+                                    {{ \Carbon\Carbon::now()->diffInDays($currentExercise->end_date, false) }} days
+                                @else
+                                    Closed
+                                @endif
+                            </p>
+                        </div>
+                    </div>
+
+                    @if($currentExercise->description)
+                        <div class="mt-3">
+                            <strong>Description:</strong>
+                            <p class="text-muted">{{ $currentExercise->description }}</p>
+                        </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h4 class="header-title">Recent Exercises</h4>
+                        <a href="{{ route('promotion.configuration.exercises') }}" class="btn btn-primary btn-sm">View All</a>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-centered table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Year</th>
+                                    <th>Title</th>
+                                    <th>Duration</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse($exercises->take(5) as $exercise)
+                                <tr>
+                                    <td>{{ $exercise->year }}</td>
+                                    <td>{{ $exercise->title }}</td>
+                                    <td>
+                                        {{ $exercise->start_date->format('M d') }} - {{ $exercise->end_date->format('M d, Y') }}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{{ $exercise->status === 'Active' ? 'success' : ($exercise->status === 'Completed' ? 'info' : 'secondary') }}">
+                                            {{ $exercise->status }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <a href="{{ route('promotion.configuration.configurations', $exercise) }}" class="btn btn-sm btn-outline-primary">
+                                            Configure
+                                        </a>
+                                    </td>
+                                </tr>
+                                @empty
+                                <tr>
+                                    <td colspan="5" class="text-center">No promotion exercises found</td>
+                                </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        </div>
+        </div>
+    </div>
+</div>
+</section>
+@endsection
+
+@section('js')
+<script>
+    $(document).ready(function() {
+        // Add any JavaScript functionality here
+    });
+</script>
+@endsection

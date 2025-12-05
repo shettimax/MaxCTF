@@ -1,0 +1,55 @@
+<?php
+
+namespace App\Http\Controllers\Staff;
+
+use App\Models\Employee;
+use App\Models\EmployeePosting;
+use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+
+class EmployeePostingController extends Controller
+{
+    public function __construct()
+    {
+        return $this->middleware('auth:staff');
+    }
+
+    public function index(){
+        try{
+            $employee = Employee::find(Auth::user()->employee_id);
+            return view('pages.staff.profile.posting', compact('employee'));
+        }catch(\Exception $e){
+            return redirect()->back()->with('error', $e->getMessage());
+        }
+    }
+
+    public function storePosting(Request $request){
+        try{
+            $this->validate($request, [
+                'designation'=> 'required'
+            ]);
+            $posting = EmployeePosting::find($request->posting_id);
+            if(!$posting)
+                $posting = new EmployeePosting();
+            $posting->employee_id = $request->employee_id;
+            $posting->designation = $request->designation;
+            $posting->department_id = $request->department;
+            $posting->from = $request->from;
+            $posting->to = $request->to;
+            $posting->save();
+            return redirect()->back()->with('success', 'Done!');
+        }catch(\Exception $e){
+            return redirect()->back()->with('error', $e->getMessage());
+        }
+    }
+
+    public function deletePosting(EmployeePosting $employeePosting){
+        try{
+            EmployeePosting::destroy($employeePosting->id);
+            return redirect()->back()->with('success', 'Done!');
+        }catch(\Exception $e){
+            return redirect()->back()->with('error', $e->getMessage());
+        }
+    }
+}

@@ -1,0 +1,438 @@
+<?php
+/**
+ * External File Server - Upload Handler
+ *
+ * This script handles file uploads from the ABU Portal Laravel application
+ * Place this file on your Apache server and configure the routes accordingly
+ */
+
+// Enable error reporting for debugging (disable in production)
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
+// Set content type to JSON
+header('Content-Type: application/json');
+
+// Allow CORS (adjust domains as needed)
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: POST, GET, DELETE, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type, Authorization');
+
+// Handle preflight OPTIONS request
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit();
+}
+
+// Configuration
+$config = [
+    'upload_dir' => '/var/www/uploads/', // Change this to your upload directory
+    'max_file_size' => 10 * 1024 * 1024, // 10MB
+    'allowed_extensions' => ['jpg', 'jpeg', 'png', 'pdf', 'xlsx', 'xls', 'csv'],
+    'api_key' => 'eyJ1c2VyX2lkIjoiMTIzNDUiLCJyb2xlIjoiYWRtaW4iLCJpYXQiOjE3MjM4OTY4MDAsImV4cCI6MTcyMzk4MzIwMH0.', // Change this to match your Laravel config
+    'log_file' => '/var/www/html/logs/upload.log'
+];
+
+// Create upload directory if it doesn't exist
+if (!is_dir($config['upload_dir'])) {
+    mkdir($config['upload_dir'], 0755, true);
+}
+
+// Create logs directory if it doesn't exist
+$logsDir = dirname($config['log_file']);
+if (!is_dir($logsDir)) {
+    mkdir($logsDir, 0755, true);
+}
+
+/**
+ * Log function
+ */
+function logMessage($message, $type = 'INFO') {
+    global $config;
+    $timestamp = date('Y-m-d H:i:s');
+    $logEntry = "[{$timestamp}] [{$type}] {$message}" . PHP_EOL;
+    file_put_contents($config['log_file'], $logEntry, FILE_APPEND | LOCK_EX);
+}
+
+/**
+ * Verify API key
+ */
+function verifyApiKey() {
+    global $config;
+
+    $headers = getallheaders();
+    $authHeader = isset($headers['Authorization']) ? $headers['Authorization'] : '';
+
+    if (empty($authHeader) || !preg_match('/Bearer\s+(.*)$/i', $authHeader, $matches)) {
+        return false;
+    }
+
+    $token = trim($matches[1]);
+    return $token === $config['api_key'];
+}
+
+/**
+ * Generate safe filename from original name, handling conflicts
+ */
+function getSafeFilename($originalName, $targetDir) {
+    // Sanitize the original filename
+    $filename = basename($originalName);
+    $filename = preg_replace('/[^a-zA-Z0-9._-]/', '_', $filename);
+
+    $fullPath = $targetDir . '/' . $filename;
+
+    // If file doesn't exist, use original name
+    if (!file_exists($fullPath)) {
+        return $filename;
+    }
+
+    // If file exists, add numbered suffix
+    $pathInfo = pathinfo($filename);
+    $name = $pathInfo['filename'];
+    $extension = isset($pathInfo['extension']) ? '.' . $pathInfo['extension'] : '';
+
+    $counter = 1;
+    do {
+        $newFilename = $name . '_' . $counter . $extension;
+        $fullPath = $targetDir . '/' . $newFilename;
+        $counter++;
+    } while (file_exists($fullPath));
+
+    return $newFilename;
+}
+
+/**
+ * Handle file upload
+ */
+function handleUpload() {
+    global $config;
+
+    if (!verifyApiKey()) {
+        http_response_code(401);
+        echo json_encode(['error' => 'Unauthorized - Invalid API key']);
+        return;
+    }
+
+    if (!isset($_FILES['file']) || $_FILES['file']['error'] !== UPLOAD_ERR_OK) {
+        http_response_code(400);
+        echo json_encode(['error' => 'No file uploaded or upload error']);
+        return;
+    }
+
+    $file = $_FILES['file'];
+    $uploadedFileName = $file['name'];
+    $fileSize = $file['size'];
+    $tmpPath = $file['tmp_name'];
+
+    // Get additional parameters
+    $path = $_POST['path'] ?? '';
+    $options = json_decode($_POST['options'] ?? '{}', true);
+
+    // Use original_name from options if provided, otherwise fallback to uploaded filename
+    $originalName = isset($options['original_name']) ? $options['original_name'] : $uploadedFileName;
+
+    // Validate file size
+    if ($fileSize > $config['max_file_size']) {
+        http_response_code(400);
+        echo json_encode(['error' => 'File too large. Maximum size: ' . ($config['max_file_size'] / 1024 / 1024) . 'MB']);
+        return;
+    }
+
+    // Get file extension from original name
+    $extension = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
+    if (!in_array($extension, $config['allowed_extensions'])) {
+        http_response_code(400);
+        echo json_encode(['error' => 'File type not allowed. Allowed types: ' . implode(', ', $config['allowed_extensions'])]);
+        return;
+    }
+
+    // Create directory structure if it doesn't exist
+    $fullPath = $config['upload_dir'] . $path;
+    $dir = dirname($fullPath);
+    if (!is_dir($dir)) {
+        mkdir($dir, 0755, true);
+    }
+
+    // Use original filename with conflict handling
+    $filename = getSafeFilename($originalName, $dir);
+    $fullPath = $dir . '/' . $filename;
+
+    // Move uploaded file
+    if (move_uploaded_file($tmpPath, $fullPath)) {
+        // Generate external ID
+        $externalId = uniqid('file_', true);
+
+        // Log successful upload
+        logMessage("File uploaded successfully: '{$uploadedFileName}' as '{$originalName}' -> {$fullPath} (Size: {$fileSize} bytes, External ID: {$externalId})");
+
+        // Return success response
+        echo json_encode([
+            'success' => true,
+            'id' => $externalId,
+            'url' => getFileUrl($path, $filename),
+            'path' => $path . '/' . $filename,
+            'size' => $fileSize,
+            'mime_type' => mime_content_type($fullPath),
+            'original_name' => $originalName,
+            'uploaded_at' => date('c')
+        ]);
+    } else {
+        logMessage("Failed to move uploaded file: {$originalName} ({$tmpPath}) -> {$fullPath}", 'ERROR');
+        http_response_code(500);
+        echo json_encode(['error' => 'Failed to save uploaded file']);
+    }
+}
+
+/**
+ * Get file URL
+ */
+function getFileUrl($path, $filename) {
+    $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http';
+    $host = $_SERVER['HTTP_HOST'];
+    $baseUrl = "{$protocol}://{$host}";
+
+    return "{$baseUrl}/uploads/{$path}/{$filename}";
+}
+
+/**
+ * Check if file exists
+ */
+function checkFileExists() {
+    global $config;
+
+    if (!verifyApiKey()) {
+        http_response_code(401);
+        echo json_encode(['error' => 'Unauthorized - Invalid API key']);
+        return;
+    }
+
+    $path = $_GET['path'] ?? '';
+    if (empty($path)) {
+        http_response_code(400);
+        echo json_encode(['error' => 'Path parameter required']);
+        return;
+    }
+
+    $fullPath = $config['upload_dir'] . $path;
+    $exists = file_exists($fullPath);
+
+    echo json_encode(['exists' => $exists]);
+}
+
+/**
+ * Get file URL
+ */
+function getFileUrlEndpoint() {
+    global $config;
+
+    if (!verifyApiKey()) {
+        http_response_code(401);
+        echo json_encode(['error' => 'Unauthorized - Invalid API key']);
+        return;
+    }
+
+    $path = $_GET['path'] ?? '';
+    if (empty($path)) {
+        http_response_code(400);
+        echo json_encode(['error' => 'Path parameter required']);
+        return;
+    }
+
+    $fullPath = $config['upload_dir'] . $path;
+    if (file_exists($fullPath)) {
+        $url = getFileUrl(dirname($path), basename($path));
+        echo json_encode(['url' => $url]);
+    } else {
+        http_response_code(404);
+        echo json_encode(['error' => 'File not found']);
+    }
+}
+
+/**
+ * Delete file
+ */
+function deleteFile() {
+    global $config;
+
+    if (!verifyApiKey()) {
+        http_response_code(401);
+        echo json_encode(['error' => 'Unauthorized - Invalid API key']);
+        return;
+    }
+
+    $path = $_POST['path'] ?? '';
+    if (empty($path)) {
+        http_response_code(400);
+        echo json_encode(['error' => 'Path parameter required']);
+        return;
+    }
+
+    $fullPath = $config['upload_dir'] . $path;
+    if (file_exists($fullPath)) {
+        if (unlink($fullPath)) {
+            logMessage("File deleted successfully: {$path}");
+            echo json_encode(['success' => true, 'message' => 'File deleted successfully']);
+        } else {
+            logMessage("Failed to delete file: {$path}", 'ERROR');
+            http_response_code(500);
+            echo json_encode(['error' => 'Failed to delete file']);
+        }
+    } else {
+        http_response_code(404);
+        echo json_encode(['error' => 'File not found']);
+    }
+}
+
+/**
+ * Get file metadata
+ */
+function getFileMetadata() {
+    global $config;
+
+    if (!verifyApiKey()) {
+        http_response_code(401);
+        echo json_encode(['error' => 'Unauthorized - Invalid API key']);
+        return;
+    }
+
+    $path = $_GET['path'] ?? '';
+    if (empty($path)) {
+        http_response_code(400);
+        echo json_encode(['error' => 'Path parameter required']);
+        return;
+    }
+
+    $fullPath = $config['upload_dir'] . $path;
+    if (file_exists($fullPath)) {
+        $stat = stat($fullPath);
+        $metadata = [
+            'size' => $stat['size'],
+            'mime_type' => mime_content_type($fullPath),
+            'created_at' => date('c', $stat['ctime']),
+            'modified_at' => date('c', $stat['mtime']),
+            'permissions' => substr(sprintf('%o', $stat['mode']), -4)
+        ];
+        echo json_encode($metadata);
+    } else {
+        http_response_code(404);
+        echo json_encode(['error' => 'File not found']);
+    }
+}
+
+// Route handling
+$requestMethod = $_SERVER['REQUEST_METHOD'];
+$requestUri = $_SERVER['REQUEST_URI'];
+$path = parse_url($requestUri, PHP_URL_PATH);
+
+// Extract endpoint from path - handle different routing scenarios
+$endpoint = '';
+if (strpos($path, '/api/upload') !== false) {
+    $endpoint = 'upload';
+} elseif (strpos($path, '/api/file/exists') !== false) {
+    $endpoint = 'exists';
+} elseif (strpos($path, '/api/file/url') !== false) {
+    $endpoint = 'url';
+} elseif (strpos($path, '/api/file/delete') !== false) {
+    $endpoint = 'delete';
+} elseif (strpos($path, '/api/file/metadata') !== false) {
+    $endpoint = 'metadata';
+} else {
+    // Fallback - try to get endpoint from query parameter or path
+    $endpoint = $_GET['endpoint'] ?? basename($path);
+}
+
+// Log the request for debugging
+logMessage("API Request: {$requestMethod} {$requestUri} -> endpoint: {$endpoint}");
+
+try {
+    switch ($endpoint) {
+        case 'upload':
+            if ($requestMethod === 'POST') {
+                handleUpload();
+            } else {
+                http_response_code(405);
+                echo json_encode(['error' => 'Method not allowed']);
+            }
+            break;
+
+        case 'exists':
+            if ($requestMethod === 'GET') {
+                checkFileExists();
+            } else {
+                http_response_code(405);
+                echo json_encode(['error' => 'Method not allowed']);
+            }
+            break;
+
+        case 'url':
+            if ($requestMethod === 'GET') {
+                getFileUrlEndpoint();
+            } else {
+                http_response_code(405);
+                echo json_encode(['error' => 'Method not allowed']);
+            }
+            break;
+
+        case 'delete':
+            if ($requestMethod === 'DELETE' || $requestMethod === 'POST') {
+                deleteFile();
+            } else {
+                http_response_code(405);
+                echo json_encode(['error' => 'Method not allowed']);
+            }
+            break;
+
+        case 'metadata':
+            if ($requestMethod === 'GET') {
+                getFileMetadata();
+            } else {
+                http_response_code(405);
+                echo json_encode(['error' => 'Method not allowed']);
+            }
+            break;
+
+        case 'status':
+        case 'upload_handler.php':
+        case '':
+            // Status endpoint or direct access
+            echo json_encode([
+                'status' => 'online',
+                'server' => 'External File Server',
+                'version' => '1.0',
+                'timestamp' => date('c'),
+                'endpoints' => [
+                    'POST /api/upload' => 'Upload files',
+                    'GET /api/file/exists' => 'Check if file exists',
+                    'GET /api/file/url' => 'Get file URL',
+                    'DELETE /api/file/delete' => 'Delete file',
+                    'GET /api/file/metadata' => 'Get file metadata'
+                ],
+                'request_info' => [
+                    'method' => $requestMethod,
+                    'uri' => $requestUri,
+                    'path' => $path,
+                    'detected_endpoint' => $endpoint
+                ]
+            ]);
+            break;
+
+        default:
+            http_response_code(404);
+            echo json_encode([
+                'error' => 'Endpoint not found',
+                'available_endpoints' => ['upload', 'exists', 'url', 'delete', 'metadata', 'status'],
+                'request_info' => [
+                    'method' => $requestMethod,
+                    'uri' => $requestUri,
+                    'path' => $path,
+                    'detected_endpoint' => $endpoint
+                ]
+            ]);
+            break;
+    }
+} catch (Exception $e) {
+    logMessage("Exception occurred: " . $e->getMessage(), 'ERROR');
+    http_response_code(500);
+    echo json_encode(['error' => 'Internal server error', 'message' => $e->getMessage()]);
+}
+?>

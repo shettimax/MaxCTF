@@ -1,0 +1,86 @@
+@extends('layout.student.master')
+
+@section('content')
+    <section class="">
+        <div class="main-section">
+            <div class="container" style="padding: 10px 25px;box-shadow: 0 0 5px rgba(0,0,0,0.2);background-color: #fff;">
+                <div class="social-box">
+                    <div class="container">
+                        <div class="row">
+                            <div class="col-lg-12 col-xs-12 text-center">
+                                <div class="box">
+
+                                    <h2>Other Service Charges</h2>
+                                    <table class="table table-bordered">
+                                        <tr>
+                                            <th>S/N</th>
+                                            <th>Service Charges</th>
+                                            <th>Action</th>
+                                        </tr>
+
+                                        @foreach($payItems as $payItem)
+                                            <tr>
+                                                <th>{{$loop->iteration}}</th>
+                                                <th>{{$payItem->item_name}}</th>
+                                                <th>
+                                                    <a class="btn btn-success btn-sm" href="{{ route("fees.others.osc.pay",[$payItem->id])}}">
+                                                        <i class="fa fa-credit-card text-white"></i>
+                                                        Pay
+                                                    </a>
+                                                    <a class="btn btn-info btn-sm"  href="{{ route("fees.others.osc.list",[$payItem->id])}}">
+                                                        <i class="fa fa-list-ul text-white"></i>
+                                                        View Payments
+                                                    </a>
+
+                                                </th>
+                                            </tr>
+                                        @endforeach
+                                    </table>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+@endsection
+
+@section('css')
+
+    <style class="cp-pen-styles">
+
+
+        .social-box .box {
+            background: #FFF;
+            border: 2px dashed #61bf79;
+            border-radius: 10px;
+            cursor: pointer;
+            margin: 20px 0;
+            padding: 40px 10px;
+            transition: all 0.5s ease-out;
+        }
+
+        .social-box .box:hover {
+            box-shadow: 0 0 6px #f8f5f9;
+        }
+
+        .social-box .box-text {
+            font-size: 15px;
+            line-height: 30px;
+            margin: 20px 0;
+        }
+
+        .social-box .box-btn a {
+            color: #fdfdfd;
+            font-size: 16px;
+            text-decoration: none;
+        }
+
+        .social-box .fa {
+            color: #61bf79;
+        }
+    </style>
+
+@endsection

@@ -1,0 +1,222 @@
+<?php
+
+namespace App\Http\Controllers\Staff;
+
+use App\Http\Controllers\Controller;
+use App\Models\PromotionRecomendation;
+use App\Models\Employee;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+
+class PromotionWithdrawalController extends Controller
+{
+    public function __construct()
+    {
+        $this->middleware(['auth:staff']);
+    }
+
+    /**
+     * Display the promotion withdrawal page
+     */
+    public function index()
+    {
+        $years = $this->getYears();
+        return view('pages.staff.promotion.withdrawal', compact('years'));
+    }
+
+    /**
+     * Search for promotion recommendations by personnel number and year
+     */
+    public function search(Request $request)
+    {
+        try {
+            $request->validate([
+                'personnel_no' => 'required|string',
+                'year' => 'required|integer'
+            ]);
+
+            $personnelNo = $request->personnel_no;
+            $year = $request->year;
+
+            Log::info('Promotion withdrawal search:', [
+                'personnel_no' => $personnelNo,
+                'year' => $year,
+                'searched_by' => Auth::id()
+            ]);
+
+            // Find employee by personnel number (case insensitive)
+            $employee = Employee::whereRaw('LOWER(personnel_no) = ?', [strtolower($personnelNo)])->first();
+
+            if (!$employee) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Employee not found with personnel number: ' . $personnelNo
+                ], 404);
+            }
+
+            // Find promotion recommendation that is council approved for the given year
+            $recommendation = PromotionRecomendation::where('personnel_no', $employee->personnel_no)
+                ->where('year', $year)
+                ->where('council_approval', 'Approved')
+                ->first();
+
+            if (!$recommendation) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No council approved promotion found for ' . $employee->personnel_no . ' in ' . $year
+                ], 404);
+            }
+
+            // Load relationships
+            $recommendation->load(['employee', 'rank']);
+
+            return response()->json([
+                'success' => true,
+                'recommendation' => $recommendation,
+                'employee' => $employee
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error in promotion withdrawal search:', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Error searching for promotion recommendation: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Generate withdrawal letter template
+     */
+    public function generateLetter(Request $request)
+    {
+        try {
+            $request->validate([
+                'recommendation_id' => 'required|exists:promotion_recomendations,id'
+            ]);
+
+            $recommendation = PromotionRecomendation::with(['employee', 'rank'])->find($request->recommendation_id);
+
+            if (!$recommendation) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Promotion recommendation not found'
+                ], 404);
+            }
+
+            // Generate the withdrawal letter template
+            $letter = $this->createWithdrawalLetter($recommendation);
+
+            return response()->json([
+                'success' => true,
+                'letter' => $letter,
+                'recommendation' => $recommendation
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error generating withdrawal letter:', [
+                'error' => $e->getMessage(),
+                'recommendation_id' => $request->recommendation_id
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Error generating withdrawal letter: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Process the withdrawal
+     */
+    public function withdraw(Request $request)
+    {
+        try {
+            $request->validate([
+                'recommendation_id' => 'required|exists:promotion_recomendations,id',
+                'withdrawal_letter' => 'required|string',
+                'withdrawal_reason' => 'nullable|string'
+            ]);
+
+            $recommendation = PromotionRecomendation::find($request->recommendation_id);
+
+            if (!$recommendation) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Promotion recommendation not found'
+                ], 404);
+            }
+
+            // Update the council approval status to 'Withdrawn'
+            $recommendation->council_approval = 'Withdrawn';
+            $recommendation->withdrawal_letter = $request->withdrawal_letter;
+            $recommendation->withdrawal_reason = $request->withdrawal_reason;
+            $recommendation->withdrawn_by = Auth::id();
+            $recommendation->withdrawn_at = now();
+
+            if ($recommendation->save()) {
+                Log::info('Promotion withdrawn successfully:', [
+                    'recommendation_id' => $recommendation->id,
+                    'personnel_no' => $recommendation->personnel_no,
+                    'year' => $recommendation->year,
+                    'withdrawn_by' => Auth::id()
+                ]);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Promotion has been successfully withdrawn'
+                ]);
+            }
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to withdraw promotion'
+            ], 500);
+
+        } catch (\Exception $e) {
+            Log::error('Error withdrawing promotion:', [
+                'error' => $e->getMessage(),
+                'recommendation_id' => $request->recommendation_id
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Error withdrawing promotion: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Create withdrawal letter template
+     */
+    private function createWithdrawalLetter($recommendation)
+    {
+        $employee = $recommendation->employee;
+        $personnelNo = $recommendation->personnel_no;
+        $recommendedRank = $recommendation->recommended_rank;
+        $currentDate = now()->format('d F Y');
+
+        $letter = "";
+        $letter .= "Please refer to our letter P. {$personnelNo} dated {$currentDate} notifying you of your promotion to the rank of {$recommendedRank}. I have been directed to inform you with regrets that the promotion is hereby withdrawn with immediate effect.\n\n";
+        $letter .= "This is because your appointment was re-designated from Senior Foreman to Works Superintendent on 5* August, 2020 as such, you are not due for the promotion which was issued in error.\n\n";
+        $letter .= "Yours faithfully,\n\n";
+        // $letter .= "Director of Human Resources";
+
+        return $letter;
+    }
+
+    /**
+     * Get available years
+     */
+    private function getYears()
+    {
+        $currentYear = date('Y');
+        $years = [];
+        for ($year = $currentYear; $year >= 2020; $year--) {
+            $years[] = $year;
+        }
+        return $years;
+    }
+}

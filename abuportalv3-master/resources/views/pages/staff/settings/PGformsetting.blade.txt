@@ -1,0 +1,419 @@
+@extends('layout.staff.master')
+
+@section('content')
+    <section>
+    <div class="main-section">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-md-12">
+                    <div class="card">
+                        <div class="card-body">
+                            @if (session('status'))
+                                <div class="alert alert-success" role="alert">
+                                    {{ session('status') }}
+                                </div>
+                            @endif
+                            @if (isset($errors))
+                                <ul>
+                                    @foreach($errors as $error)
+                                        <li>{{$error}}</li>
+                                    @endforeach
+                                </ul>
+                            @endif
+                            @if(Session::has('flash_message'))
+                                <div class="alert alert-success">
+                                    {{ Session::get('flash_message') }}
+                                </div>
+                            @endif
+                            @php
+                                $obj = new \App\Http\Controllers\Staff\CandidateFormSettingsController();
+                            @endphp
+                            <h3>Manage Opening and Closing of Forms (SPGS)</h3>
+                            <form action="{{route('pgsettings.store')}}" method="POST">
+                                @csrf
+                                <div class="form-row">
+                                <div class="col-md-3 mb-3">
+                        <label for="faculty">Faculty: </label>
+                        <select class="form-control  {{ $errors->has('faculty')?'is-invalid':'is-valid' }}"
+                                name="faculty" id="faculty" required>
+                            <option value="">Select...</option>
+                            @foreach(\App\Models\Faculty::where("id",">",0)->orderBy("name")->get()  as $faculty)
+                                                <option value="{{$faculty->id}}">{{$faculty->name}}</option>
+                          @endforeach
+                            
+                        </select>
+                        @if($errors->has('faculty'))
+                            <div class="invalid-feedback" style="color:red;">
+                                {{ $errors->first('faculty')}}
+                            </div>
+                        @endif
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="department">Department: </label>
+                        <select class="form-control"
+                                name="department" id="department" required>
+                            <option value="">Select...</option>
+                            <option value="%">All Departments</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="progtype">Programme Type:</label>
+                        <select id="progtype" name="progtype"
+                                class="form-control is-valid"
+                                required>
+                            <option value="">--select--</option>
+                            @foreach(\App\Models\ProgrammeType::where("prog_type_code","=","PG")->orderBy("prog_type_name")->get()  as $faculty)
+                                                <option value="{{$faculty->id}}">{{$faculty->name}}</option>
+                          @endforeach
+                        </select>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <label for="programme">Programme: </label>
+                        <select class="form-control"
+                                name="programme" id="programme" required>
+                            <option value="">Select...</option>
+                            <option value="all">All Programmes</option>
+                        </select>
+
+                    </div>
+                                    <div class="col-md-3 mb-3">
+                                        <label for="progtype">Form Type:</label>
+                                        <select class="form-control  {{ $errors->has('progtype')?'is-invalid':'is-valid' }}" name="progtype1" id="progtype1" required>
+                                            <option value="">Select...</option>
+                                            <option value="%">All Form Type</option>
+                                            @foreach(\App\Models\CandidateFormType::wherein("id",[13,14,15,16])->orderBy("name")->get()  as $formtype)
+                                                <option value="{{$formtype->id}}">{{$formtype->name}}</option>
+                                            @endforeach
+
+                                        </select>
+                                        @if($errors->has('progtype'))
+                                            <div class="invalid-feedback">
+                                                {{ $errors->first('progtype')}}
+                                            </div>
+                                        @endif
+                                    </div>
+                                </div><!-- end of form row-->
+
+                                <div class="form-row">                                
+                                    <div class="col-md-3 mb-3">
+                                        <label for="price">Form Price:</label>
+                                        <input type="text" class="form-control {{ $errors->has('price')?'is-invalid':'is-valid' }}" name="price" placeholder="Form Price" value="" required>
+                                        @if($errors->has('price'))
+                                            <div class="invalid-feedback">
+                                                {{ $errors->first('price')}}
+                                            </div>
+                                        @endif
+                                    </div>
+                                    <div class="col-md-3 mb-3">
+                                        <label for="form_session">Session:</label>
+                                        <select id="form_session" class="form-control {{ $errors->has('form_session')?'is-invalid':'is-valid' }}" size="" name="form_session" placeholder="Session" aria-label="Session" aria-describedby="basic-addon2" required>
+                                            <option value="">Session </option>
+                                            @foreach(range(date("Y"),date("Y")-4) as $year)
+                                                <option value="{{$year}}">{{$year}}/{{$year+1}}</option>
+                                            @endforeach
+                                        </select>
+                                        @if($errors->has('form_session'))
+                                            <div class="invalid-feedback">
+                                                {{ $errors->first('form_session')}}
+                                            </div>
+                                        @endif
+                                    </div>
+                                </div><!-- end of form row-->
+
+                                <div class="form-row">
+                                    <div class="col-md-3 mb-3">
+                                        <label for="sdate">Start Date:</label>
+                                        <input type="text" class="form-control {{ $errors->has('sdate')?'is-invalid':'is-valid' }}" name="sdate" id="sdate" placeholder="Start Date" value="" required>
+                                        @if($errors->has('sdate'))t
+                                        <div class="invalid-feedback">
+                                            {{ $errors->first('sdate')}}
+                                        </div>
+                                        @endif
+                                    </div>
+                                    <div class="col-md-3 mb-3">
+                                        <label for="ldate">Late Start Date:</label>
+                                        <input type="text" class="form-control {{ $errors->has('ldate')?'is-invalid':'is-valid' }}" name="ldate" id="ldate" placeholder="Last Start Date" value="" required>
+                                        @if($errors->has('ldate'))
+                                            <div class="invalid-feedback">
+                                                {{ $errors->first('ldate')}}
+                                            </div>
+                                        @endif
+                                    </div>
+                                    <div class="col-md-3 mb-3">
+                                        <label for="cdate">Closing Date:</label>
+                                        <input type="text" class="form-control {{ $errors->has('cdate')?'is-invalid':'is-valid' }}" name="cdate" id="cdate" placeholder="Closing Date" value="" required>
+                                        @if($errors->has('cdate'))
+                                            <div class="invalid-feedback">
+                                                {{ $errors->first('cdate')}}
+                                            </div>
+                                        @endif
+                                    </div>
+                                </div><!-- end of form row-->
+                                <div class="form-row">
+                                    <div class="col-md-3 mb-3">
+                                        <label for="lprice">Late Price:</label>
+                                        <input type="text" class="form-control {{ $errors->has('lprice')?'is-invalid':'is-valid' }}" name="lprice" placeholder="Percentage of Form Price" pattern="[0-9]{1,2}" value="" required>
+                                        @if($errors->has('lprice'))
+                                            <div class="invalid-feedback">
+                                                {{ $errors->first('lprice')}}
+                                            </div>
+                                        @endif
+                                    </div>
+                                    <div class="row">
+                                    <div class="col-md-3 mb-3">
+                                    <br/><br/>
+                                        <div class="form-group">
+                                            <label for="">&nbsp;</label>
+                                            @if(isset($form))
+                                                <button type="submit" name="update" id="updatebtn" class="btn btn-success text-right"><span class="icon dashicons-update"> Update</span></button>
+                                                <a href="{{route('pgformsettings')}}" class="btn btn-warning"><span class="icon icon-cancel4"> Cancel</span></a>
+                                                <input type="hidden" name="formid" value=""/>
+                                            @else
+                                                <button type="submit" name="add" id="addbtn" class="btn btn-success text-right"> <span class="icon icon-save"> Save</span></button>
+                                            @endif
+                                        </div>
+                                    </div>
+                                </div><!-- end of form row-->
+                                
+                            </form>
+
+                            <form method="post" action="{{route('pgsettings.show')}}">
+                                @csrf
+                                <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="inst">Programme Type:</label>
+                                    <select class="form-control  {{ $errors->has('progtype')?'is-invalid':'is-valid' }}" name="progtype" id="progtypeid" required>
+                                        <option value="all">All Programme Types</option>
+                                        @foreach(\App\Models\ProgrammeType::where("prog_type_code","=","PG")->orderBy("prog_type_name")->get()  as $programmetype)
+                                            @php $id = $programmetype->id@endphp
+                                            <option value="{{$programmetype->id}}" {{$id == $programmetype->id?"selected":""}}>{{$programmetype->prog_type_name}}</option>
+                                        @endforeach
+                                    </select>
+                                    @if($errors->has('progtype'))
+                                        <div class="invalid-feedback">
+                                            {{ $errors->first('progtype')}}
+                                        </div>
+                                    @endif
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <label for="form_session">Session :</label>
+                                    <select id="form_session" class="form-control {{ $errors->has('form_session')?'is-invalid':'is-valid' }}" name="form_session" placeholder="Session" aria-label="Session" aria-describedby="basic-addon2" required>
+                                        <option value="">Session </option>
+                                        @foreach(range(date("Y"),date("Y")-4) as $year)
+                                            <option value="{{$year}}">{{$year}}/{{$year+1}}</option>
+                                        @endforeach
+                                    </select>
+                                    @if($errors->has('form_session'))
+                                        <div class="invalid-feedback">
+                                            {{ $errors->first('form_session')}}
+                                        </div>
+                                    @endif
+                                </div>    
+                                <br>
+                                    <div class="col-md-3">
+                                        <button type="submit" name="showforms" class="btn btn-success">Fetch</button>
+                                    </div>
+                                </div>                                               
+                            </form>
+
+                            @if(isset($forms))
+                                <table class="table table-bordered table-striped table-condensed">
+                                    <tr><th>S/N</th><th>Department</th><th>Programme</th><th>Session</th><th>Date</th><th>Status</th></tr>
+                                    @php $i = 0;
+                                    @endphp
+                                    @foreach($forms as $form)
+                                        <tr><td style="text-align: left;font-size:12px;">{{++$i}}</td>
+                                            <td style="text-align: left;font-size:12px;">{{$form->dept}}</td>
+                                            <td style="text-align: left;font-size:12px;">{{$form->programme}}</td>
+                                            <td style="text-align: left;font-size:12px;">{{$form->session}}</td>
+                                            <td style="text-align: left;font-size:12px;">{{date_format(new DateTime($form->start_date),'g:ia \o\n l jS F Y')}} to {{date_format(new DateTime($form->late_start_date),'g:ia \o\n l jS F Y')}}</td>
+                                            <td style="text-align: left;font-size:12px;">
+                                                    <span style="font-size:12px;font-weight: 700;color:{{$obj->isFormOpened($form->id)==true?'green':'brown;'}}">
+                                                                {{$obj->isFormOpened($form->id)==true?"Opened":"Closed"}}</span>
+                                            </td></tr>
+                                    @endforeach
+                                </table>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    </section>
+    <script src="{{ asset('js/jqueryui/jquery-ui.js')}}" ></script>
+    <link rel="stylesheet" href="{{ asset('js/jqueryui/jquery-ui.min.css')}}" type="text/css" media="all">
+    <script>
+        jQuery(function () {
+            //Load faculties
+            jQuery.ajax({
+                url: '{{route("filter.faculties")}}',
+                type: 'GET',
+                data: {permission: '{{Route::currentRouteName()}}', category: 'academic'}
+            }).done(function (msg) {
+                jQuery("#faculty").html("<option value=''>--select--</option>" + msg);
+            });
+
+            //Return departments on select of faculty
+            jQuery(document).on("change", "#faculty", function (event) {
+                jQuery("#department").html("<option value=''>Loading...</option>");
+                jQuery.ajax({
+                    url: '{{route("filter.departments")}}',
+                    type: 'GET',
+                    data: {
+                        permission: '{{Route::currentRouteName()}}',
+                        faculty_id: jQuery("#faculty").val()
+                    }
+                }).done(function (msg) {
+                    jQuery("#department").html("<option value=''>--select--</option>" + msg);
+                    jQuery("#progtype").val("");
+                    jQuery("#programme").val("");
+                    jQuery("#level").val("");
+                    jQuery("#session").val("");
+                });
+            });
+
+             //Return programme types on select of department
+             jQuery(document).on("change", "#department", function (event) {
+                jQuery("#progtype").html("<option value=''>Loading...</option>");
+                jQuery.ajax({
+                    url: '{{route("filter.programme_types")}}',
+                    type: 'GET',
+                    data: {
+                        permission: '{{Route::currentRouteName()}}',
+                        department_id: jQuery("#department").val(),
+                        faculty_id: jQuery("#faculty").val(),
+                        programme_mode: 'PG',
+                    }
+                }).done(function (msg) {
+                    jQuery("#progtype").html("<option value=''>--select--</option>" + msg);
+                    jQuery("#programme").val("");
+                    jQuery("#level").val("");
+                    jQuery("#session").val("");
+                });
+            });
+           
+            //Return programmes on select of programme type
+            jQuery(document).on("change", "#progtype", function (event) {
+                jQuery("#programme").html("<option value=''>Loading...</option>");
+                jQuery.ajax({
+                    url: '{{route("filter.programmes")}}',
+                    type: 'GET',
+                    data: {
+                        permission: '{{Route::currentRouteName()}}',
+                        department_id: jQuery("#department").val(),
+                        programme_type_id: jQuery("#progtype").val(),
+                        faculty_id: jQuery("#faculty").val(),
+                        programme_mode: 'PG',
+
+                    }
+                }).done(function (msg) {
+                    jQuery("#programme").html("<option value=''>--select--</option>" + msg);
+                    jQuery("#level").val("");
+                    jQuery("#session").val("");
+                });
+            });
+
+            jQuery("body").on("change","#form_session",function () {
+                var form_session = $(this).val();
+                jQuery("#sdate").empty();
+                jQuery("#sdate").removeAttr("disabled");
+                jQuery.ajax({
+                    type:"GET",
+                    url:"{{ url('candidateform/formstartdate/')}}/"+form_session
+                }).done(function(data){
+                    if($.trim(data)!="na"){
+                        jQuery("#sdate").attr("disabled","disabled");
+                        jQuery('#sdate').val(data);
+                    }else{
+                        jQuery("#sdate").removeAttr("disabled");
+                        jQuery('#sdate').val("");
+                    }
+                });
+            });
+
+            {{--$(function () {--}}
+            {{--$(document).on("change", "#faculty", function (event) {--}}
+                {{--$("#department").html("<option value=''>Loading...</option>");--}}
+                {{--$.ajax({--}}
+                    {{--url: '{{route("filter.departments")}}',--}}
+                    {{--type: 'GET',--}}
+                    {{--data: {--}}
+                        {{--permission: '{{Route::currentRouteName()}}',--}}
+                        {{--faculty_id: $("#faculty").val()--}}
+                    {{--}--}}
+                {{--}).done(function (msg) {--}}
+                    {{--$("#department").html("<option value=''>--select--</option>" + msg);--}}
+                    {{--$("#progtype").val("");--}}
+                    {{--$("#programme").val("");--}}
+                    {{--$("#level").val("");--}}
+                    {{--$("#session").val("");--}}
+                {{--});--}}
+            {{--});--}}
+
+            {{--$(document).on("change", "#department", function (event) {--}}
+                {{--$("#progtype").html("<option value=''>Loading...</option>");--}}
+                {{--$.ajax({--}}
+                    {{--url: '{{route("filter.programme_types")}}',--}}
+                    {{--type: 'GET',--}}
+                    {{--data: {--}}
+                        {{--permission: '{{Route::currentRouteName()}}',--}}
+                        {{--department_id: $("#department").val(),--}}
+                        {{--faculty_id: $("#faculty").val(),--}}
+                    {{--}--}}
+                {{--}).done(function (msg) {--}}
+                    {{--$("#progtype").html("<option value=''>--select--</option>" + msg);--}}
+                    {{--$("#programme").val("");--}}
+                    {{--$("#level").val("");--}}
+                    {{--$("#session").val("");--}}
+                {{--});--}}
+            {{--});--}}
+
+            {{--$("body").on("change","#form_session",function () {--}}
+                {{--var form_session = $(this).val();--}}
+                {{--$("#sdate").empty();--}}
+                {{--$("#sdate").removeAttr("disabled");--}}
+                {{--$.ajax({--}}
+                    {{--type:"GET",--}}
+                    {{--url:"{{ url('candidateform/formstartdate/')}}/"+form_session--}}
+                {{--}).done(function(data){--}}
+                    {{--if($.trim(data)!="na"){--}}
+                        {{--$("#sdate").attr("disabled","disabled");--}}
+                        {{--$('#sdate').val(data);--}}
+                    {{--}else{--}}
+                        {{--$("#sdate").removeAttr("disabled");--}}
+                        {{--$('#sdate').val("");--}}
+                    {{--}--}}
+                {{--});--}}
+            {{--});--}}
+
+            {{--$(document).on("change", "#progtype", function (event) {--}}
+                {{--$("#programme").html("<option value=''>Loading...</option>");--}}
+                {{--$.ajax({--}}
+                    {{--url: '{{route("filter.programmes")}}',--}}
+                    {{--type: 'GET',--}}
+                    {{--data: {--}}
+                        {{--permission: '{{Route::currentRouteName()}}',--}}
+                        {{--department_id: $("#department").val(),--}}
+                        {{--programme_type_id: $("#progtype").val(),--}}
+                        {{--faculty_id: $("#faculty").val(),--}}
+                    {{--}--}}
+                {{--}).done(function (msg) {--}}
+                    {{--$("#programme").html("<option value=''>--select--</option>" + msg);--}}
+                    {{--$("#level").val("");--}}
+                    {{--$("#session").val("");--}}
+                {{--});--}}
+            {{--});--}}
+
+            {{--$("#ldate,#cdate,#sdate").datepicker({--}}
+                {{--changeMonth: true,--}}
+                {{--changeYear: true,--}}
+                {{--dateFormat:'yy-mm-dd',--}}
+                {{--minDate: -1,--}}
+                {{--maxDate: "+3M +1Y"--}}
+            {{--});--}}
+        {{--});--}}
+        });
+        $('#ldate,#cdate,#sdate').datetimepicker({format: 'YYYY-MM-DD'});
+    </script>
+@endsection

@@ -1,0 +1,30 @@
+<div class="text-right"><a href='#' class="btn btn-sm btn-default createblockaction" data-id='{{$hostel->id}}'>Add New Block in {{$hostel->name}} Hall</a></div>
+<table class="table table-bordered table-hover table-sm">
+    <thead class='thead-dark'>
+        <tr>
+            <th>S/N</th>
+            <th>Block Name</th>
+            <th>Hostel Name</th>
+            <th>Student Category</th>
+            <th>Gender</th>
+            <th>Status</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach($blocks as $block)
+        <tr>
+            <td>{{$loop->iteration}}</td>
+            <td><a href='#' class='viewblock' data-id='{{$block->id}}'>{{strtoupper($block->name)}}</a></td>
+            <td>{{strtoupper($block->hostel->name)}}</td>
+            <td>{{ucfirst($block->studcat)}}</td>
+            <td>{{ucfirst($block->gender)}}</td>
+            <td>{{($block->status==1)?('Active'):('Inactive')}}</td>
+            <td>
+                <a href="#" class="viewblock btn btn-default btn-sm" data-id='{{$block->id}}'>View</a>
+                <a href="#" class="modifyblockaction btn btn-default btn-sm" data-id='{{$block->id}}'>Modify</a>
+            </td>
+        </tr>
+        @endforeach
+    </tbody>
+</table>

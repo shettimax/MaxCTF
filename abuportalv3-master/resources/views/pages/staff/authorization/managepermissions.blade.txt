@@ -1,0 +1,88 @@
+
+@extends("layout.staff.master")
+
+@section("pageTitle")
+    Dashboard
+@endsection
+@section("content")
+    <section>
+        <div class="container pt-10">        <div class="container pt-10">
+                @if (session('status'))
+                    <div class="alert alert-success" role="alert">
+                        {{ session('status') }}
+                    </div>
+                @endif
+                @if (isset($errors))
+                    <ul>
+                        @foreach($errors as $error)
+                            <li>{{$error}}</li>
+                        @endforeach
+                    </ul>
+                @endif
+                @if(Session::has('flash_message'))
+                    <div class="alert alert-success">
+                        {{ Session::get('flash_message') }}
+                    </div>
+                @endif
+                <ul class="nav nav-tabs">
+                    <li class="active"><a href="{{route('permission')}}">Permission</a></li>
+                    <li><a href="{{route('role')}}">Role</a></li>
+                    <li><a href="{{route('rolepermission')}}">Assign Permissions to Role</a></li>
+                </ul>
+                <br/>
+                <h3>Manage Permissions</h3>
+                @php
+                    $pms = isset($model->name)?$model->name:'';
+                @endphp
+                <form action="{{route('permission.store')}}" method="POST">
+                    @csrf
+                    @if( isset($model) && $model !=null)
+                        <input type="hidden" name="permissionid" value="{{$model->id}}"/>
+                    @endif
+                    <div class="form-row">
+                        <div class="col-md-3 mb-3">
+                            <label for="permission">Permissin Name:</label>
+                            <input type="text" class="form-control {{ $errors->has('permission')?'is-invalid':'is-valid' }}" name="permission" value="{{$pms}}" placeholder="Permission Name"  required>
+                            @if($errors->has('permission'))
+                                <div class="invalid-feedback" style="color:red;">
+                                    {{ $errors->first('permission')}}
+                                </div>
+                            @endif
+                        </div>
+                        <div class="col-md-2 mb-2 text-right">
+                            <div class="form-group">
+                                <label for="">&nbsp;</label>
+                                <button type="submit" name="add" id="addbtn" class="btn btn-success text-right"> <span class="icon icon-save"> Save </span></button>
+                                @if( isset($model) && $model !=null)
+                                    <button  type="button" id="close" name="close" class="btn btn-danger btn-sm" ><span class="icon icon-close2"></span> Close</button>
+                                @endif
+                            </div>
+                        </div>
+                    </div><!-- end of form row-->
+                </form>
+                <div class="row">
+                    <table class="table table-bordered table-hover" style="width:50%;font-size:16px;font-family: Calibri;">
+                        <tr><th>S/N</th><th>Name</th><th>Action</th></tr>
+                        @php $i =1; @endphp
+                        @foreach(\App\Models\Permission::select('*')->orderby('name')->get() as $permission)
+                            <tr>
+                                <td>{{$i++}}</td><td>{{$permission->name}}</td>
+                                <td><a href="{{route('permission.edit',['id'=>$permission->id])}}"><span class="icon icon-edit2"></span> Edit</a> </td>
+                            </tr>
+                        @endforeach
+                    </table>
+                </div>
+            </div>
+        </div>
+    </section>
+@endsection
+@section('js')
+    <script>
+        jQuery(document).ready(function(){
+            jQuery('#close').click(function(){
+                window.location.href = '{{ url('staff/authorization/permission') }}';
+            });
+        });
+    </script>
+
+@endsection

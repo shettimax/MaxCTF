@@ -1,0 +1,292 @@
+@extends("layout.staff.master")
+@section("css")
+    <style>
+        table {
+            /*color: blue;*/
+            font-size: 13px;
+            font-family: 'Roboto Slab', serif;
+            text-decoration: none;
+            /*text-transform: lowercase;*/
+        }
+    </style>
+@endsection
+@section("pageTitle")
+    My Timetable
+@endsection
+@section("content")
+    <section>
+        <div class="main-section">
+            <div class="container">
+                {{--                <div class="heading-line-bottom mb-50">--}}
+                {{--                    <h4 class="heading-title">My Teaching History</h4>--}}
+                {{--                </div>--}}
+
+                <div class="row mb-15 mt-50">
+                    @php
+                        $session_str = ($session * 1) ."/". (($session * 1)+1);
+                        $semester_str = ($semester == 1) ? "First":"Second";
+
+                    @endphp
+                    <div class="col-md-12">
+                        <div class="panel-group" id="accordion1" role="tablist" aria-multiselectable="true">
+                            <div class="panel panel-default">
+                                <div class="panel-heading" role="tab" id="headingOne1">
+                                    <h4 class="panel-title">
+                                        <a aria-expanded="true" style="font-size: 15px;">My Time Table
+                                            for {{$semester_str}} {{$session_str}} Academic Session</a>
+                                    </h4>
+                                </div>
+                                <div id="collapseOne1" class="panel-collapse collapse in" role="tabpanel"
+                                     aria-labelledby="headingOne1">
+                                    <div class="panel-body">
+                                        <div class="table-responsive">
+                                            <table class="table table-striped">
+                                                <tr>
+                                                    <th style="width:16%;">MON</th>
+                                                    <th style="width:16%;">TUE</th>
+                                                    <th style="width:16%;">WED</th>
+                                                    <th style="width:16%;">THU</th>
+                                                    <th style="width:16%;">FRI</th>
+                                                    <th style="width:16%;">SAT</th>
+                                                </tr>
+                                                @foreach($timetable as $item)
+                                                    <tr>
+                                                        <td>
+                                                            @if($item->day=="MON")
+                                                                <div class="event-content pull-left flip">
+                                                                    <div
+                                                                        class="entry-title text-white text-uppercase m-0 mt-5 text-left bold">
+                                                                        <a data-container="body" data-toggle="tooltip"
+                                                                           data-placement="right"
+                                                                           title="{{$item->coursetitle}}"><strong>{{$item->coursecode}}
+                                                                                ({{$item->grouptype=='LT'?'Lecture':'Lab'}}
+                                                                                )</strong></a>
+                                                                    </div>
+                                                                    <div class=" text-gray-darkgray font-13">
+                                                                        <i class="fa fa-clock-o mr-5 text-theme-colored"></i>
+                                                                        {{\Carbon\Carbon::parse($item->start)->format('g:i A') }}
+                                                                        <br>
+                                                                        <i class="fa fa-clock-o mr-5 text-theme-colored"></i>
+                                                                        {{ \Carbon\Carbon::parse($item->end)->format('g:i A') }}
+                                                                    </div>
+                                                                    <div class="text-gray-darkgray font-13 pl-0">
+                                                                        <i class="fa fa-hospital-o mr-5 text-theme-colored"></i>
+                                                                        <strong>{{ $item->facility_name }}</strong>
+                                                                    </div>
+                                                                </div>
+                                                            @endif
+                                                        </td>
+                                                        <td>
+                                                            @if($item->day=="TUE")
+                                                                <div class="event-content pull-left flip">
+                                                                    <div
+                                                                        class="entry-title text-white text-uppercase m-0 mt-5 text-left bold">
+                                                                        <a data-container="body" data-toggle="tooltip"
+                                                                           data-placement="right"
+                                                                           title="{{$item->coursetitle}}"><strong>{{$item->coursecode}}
+                                                                                ({{$item->grouptype=='LT'?'Lecture':'Lab'}}
+                                                                                )</strong></a>
+                                                                    </div>
+                                                                    <div class=" text-gray-darkgray font-13">
+                                                                        <i class="fa fa-clock-o mr-5 text-theme-colored"></i>
+                                                                        {{\Carbon\Carbon::parse($item->start)->format('g:i A') }}
+                                                                        <br>
+                                                                        <i class="fa fa-clock-o mr-5 text-theme-colored"></i>
+                                                                        {{ \Carbon\Carbon::parse($item->end)->format('g:i A') }}
+                                                                    </div>
+                                                                    <div class="text-gray-darkgray font-13 pl-0">
+                                                                        <i class="fa fa-hospital-o mr-5 text-theme-colored"></i>
+                                                                        <strong>{{ $item->facility_name }}</strong>
+                                                                    </div>
+                                                                </div>
+                                                            @endif
+                                                        </td>
+                                                        <td>
+                                                            @if($item->day=="WED")
+                                                                <div class="event-content pull-left flip">
+                                                                    <div
+                                                                        class="entry-title text-white text-uppercase m-0 mt-5 text-left bold">
+                                                                        <a data-container="body" data-toggle="tooltip"
+                                                                           data-placement="right"
+                                                                           title="{{$item->coursetitle}}"><strong>{{$item->coursecode}}
+                                                                                ({{$item->grouptype=='LT'?'Lecture':'Lab'}}
+                                                                                )</strong></a>
+                                                                    </div>
+                                                                    <div class=" text-gray-darkgray font-13">
+                                                                        <i class="fa fa-clock-o mr-5 text-theme-colored"></i>
+                                                                        {{\Carbon\Carbon::parse($item->start)->format('g:i A') }}
+                                                                        <br>
+                                                                        <i class="fa fa-clock-o mr-5 text-theme-colored"></i>
+                                                                        {{ \Carbon\Carbon::parse($item->end)->format('g:i A') }}
+                                                                    </div>
+                                                                    <div class="text-gray-darkgray font-13 pl-0">
+                                                                        <i class="fa fa-hospital-o mr-5 text-theme-colored"></i>
+                                                                        <strong>{{ $item->facility_name }}</strong>
+                                                                    </div>
+                                                                </div>
+                                                            @endif
+                                                        </td>
+                                                        <td>
+                                                            @if($item->day=="THU")
+                                                                <div class="event-content pull-left flip">
+                                                                    <div
+                                                                        class="entry-title text-white text-uppercase m-0 mt-5 text-left bold">
+                                                                        <a data-container="body" data-toggle="tooltip"
+                                                                           data-placement="right"
+                                                                           title="{{$item->coursetitle}}"><strong>{{$item->coursecode}}
+                                                                                ({{$item->grouptype=='LT'?'Lecture':'Lab'}}
+                                                                                )</strong></a>
+                                                                    </div>
+                                                                    <div class=" text-gray-darkgray font-13">
+                                                                        <i class="fa fa-clock-o mr-5 text-theme-colored"></i>
+                                                                        {{\Carbon\Carbon::parse($item->start)->format('g:i A') }}
+                                                                        <br>
+                                                                        <i class="fa fa-clock-o mr-5 text-theme-colored"></i>
+                                                                        {{ \Carbon\Carbon::parse($item->end)->format('g:i A') }}
+                                                                    </div>
+                                                                    <div class="text-gray-darkgray font-13 pl-0">
+                                                                        <i class="fa fa-hospital-o mr-5 text-theme-colored"></i>
+                                                                        <strong>{{ $item->facility_name }}</strong>
+                                                                    </div>
+                                                                </div>
+                                                            @endif
+                                                        </td>
+                                                        <td>
+                                                            @if($item->day=="FRI")
+                                                                <div class="event-content pull-left flip">
+                                                                    <div
+                                                                        class="entry-title text-white text-uppercase m-0 mt-5 text-left bold">
+                                                                        <a data-container="body" data-toggle="tooltip"
+                                                                           data-placement="right"
+                                                                           title="{{$item->coursetitle}}"><strong>{{$item->coursecode}}
+                                                                                ({{$item->grouptype=='LT'?'Lecture':'Lab'}}
+                                                                                )</strong></a>
+                                                                    </div>
+                                                                    <div class=" text-gray-darkgray font-13">
+                                                                        <i class="fa fa-clock-o mr-5 text-theme-colored"></i>
+                                                                        {{\Carbon\Carbon::parse($item->start)->format('g:i A') }}
+                                                                        <br>
+                                                                        <i class="fa fa-clock-o mr-5 text-theme-colored"></i>
+                                                                        {{ \Carbon\Carbon::parse($item->end)->format('g:i A') }}
+                                                                    </div>
+                                                                    <div class="text-gray-darkgray font-13 pl-0">
+                                                                        <i class="fa fa-hospital-o mr-5 text-theme-colored"></i>
+                                                                        <strong>{{ $item->facility_name }}</strong>
+                                                                    </div>
+                                                                </div>
+                                                            @endif
+                                                        </td>
+                                                        <td>
+                                                            @if($item->day=="SAT")
+                                                                <div class="event-content pull-left flip">
+                                                                    <div
+                                                                        class="entry-title text-white text-uppercase m-0 mt-5 text-left bold">
+                                                                        <a data-container="body" data-toggle="tooltip"
+                                                                           data-placement="right"
+                                                                           title="{{$item->coursetitle}}"><strong>{{$item->coursecode}}
+                                                                                ({{$item->grouptype=='LT'?'Lecture':'Lab'}}
+                                                                                )</strong></a>
+                                                                    </div>
+                                                                    <div class=" text-gray-darkgray font-13">
+                                                                        <i class="fa fa-clock-o mr-5 text-theme-colored"></i>
+                                                                        {{\Carbon\Carbon::parse($item->start)->format('g:i A') }}
+                                                                        <br>
+                                                                        <i class="fa fa-clock-o mr-5 text-theme-colored"></i>
+                                                                        {{ \Carbon\Carbon::parse($item->end)->format('g:i A') }}
+                                                                    </div>
+                                                                    <div class="text-gray-darkgray font-13 pl-0">
+                                                                        <i class="fa fa-hospital-o mr-5 text-theme-colored"></i>
+                                                                        <strong>{{ $item->facility_name }}</strong>
+                                                                    </div>
+                                                                </div>
+                                                            @endif
+                                                        </td>
+                                                    </tr>
+                                                @endforeach
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+@endsection
+
+@section("js")
+    <script type="text/javascript">
+        $(document).ready(function () {
+
+            function getLecturerString(employees) {
+                str = "";
+                $.each(employees, function (idx, val) {
+                    str = str + val.surname + " " + val.firstname + ", ";
+                });
+                return str.slice(0, -2);
+            }
+
+            $(document).on('click', '.viewinfo', function () {
+
+                informationstr = $(this).attr("informationstr");
+                informationarr = informationstr.split("~~");
+                $("#tooltip-coursecode").html(informationarr[0]);
+                $("#tooltip-coursetitle").html(informationarr[1]);
+                $("#tooltip-groupno").html(informationarr[2]);
+                $("#tooltip-duration").html(informationarr[3]);
+                $("#tooltip-lecturer").html(informationarr[4]);
+                $("#tooltip-venue").html(informationarr[5]);
+                $('#viewinfo-modal').modal();
+                return false;
+            });
+
+
+            $.ajax({
+                type: 'POST',
+                url: '{{route('myteaching.getschedules')}}',
+                data: {
+                    session: "<?php echo $session ?>",
+                    semester: "<?php echo $semester ?>",
+                    _token: '<?php echo csrf_token() ?>'
+                },
+                success: function (data) {
+                    console.log(data);
+                    $.each(data, function (idx1, val1) {
+                        groupno = "Grp " + val1.groupno;
+                        grouptype = val1.grouptype;
+                        coursecode = val1.coursecode;
+                        lecturers = val1.courselecturer;
+                        lecturersstr = getLecturerString(lecturers);
+                        coursetitle = val1.coursetitle;
+
+                        $.each(val1.courseperiod, function (idx2, val2) {
+                            duration = (val2.end.substring(0, 2) - val2.start.substring(0, 2)) * 100;
+                            duration = duration + (duration / 100);
+                            startposition = parseInt(val2.start.substring(0, 2));
+                            day = val2.day.toLowerCase();
+                            facilitystr = val2.facilityname;
+                            schedulebgcolor = (grouptype == "lt") ? "mediumseagreen" : "skyblue";
+                            startend = val2.start + " - " + val2.end;
+                            informationstr = coursecode + "~~" + coursetitle + "~~" + groupno + "~~" + startend + "~~" + lecturersstr + "~~" + facilitystr;
+                            viewinfo = "<a href = '#' class = 'viewinfo' informationstr = '" + informationstr + "'><i class='icon-eye7' style = 'font-size: 20px;'></i></a>";
+                            $("." + day + "-" + startposition).append("<div class = 'period'  style='width:" + duration + "%; background-color: " + schedulebgcolor + ";'>" + coursecode + " - " + groupno + " - " + facilitystr + " - " + lecturersstr + " " + viewinfo + "</div>");
+                        });
+                    });
+
+                    $.each(['mon', 'tue', 'wed', 'thu', 'fri', 'sat'], function (idx, val) {
+                        maxHeight = Math.max.apply(Math, $("[class*='" + val + "']").map(function () {
+                            return $(this).height();
+                        }).get());
+                        maxHeight = maxHeight + 5;
+                        $("[class*='" + val + "']").css('height', maxHeight + 'px');
+                    });
+                }
+            });
+        });
+
+    </script>
+@endsection
+

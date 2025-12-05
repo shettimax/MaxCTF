@@ -1,0 +1,15 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class FeeCategory extends Model
+{
+    //
+    public static $rules = [
+        "description"=>"required|string|min:4",
+        "code"=>"required|string|min:3|max:3",
+        "studenttype"=>"required|min:2|max:2"
+    ];
+}

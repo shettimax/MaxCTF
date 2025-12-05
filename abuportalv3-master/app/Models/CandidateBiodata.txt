@@ -1,0 +1,41 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class CandidateBiodata extends Model
+{
+    //
+    public static $rules = [
+        "surname"=>"required|string|min:2",
+        "firstname"=>"required|string|min:2",
+        "gender"=>"required|in:Female,Male",
+        "marital_status"=>"required|in:Divorced,Married,Single,Widowed",
+        "date_of_birth"=>"required|date",
+        "nationality"=>"required|exists:countries,id",
+         "lga"=>"required|exists:lgas,id",
+        ];
+
+
+    public function getFullName(){
+        return $this->surname." ".$this->firstname." ".$this->othernames;
+    }
+
+    public function lga()
+    {
+        return Lga::find($this->lga_id);
+    }
+
+    public function state()
+    {
+        return State::find($this->lga()->state_id);
+    }
+
+    public function country()
+    {
+        return Country::find($this->country_id);
+    }
+
+
+}

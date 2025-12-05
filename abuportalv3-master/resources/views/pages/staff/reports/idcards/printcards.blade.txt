@@ -1,0 +1,156 @@
+@extends("layout.staff.master")
+
+@section("css")
+
+@endsection
+
+@section("pageTitle")
+    Manage IDCards
+@endsection
+@section("content")
+    <section>
+        <div class="main-section">
+            <div class="container">
+                <div class="row justify-content-center">
+                    <div class="col-md-12">
+                        <div class="card">
+
+                            <div class="card-body">
+                                @if (session('status'))
+                                    <div class="alert alert-success" role="alert">
+                                        {{ session('status') }}
+                                    </div>
+                                @endif
+                                @if (isset($errors))
+                                    <ul>
+                                        @foreach($errors as $error)
+                                            <li>{{$error}}</li>
+                                        @endforeach
+                                    </ul>
+                                @endif
+                                @if(Session::has('flash_message'))
+                                    <div class="alert alert-success">
+                                        {{ Session::get('flash_message') }}
+                                    </div>
+                                @endif
+
+                                                <form class="form" action="" method="POST">
+                                                    @csrf
+                                                    <div class="modal-body">
+                                                        <input type="hidden" id="programme_id" name="programme_id"
+                                                               value="0"/>
+                                                        <div class="row mb-20">
+                                                            <div class="col-md-4">
+                                                                <label for="faculty">Faculty Name:</label>
+                                                                <select
+                                                                        class="form-control {{ $errors->has('faculty')?'is-invalid':'is-valid' }}"
+                                                                        name="faculty" id="faculty"
+                                                                        placeholder="Faculty Name" required>
+                                                                    <option value="-1">Select...</option>
+                                                                    @foreach(\App\Models\Faculty::select('*')->orderby('name')->get() as $faculty)
+                                                                        <option
+                                                                                value="{{$faculty->id}}">{{$faculty->name}}</option>
+                                                                    @endforeach
+                                                                </select>
+                                                                <div id="faculty_error" class="text text-danger">
+                                                                </div>
+                                                            </div>
+                                                            <div class="col-md-4">
+                                                                <label for="department">Department Name:</label>
+                                                                <select
+                                                                        class="form-control {{ $errors->has('department')?'is-invalid':'is-valid' }}"
+                                                                        name="department" id="department"
+                                                                        placeholder="Department Name" required>
+                                                                    <option value="-1">Select...</option>
+                                                                    @foreach(\App\Models\Department::select('*')->orderby('name')->get() as $department)
+                                                                        <option
+                                                                                value="{{$department->id}}">{{$department->name}}</option>
+                                                                    @endforeach
+                                                                </select>
+                                                                <div id="department_error" class="invalid-feedback">
+                                                                </div>
+                                                            </div>
+                                                            <div class="col-md-4">
+                                                                <label for="programme">Programme:</label>
+                                                                <select
+                                                                        class="form-control {{ $errors->has('programme')?'is-invalid':'is-valid' }}"
+                                                                        name="programme" id="programme"
+                                                                        placeholder="Programme" required>
+                                                                    <option value="-1">Select...</option>
+                                                                    @foreach(\App\Models\Programme::select('*')->orderby('name')->get() as $programme)
+                                                                        <option
+                                                                                value="{{$programme->id}}">{{$programme->name}}</option>
+                                                                    @endforeach
+                                                                </select>
+                                                                <div id="programme_error" class="invalid-feedback">
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+
+                                                    </div>
+
+                                                    <div class="row">
+                                                        <div>
+                                                            <br/>
+                                                            <button type="button" class="btn btn-primary add pull-right mb-30 mr-30" id="generateusers">
+                                                                <span>Generate</span>
+                                                            </button>
+                                                            <br/><br/>
+                                                        </div>
+                                                    </div>
+
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row mb-30 mr-20 ml-20" id="display">
+
+                                </div>
+
+                            </div>
+
+                        </div>
+    </section>
+@endsection
+
+@section("js")
+    <script>
+        $("body").on("change","#faculty",function () {
+            var id = $(this).val();
+            $("#department").empty();
+            $("#department").append("<option value=''>Select...</option>");
+            $.getJSON(
+                "{{ route("ajax.department",['']) }}/"+$(this).val(),
+
+            );
+        });
+
+        jQuery('#department,#programme').change(function(){
+            var department = jQuery('#department').val();
+            var prog = jQuery('#programme').val();
+
+            jQuery('#display').empty();
+            jQuery('#display').html("<h4>Please wait while departments loading...</h4>");
+            $.ajax({
+                type:"GET",
+                url:"{{ url('staff/settings/programme/show') }}/"+department+"/"+prog
+            }).done(function(data){
+                jQuery('#display').html(data);
+            });
+        });
+
+        //for datatable
+        $("body").on("change","#programme",function(){
+            var department = $(this).val();
+            $.ajax({
+                type:"get",
+                url:"{{route('student.idcards.post',[''])}}/"+department
+            }).done(function(data){
+
+                $('#display').html(data);
+            });
+        });
+    </script>
+@endsection

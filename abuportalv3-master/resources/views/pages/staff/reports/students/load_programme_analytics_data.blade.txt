@@ -1,0 +1,102 @@
+<div id="statisticsSummary" class="row mb-4">
+    <div class="col-md-4 mb-3">
+        <div class="card bg-info text-white h-100 shadow-sm d-flex flex-row align-items-center" aria-label="Total Applicants">
+            <div class="p-3 d-flex align-items-center justify-content-center" style="font-size:2.5rem;">
+                <i class="fa fa-users" aria-hidden="true"></i>
+            </div>
+            <div class="card-body">
+                <h5 class="card-title">Total Applicants</h5>
+                <h3 class="card-text">{{ number_format($summary['totalApplicants']) }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-3">
+        <div class="card bg-success text-white h-100 shadow-sm d-flex flex-row align-items-center" aria-label="Total Admitted">
+            <div class="p-3 d-flex align-items-center justify-content-center" style="font-size:2.5rem;">
+                <i class="fa fa-user-check" aria-hidden="true"></i>
+            </div>
+            <div class="card-body">
+                <h5 class="card-title">Total Admitted</h5>
+                <h3 class="card-text">{{ number_format($summary['totalAdmitted']) }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-3">
+        <div class="card bg-primary text-white h-100 shadow-sm d-flex flex-row align-items-center" aria-label="Total Registered">
+            <div class="p-3 d-flex align-items-center justify-content-center" style="font-size:2.5rem;">
+                <i class="fa fa-user-graduate" aria-hidden="true"></i>
+            </div>
+            <div class="card-body">
+                <h5 class="card-title">Total Registered</h5>
+                <h3 class="card-text">{{ number_format($summary['totalRegistered']) }}</h3>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="table-responsive">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <h5 class="mb-0">Programme Analytics Table</h5>
+        <div id="customColVisContainer" class="btn-group"></div>
+        <button id="customPdfExport" class="btn btn-danger ms-2" type="button"><i class="fa fa-file-pdf-o me-1"></i> Export PDF</button>
+    </div>
+    <table id="programmeAnalyticsTable" class="table table-striped table-hover table-bordered" style="min-width:1100px;" aria-label="Programme Analytics Data Table">
+        <thead class="thead-dark" style="position:sticky;top:0;z-index:2;background:#343a40;color:#fff;">
+            <tr>
+                <th>S/N</th>
+                <th>Faculty</th>
+                <th>Department</th>
+                <th>Programme Type</th>
+                <th>Programme</th>
+                <th>Applicants</th>
+                <th>Admitted</th>
+                <th>Registered</th>
+                <th>Admission Rate</th>
+                <th>Registration Rate</th>
+            </tr>
+        </thead>
+        <tbody aria-label="Programme Analytics Data">
+            @php $sn = 1; @endphp
+            @forelse(collect($stats)->sortBy([['faculty', 'asc'], ['department', 'asc'], ['programme', 'asc']]) as $row)
+                <tr class="programme-row" data-faculty="{{ $row['faculty'] }}" data-department="{{ $row['department'] }}">
+                    <td>{{ $sn++ }}</td>
+                    <td>{{ $row['faculty'] }}</td>
+                    <td>{{ $row['department'] }}</td>
+                    <td>{{ $row['programme_type'] }}</td>
+                    <td>{{ $row['programme'] }}</td>
+                    <td>{{ number_format($row['applicants']) }}</td>
+                    <td>{{ number_format($row['admitted']) }}</td>
+                    <td>{{ number_format($row['registered']) }}</td>
+                    <td>{{ $row['admission_rate'] }}%</td>
+                    <td>{{ $row['registration_rate'] }}%</td>
+                </tr>
+            @empty
+                <tr><td colspan="10" class="text-center">No data available.</td></tr>
+            @endforelse
+        </tbody>
+    </table>
+</div>
+
+<style>
+/* Alternating row colors for better readability */
+#programmeAnalyticsTable tbody .programme-row:nth-of-type(odd) { background-color: #f8f9fa; }
+#programmeAnalyticsTable tbody .programme-row:nth-of-type(even) { background-color: #e9ecef; }
+#programmeAnalyticsTable .faculty-row { background: #d1ecf1 !important; color: #0c5460; }
+#programmeAnalyticsTable .department-row { background: #f8d7da !important; color: #721c24; }
+#programmeAnalyticsTable thead th { position: sticky; top: 0; background: #343a40; color: #fff; z-index: 2; }
+</style>
+<!-- DataTables and Buttons dependencies: correct order -->
+<script src="/DataTables/JSZip-2.5.0/jszip.min.js"></script>
+<script src="/DataTables/pdfmake-0.1.36/pdfmake.min.js"></script>
+<script src="/DataTables/pdfmake-0.1.36/vfs_fonts.js"></script>
+<script src="/DataTables/DataTables-1.10.21/js/jquery.dataTables.min.js"></script>
+<script src="/DataTables/DataTables-1.10.21/js/dataTables.bootstrap4.min.js"></script>
+<script src="/DataTables/Buttons-1.6.2/js/dataTables.buttons.min.js"></script>
+<script src="/DataTables/Buttons-1.6.2/js/buttons.bootstrap4.min.js"></script>
+<script src="/DataTables/Buttons-1.6.2/js/buttons.html5.min.js"></script>
+<script src="/DataTables/Buttons-1.6.2/js/buttons.print.min.js"></script>
+<script src="/DataTables/Buttons-1.6.2/js/buttons.colVis.min.js"></script>
+<script src="/DataTables/RowGroup-1.1.2/js/dataTables.rowGroup.min.js"></script>
+<link rel="stylesheet" href="/DataTables/Buttons-1.6.2/css/buttons.bootstrap4.min.css">
+<link rel="stylesheet" href="/DataTables/RowGroup-1.1.2/css/rowGroup.bootstrap4.min.css">
+<!-- No DataTable initialization here --> 

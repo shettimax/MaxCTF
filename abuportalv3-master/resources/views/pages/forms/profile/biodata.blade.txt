@@ -1,0 +1,188 @@
+@extends("layout.candidate.master")
+
+
+
+@section("css")
+    <link rel="stylesheet" href="{{asset('js/datatables/jquery.dataTables.min.css')}}">
+@endsection
+
+@section("content")
+
+
+
+
+    <section class="bg-white-f7 pr-40 pl-40 pt-40 pb-40" style="border-left:2px solid #43B14B;">
+
+            <div class="row">
+                        <div class="col-md-10">
+                            <div class="panel panel-default">
+                                <div class="panel-body">
+
+                                    @if ($message = Session::get('success'))
+                                        <div class="alert alert-success" role="alert">
+                                            <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                                            {{ $message }}
+                                        </div>
+                                    @endif
+                                    <h3 class="widget-title" style="margin-bottom: 0">Biodata Information</h3><div class="double-line-bottom-theme-colored-2"></div>
+
+                                    <form class="form-horizontal" action="{{ route('forms.profile.create.biodata') }}" method="post">
+                                        @csrf
+                                        {{--<input type="hidden" name="candidate_id" value="{{ $biodata->id }}">--}}
+
+                                        <div class="form-group">
+
+                                            <div class="col-sm-4">
+                                                <span><i>Surname:</i></span>
+                                                <input type="text" name="surname" value="{{ $biodata->surname}}" class="form-control" id="name" placeholder="Surname" readonly="readonly" required="">
+                                                @if($errors->has("surname"))
+                                                    <span class="text-danger">{{ $errors->first("surname") }}</span>
+                                                @endif
+                                            </div>
+
+                                            <div class="col-sm-4">
+                                                <span><i>Firstname:</i></span>
+                                                <input type="text" name="firstname" value="{{ $biodata->firstname}}" class="form-control" id="name" placeholder="Firstname" readonly="readonly" required="">
+                                                @if($errors->has("firstname"))
+                                                    <span class="text-danger">{{ $errors->first("firstname") }}</span>
+                                                @endif
+                                            </div>
+
+                                            <div class="col-sm-4">
+                                                <span><i>Othername:</i></span>
+                                                <input type="text" name="othernames" value="{{ $biodata->othernames}}" class="form-control" id="name" placeholder="Othernames" readonly="readonly">
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <div class="col-sm-4">
+                                                <span>Marital Status:</span>
+                                                <select name="marital_status" id="marital_status" class="form-control" required="">
+                                                    <option value="Single" @if('Single'== $biodata->marital_status) selected @endif>Single</option>
+                                                    <option value="Married" @if('Married'== $biodata->marital_status) selected @endif>Married</option>
+                                                    <option value="Divorced" @if('Divorced'== $biodata->marital_status) selected @endif>Divorced</option>
+                                                    <option value="Widow" @if('Widow'== $biodata->marital_status) selected @endif>Widow</option>
+                                                    <option value="Separated" @if('Separated'== $biodata->marital_status) selected @endif>Separated</option>
+                                                </select>
+                                                @if($errors->has("marital_status"))
+                                                    <span class="text-danger">{{ $errors->first("marital_status") }}</span>
+                                                @endif
+                                            </div>
+
+                                            <div class="col-sm-4">
+                                                <span>Gender:</span>
+                                                <select name="gender" id="gender" class="form-control" required="">
+                                                    <option value="Male" @if('Male'== $biodata->gender) selected @endif>Male</option>
+                                                    <option value="Female" @if('Female'== $biodata->gender) selected @endif>Female</option>
+                                                </select>
+                                                @if($errors->has("gender"))
+                                                    <span class="text-danger">{{ $errors->first("gender") }}</span>
+                                                @endif
+                                            </div>
+                                            <div class="col-sm-4">
+                                                <span>Date of Birth:</span>
+                                                <input name="date_of_birth" value="{{ $biodata->date_of_birth}}" type="text" class="form-control" id="date_of_birth" placeholder="Date of Birth" required="">
+                                                @if($errors->has("date_of_birth"))
+                                                    <span class="text-danger">{{ $errors->first("date_of_birth") }}</span>
+                                                @endif
+                                            </div>
+                                        </div>
+
+                                        <div class="form-group">
+                                            <div class="col-sm-4">
+                                                <span>Nationality:</span>
+                                                <select name="nationality" id="nationality" class="form-control" required="">
+                                                    <option value="">---Select Country---- </option>
+                                                    @foreach(App\Models\Country::orderBy('name', 'ASC')->get() as $country)
+                                                        <option value="{{$country->id}}" @if($country['id']==$biodata->country_id)  selected @endif > {{$country->name}}</option>
+                                                    @endforeach
+                                                </select>
+                                                @if($errors->has("nationality"))
+                                                    <span class="text-danger">{{ $errors->first("nationality") }}</span>
+                                                @endif
+                                            </div>
+
+                                            <div class="col-sm-4">
+                                                <span>Place of Birth:</span>
+                                                <input name="place_of_birth" value="{{ $biodata->place_of_birth}}" type="text" class="form-control" id="place_of_birth" placeholder="Place of Birth">
+                                            </div>
+
+                                            <div class="col-sm-4">
+                                                <span>Home Town:</span>
+                                                <input name="home_town" value="{{ $biodata->home_town}}" type="text" class="form-control" id="home_town" placeholder="Home Town">
+                                            </div>
+                                        </div>
+
+                                        <div class="form-group">
+                                        <div class="col-sm-4">
+                                            <span>State:</span>
+                                            <select id="state" name="state" class="form-control {{ $errors->has('state')?'is-invalid':'is-valid' }}" >
+                                                <option value="">---Select State---- </option>
+                                                @if($biodata->lga_id == "" )
+                                                    @foreach(App\Models\State::orderBY('name', 'ASC')->get() as $state)
+                                                        <option value="{{$state->id}}")> {{$state->name}}</option>
+                                                    @endforeach
+                                                @else
+                                                    @foreach(App\Models\State::get() as $state)
+                                                        <option value="{{$state->id}}" {{ $state->id==$biodata->lga()->state_id?"selected":"" }}  > {{$state->name}}</option>
+                                                    @endforeach
+                                                @endif
+                                            </select>
+                                        </div>
+
+                                        <div class="col-sm-8">
+                                            <span>Lga of Origin:</span>
+                                            <select name="lga" id="lga" class="form-control" required="">
+                                                @foreach(App\Models\Lga::orderBy('name', 'ASC')->where("state_id","=",$lgas->state_id)->get() as $lga)
+                                                    <option value="{{$lga->id}}" {{ $lga->id==$lgas->id?"selected":"" }}   > {{$lga->name}}</option>
+                                                @endforeach
+                                            </select>
+                                            @if($errors->has("lga"))
+                                                <span class="text-danger">{{ $errors->first("lga") }}</span>
+                                            @endif
+                                        </div>
+                                        </div>
+
+                                        <div class="form-group mt-30">
+                                            <div class="col-sm-9">
+                                                <button type="submit" class="btn btn-success btn-theme-color btn-flat">Save Biodata</button>
+                                            </div>
+                                        </div>
+                                    </form>
+
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+    </section>
+@endsection
+
+
+@section("js")
+    <script src="{{asset('js/datatables/jquery.dataTables.min.js')}}"></script>
+
+    <script type="text/javascript">
+
+        //Return LGAs on select of State
+        $(document).on("change", "#state", function (event) {
+            $("#lga").html("<option value=''>Loading...</option>");
+            $.ajax({
+                url: '{{route("form.filter.lgas")}}',
+                type: 'GET',
+                data: {
+                    state_id: $("#state").val()
+                }
+            }).done(function (msg) {
+                // console.log(msg);
+                $("#lga").html(msg);
+            });
+        });
+
+        $(function () {
+            $('#date_of_birth').datetimepicker({format: 'YYYY-MM-DD'});
+        });
+    </script>
+@endsection
+
+
+

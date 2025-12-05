@@ -1,0 +1,114 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\CandidateOlevel;;
+use App\Models\OlevelExamType;;
+use App\Models\StudentOlevel;;
+use App\Models\StudentOlevelResult;;
+use App\Models\Subject;;
+use App\Models\OlevelGrade;;
+use Illuminate\Http\Request;
+use Session;
+use DB;
+use Auth;
+
+class StudentOlevelController extends Controller {
+
+    public function __construct() {
+        $this->middleware(['auth:student','mmode']);
+    }
+
+    public function index(Request $request) {
+        return view('pages.student.profile.index');
+    }
+
+    public function store(Request $request) {
+//        return $request;
+        $request->session()->keep('backurl');
+        if ($request->sunjects){ //isMethod('post')) {
+
+            $subjects = $request->subjects;
+            $grades = $request->grades;
+            $examtype = $request->examtype;
+            $examyear = $request->examyear;
+            $examnumber = $request->examnumber;
+            $centernumber = $request->centernumber;
+            $centername = $request->centername;
+            $sitting = $request->sitting;
+            $ischecked_ss = $request->ischecked_ss;
+            $studentid = Auth::id();
+            $olevel = StudentOlevel::where([['student_id', '=', $studentid], ['sitting', '=', $sitting]])->first();
+            if(!$olevel){
+                $olevel = new StudentOlevel;
+                $olevel->student_id = $studentid;
+                $olevel->sitting = $sitting;
+            }
+            $olevel->exam_type_id = $examtype;
+            $olevel->exam_year = $examyear;
+            $olevel->exam_number = $examnumber;
+            $olevel->center_number = $centernumber;
+            $olevel->center_name = $centername;
+            $olevel->save();
+
+            //Delete existing record for student if subjects and grades array is not empty
+            if (count($subjects) > 0 && count($grades) > 0) {
+                StudentOlevelResult::where("student_olevel_id","=",$olevel->id)->delete();
+//                ->delete();
+                //Add the subjects and grades
+                for ($i = 0; $i < count($subjects); $i++) {
+                    $subject = $subjects[$i];
+                    $grade = $grades[$i];
+
+                    $subj= new StudentOlevelResult;
+                    $subj->student_olevel_id=$olevel->id;
+                    $subj->subject_id = $subject;
+                    $subj->grade_id = $grade;
+                    $subj->save();
+                }
+            }
+            return $request;
+
+            //Delete second sitting when it is not checked
+            if ($ischecked_ss == "false") {
+                StudentOlevel::where([['student_id', '=', $studentid], ['sitting', '=', 2]])->delete();
+            }
+
+            return response()->json(true);
+        }
+		return view("pages.student.profile.addolevel");
+	}
+
+    //MISC//
+    public function getsubjects(Request $request) {
+        $request->session()->keep('backurl');
+        $subjects = Subject::all();
+        return $subjects;
+    }
+
+    public function getgrades(Request $request) {
+        $request->session()->keep('backurl');
+        $grades = OlevelGrade::all();
+        return $grades;
+    }
+
+    public function getexamtypes(Request $request) {
+        $request->session()->keep('backurl');
+        $examtypes = OlevelExamType::all();
+        return $examtypes;
+    }
+
+    public function getolevelresults(Request $request) {
+//        return $request;
+        $request->session()->keep('backurl');
+        $sitting = $request->sitting;
+        $studentid = Auth::id();
+        $olevels = StudentOlevel::
+            join("student_olevel_results","student_olevel_results.student_olevel_id","=","student_olevels.id")
+            ->join("subjects","subjects.id","=","student_olevel_results.subject_id")
+            ->join("olevel_grades","olevel_grades.id","=","student_olevel_results.grade_id")
+            ->where('student_id', '=', $studentid)->where('sitting', '=', $sitting)->get();
+        return $olevels;
+    }
+
+}

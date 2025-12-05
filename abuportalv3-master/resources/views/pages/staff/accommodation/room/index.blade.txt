@@ -1,0 +1,264 @@
+@extends('layout.staff.master')
+@section('css')
+<style rel="text/css">
+    .progressdiv{
+        color: #cccccc;
+        font-weight: 900;
+        font-size: 20px;
+        padding:30px;
+        border-style: none;
+        border-color: transparent;
+        border-width: 0px;
+        text-align: center;
+        vertical-align: middle;
+    }
+    #roomviewtb tr td:first-child {
+        font-weight: bold;
+    }
+    .roomaction{
+        margin:5px;
+        margin-right:7px;
+        min-width: 100px;
+    }
+
+</style>
+@endsection
+@section('content')
+    <section class="">
+
+        <div class="container">
+            <div class='blockpages' id='blocklist'>
+                <div class='row'>
+                    <div class='col-10 col-md-10 text-center'>
+                        <h2 class="text-theme-colored2 font-20">MANAGE ROOMS</h2>
+                        <form id='hostelfrm' class='form-inline'>
+                            <div class="form-controls">
+                                <label for="hostel">Hostels:
+                                    <select name='hostelid' id='hostel' class='form-control'>
+                                        <option value=''>Select Hostel</option>
+                                        @foreach($hostels as $hostel)
+                                            <option value='{{$hostel->id}}' @if(isset($selectedblock) && $selectedblock->hostel->id == $hostel->id) selected @endif >{{$hostel->name}}</option>
+                                        @endforeach
+                                    </select></label>
+                            </div>
+                            <div class="form-controls">
+                                <label for="block">Blocks:
+                                    <select name='blockid' id='block' class='form-control'>
+                                        <option value=''>Select Block</option>
+                                        @if(isset($selectedblock))
+                                            @foreach($selectedblock->hostel->blocks as $block)
+                                                <option value='{{$block->id}}' @if($selectedblock->id == $block->id) selected @endif >{{$block->name}}</option>
+                                            @endforeach
+                                        @endif
+                                    </select></label>
+                            </div>
+                            <div class='form-controls'>
+                                <button class='btn btn-primary' id='loadrooms'>Load Rooms</button>
+                            </div>
+
+                        </form>
+                        <div class ='roompages' id='roomlistdiv'>
+                            @if(isset($selectedblock))
+                                <div class="text-right"><a href='#' class="btn btn-sm btn-default createroomaction" data-id='{{$selectedblock->id}}'>Add New Room in {{$selectedblock->name}} Block</a></div>;
+                                <table class="table table-bordered table-hover table-sm">
+                                    <thead class='thead-dark'>
+                                    <tr>
+                                        <th>S/N</th>
+                                        <th>Room No.</th>
+                                        <th>Bedspace</th>
+                                        <th>Block</th>
+                                        <th>Hostel</th>
+                                        <!--<th>Status</th>-->
+                                        <th>Actions</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    @foreach($selectedblock->rooms as $room)
+                                        <tr>
+                                            <td>{{$loop->iteration}}</td>
+                                            <td><a href='#' class='viewroom' data-id='{{$room->id}}'>{{strtoupper($room->room_no)}}</a></td>
+                                            <td>{{$room->bed_space}}</td>
+                                            <td>{{strtoupper($room->block->name)}}</td>
+                                            <td>{{strtoupper($room->block->hostel->name)}}</td>
+                                            <td>
+                                                <a href="#" class="viewroom" data-id='{{$room->id}}'>veiw</a>
+                                                <a href="#" class="modifyroomaction" data-id='{{$room->id}}'><i class="icon icon-edit3 icon-2x"></i></a>
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                    </tbody>
+                                </table>
+                            @endif
+                        </div>
+                        <div class='progressdiv' id='progress1'>Clock on <i>"Load Rooms"</i> button to display list of rooms.</div>
+                        <div class='progressdiv' id='progress2' style='display:none;'><i>Loading...</i></div>
+                    </div>
+                    <div class='col-1 col-md-2'></div>
+                </div>
+            </div>
+            <div class='roompages' id="roomviewdiv">
+
+            </div>
+            <div class="roompages" id='modifyroomdiv'>
+
+            </div>
+            <div class="roompages" id='createroomdiv'>
+
+            </div>
+            <div class='progressdiv' id='generalprogressdiv' style='display:none;'><i>Loading...</i></div>
+        </div>
+
+    </section>
+@endsection
+@section('js')
+<script type='text/javascript'>
+    $(document).on('change', '#hostel', function (event) {
+        $('#roomlistdiv').html('');
+        $('#progress1').hide();
+        $('#progress2').show();
+        $('#loadrooms').prop('disabled', true);
+        $('#block').html("<option value=''>Loading...</option>");
+        $.ajax({
+            'url': "{{route('accommodation.admin.block.getblockoptions')}}",
+            'type': 'GET',
+            'data': {'hostelid': $('#hostel').val()}
+        }).done(function (data) {
+            $('#block').html("<option value=''>Select Block</option>" + data);
+            $('.progressdiv').hide();
+            $('#progress1').show();
+            $('#loadrooms').prop('disabled', false);
+        });
+
+    });
+    $(document).on('change', '#block', function (event) {
+        $('.roompages').hide();
+        $('#roomlistdiv').html('');
+        $('#progress1').show();
+        $('#progress2').hide();
+    });
+    $(document).on('click', '#loadrooms', function (event) {
+        if ($('#block').val() != "") {
+            $('.roompages').hide();
+            $('#progress2').show();
+            $('#progress1').hide();
+            $.ajax({
+                'url': "{{route('accommodation.admin.room.getroomhtmllist')}}",
+                'type': 'GET',
+                'data': $('#hostelfrm').serialize()
+            }).done(function (data) {
+                $('#roomlistdiv').html(data).show();
+                $('.progressdiv').hide();
+            });
+        }
+        event.preventDefault();
+    });
+    $(document).on('click', '.viewroom', function (event) {
+        dis = $(this);
+        id = dis.attr('data-id');
+        $('.roompages').hide();
+        $('#generalprogressdiv').show();
+        $.ajax({
+            'url': "{{route('accommodation.admin.room.show')}}",
+            'type': 'GET',
+            'data': {'id': id}
+        }).done(function (data) {
+            $('#roomviewdiv').html(data).show();
+            $('#generalprogressdiv').hide();
+        });
+        event.preventDefault();
+    });
+    $(document).on('click', '.roomlistaction', function (event) {
+        dis = $(this);
+        $('.roompages').hide();
+        $('#roomlistdiv').show();
+        $('#loadrooms').trigger('click');
+        event.preventDefault();
+    });
+
+//    $(document).on('click', '#toggleroomstatus', function (event) {
+//        dis = $(this);
+//        id = dis.attr('data-id');
+//        $('.roompages').hide();
+//        $('#generalprogressdiv').show();
+//        $.ajax({
+//            'url': "{{route('accommodation.admin.room.togglestatus')}}",
+//            'type': 'GET',
+//            'data': {'id': id}
+//        }).done(function (data) {
+//            $('#roomviewdiv').html(data).show();
+//            $('#generalprogressdiv').hide();
+//        });
+//    });
+
+    $(document).on('click', '.modifyroomaction', function (event) {
+        dis = $(this);
+        id = dis.attr('data-id');
+        $('.roompages').hide();
+        $('#generalprogressdiv').show();
+
+        $.ajax({
+            url: "{{route('accommodation.admin.room.edit')}}",
+            type: 'GET',
+            data: {'id': id}
+        }).done(function (data) {
+            $('#modifyroomdiv').html(data).show();
+            $('#generalprogressdiv').hide();
+        });
+        event.preventDefault();
+    });
+
+    $(document).on('click', '.createroomaction', function (event) {
+        dis = $(this);
+        id = dis.attr('data-id');
+        $('.roompages').hide();
+        $('#generalprogressdiv').show();
+
+        $.ajax({
+            url: "{{route('accommodation.admin.room.create')}}",
+            type: 'GET',
+            data: {'id': id}
+        }).done(function (data) {
+            $('#createroomdiv').html(data).show();
+            $('#generalprogressdiv').hide();
+        });
+        event.preventDefault();
+    });
+
+    $(document).on('change', '#roomfee', function (event) {
+        //alert($(this).val());
+        if ($(this).val() == 'asspecified') {
+            $('#roomfeediv').removeClass('hidden').show();
+        } else {
+            $('#roomfeediv').hide();
+        }
+    });
+
+    $(document).on('click', '#modifyroom', function (event) {
+        $('.roompages').hide();
+        $('#generalprogressdiv').show();
+        $.ajax({
+            url: "{{route('accommodation.admin.room.modify')}}",
+            type: 'POST',
+            data: $('#modifyroomfrm').serialize()
+        }).done(function (data) {
+            $('#modifyroomdiv').html(data).show();
+            $('.progressdiv').hide();
+        });
+        event.preventDefault();
+    });
+
+    $(document).on('click', '#createroom', function (event) {
+        $('.roompages').hide();
+        $('#generalprogressdiv').show();
+        $.ajax({
+            url: "{{route('accommodation.admin.room.store')}}",
+            type: 'POST',
+            data: $('#createroomfrm').serialize()
+        }).done(function (data) {
+            $('#createroomdiv').html(data).show();
+            $('.progressdiv').hide();
+        });
+        event.preventDefault();
+    });
+</script>
+@endsection

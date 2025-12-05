@@ -1,0 +1,291 @@
+@extends('layout.staff.master')
+
+@section('title', 'Create Step Configuration')
+
+@section('content')
+<section>
+<div class="promotion-step-configuration-create-wrapper">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-12">
+                <div class="page-title-box">
+                    <div class="page-title-right">
+                        <ol class="breadcrumb m-0">
+                            <li class="breadcrumb-item"><a href="{{ route('staff.dashboard') }}">Dashboard</a></li>
+                            <li class="breadcrumb-item"><a href="{{ route('promotion') }}">Promotion</a></li>
+                            <li class="breadcrumb-item"><a href="{{ route('promotion.configuration.index') }}">Configuration</a></li>
+                            <li class="breadcrumb-item"><a href="{{ route('promotion.configuration.configurations', $exercise) }}">Step Configurations</a></li>
+                            <li class="breadcrumb-item active">Create</li>
+                        </ol>
+                    </div>
+                    <h4 class="page-title">Create Step Configuration</h4>
+                </div>
+            </div>
+        </div>
+
+            <div class="row justify-content-center">
+            <div class="col-lg-10 col-xl-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h4 class="header-title mb-0">New Step Configuration for {{ $exercise->title }}</h4>
+                    </div>
+                    <div class="card-body">
+                    <form action="{{ route('promotion.configuration.configurations.store', $exercise) }}" method="POST">
+                        @csrf
+
+                                                <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="step_id" class="form-label fw-bold">Step <span class="text-danger">*</span></label>
+                                    <select class="form-select form-select-lg @error('step_id') is-invalid @enderror" id="step_id" name="step_id" required>
+                                        <option value="">Choose a step...</option>
+                                        @foreach($steps as $step)
+                                            <option value="{{ $step->id }}" {{ old('step_id') == $step->id ? 'selected' : '' }}>
+                                                {{ $step->order }}. {{ $step->name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    @error('step_id')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="order" class="form-label fw-bold">Order <span class="text-danger">*</span></label>
+                                    <input type="number" class="form-control form-control-lg @error('order') is-invalid @enderror"
+                                           id="order" name="order" value="{{ old('order') }}"
+                                           min="1" max="20" placeholder="e.g., 1, 2, 3..." required>
+                                    <small class="form-text text-muted">The sequence order in this exercise</small>
+                                    @error('order')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                            </div>
+                        </div>
+
+                                                <div class="row g-3">
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="complex_id" class="form-label fw-bold">Complex</label>
+                                    <select class="form-select form-select-lg @error('complex_id') is-invalid @enderror" id="complex_id" name="complex_id">
+                                        <option value="">Choose complex (optional)</option>
+                                        @foreach($complexes as $complex)
+                                            <option value="{{ $complex->id }}" {{ old('complex_id') == $complex->id ? 'selected' : '' }}>
+                                                {{ $complex->name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    @error('complex_id')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="faculty_id" class="form-label fw-bold">Faculty</label>
+                                    <select class="form-select form-select-lg @error('faculty_id') is-invalid @enderror" id="faculty_id" name="faculty_id">
+                                        <option value="">Choose faculty (optional)</option>
+                                        @foreach($faculties as $faculty)
+                                            <option value="{{ $faculty->id }}" {{ old('faculty_id') == $faculty->id ? 'selected' : '' }}>
+                                                {{ $faculty->name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    @error('faculty_id')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="department_id" class="form-label fw-bold">Department</label>
+                                    <select class="form-select form-select-lg @error('department_id') is-invalid @enderror" id="department_id" name="department_id">
+                                        <option value="">Choose department (optional)</option>
+                                        @foreach($departments as $dept)
+                                            <option value="{{ $dept->id }}" {{ old('department_id') == $dept->id ? 'selected' : '' }}>
+                                                {{ $dept->name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    @error('department_id')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                            </div>
+                        </div>
+
+                                                <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="approver_type" class="form-label fw-bold">Approver Type <span class="text-danger">*</span></label>
+                                    <select class="form-select form-select-lg @error('approver_type') is-invalid @enderror" id="approver_type" name="approver_type" required>
+                                        <option value="">Choose approver type...</option>
+                                        <option value="Role" {{ old('approver_type') == 'Role' ? 'selected' : '' }}>Role-based</option>
+                                        <option value="User" {{ old('approver_type') == 'User' ? 'selected' : '' }}>Specific User</option>
+                                        <option value="System" {{ old('approver_type') == 'System' ? 'selected' : '' }}>System Auto</option>
+                                    </select>
+                                    @error('approver_type')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="approver_role" class="form-label fw-bold">Approver Role</label>
+                                    <input type="text" class="form-control form-control-lg @error('approver_role') is-invalid @enderror"
+                                           id="approver_role" name="approver_role" value="{{ old('approver_role') }}"
+                                           placeholder="e.g., HOD, Dean, Complex Chair">
+                                    <small class="form-text text-muted">Required if Approver Type is Role-based</small>
+                                    @error('approver_role')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="status" class="form-label fw-bold">Status <span class="text-danger">*</span></label>
+                                    <select class="form-select form-select-lg @error('status') is-invalid @enderror" id="status" name="status" required>
+                                        <option value="">Choose status...</option>
+                                        <option value="Active" {{ old('status') == 'Active' ? 'selected' : '' }}>Active</option>
+                                        <option value="Inactive" {{ old('status') == 'Inactive' ? 'selected' : '' }}>Inactive</option>
+                                    </select>
+                                    @error('status')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-3 mt-4 pt-3 border-top">
+                            <a href="{{ route('promotion.configuration.configurations', $exercise) }}" class="btn btn-secondary btn-lg">
+                                <i class="mdi mdi-arrow-left me-2"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="mdi mdi-content-save me-2"></i> Create Configuration
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        </div>
+        </div>
+    </div>
+</div>
+</section>
+@endsection
+
+@section('css')
+<style>
+.promotion-step-configuration-create-wrapper {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    min-height: 100vh;
+    padding: 20px 0;
+}
+
+.promotion-step-configuration-create-wrapper .card {
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    background: white;
+}
+
+.promotion-step-configuration-create-wrapper .card-header {
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    color: white;
+    border-radius: 15px 15px 0 0 !important;
+    padding: 25px;
+}
+
+.promotion-step-configuration-create-wrapper .card-body {
+    padding: 30px;
+}
+
+.promotion-step-configuration-create-wrapper .form-group {
+    margin-bottom: 25px;
+}
+
+.promotion-step-configuration-create-wrapper .form-label {
+    color: #495057;
+    margin-bottom: 8px;
+    font-size: 0.95rem;
+}
+
+.promotion-step-configuration-create-wrapper .form-select,
+.promotion-step-configuration-create-wrapper .form-control {
+    border: 2px solid #e9ecef;
+    border-radius: 10px;
+    padding: 12px 15px;
+    transition: all 0.3s ease;
+}
+
+.promotion-step-configuration-create-wrapper .form-select:focus,
+.promotion-step-configuration-create-wrapper .form-control:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.25);
+    transform: translateY(-2px);
+}
+
+.promotion-step-configuration-create-wrapper .form-select-lg,
+.promotion-step-configuration-create-wrapper .form-control-lg {
+    font-size: 1rem;
+    height: auto;
+}
+
+.promotion-step-configuration-create-wrapper .btn {
+    border-radius: 10px;
+    padding: 12px 25px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.promotion-step-configuration-create-wrapper .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
+.promotion-step-configuration-create-wrapper .form-text {
+    color: #6c757d;
+    font-size: 0.85rem;
+    margin-top: 5px;
+}
+
+.promotion-step-configuration-create-wrapper .invalid-feedback {
+    font-size: 0.85rem;
+    margin-top: 5px;
+}
+</style>
+@endsection
+
+@section('js')
+<script>
+$(document).ready(function() {
+    // Set default order if not provided
+    if (!$('#order').val()) {
+        $('#order').val(1);
+    }
+
+    // Show/hide approver role field based on approver type
+    $('#approver_type').on('change', function() {
+        if ($(this).val() === 'Role') {
+            $('#approver_role').closest('.form-group').show();
+            $('#approver_role').prop('required', true);
+        } else {
+            $('#approver_role').closest('.form-group').hide();
+            $('#approver_role').prop('required', false);
+        }
+    });
+
+    // Trigger change event on load
+    $('#approver_type').trigger('change');
+});
+</script>
+@endsection

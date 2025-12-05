@@ -1,0 +1,21 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class EmployeeContactAddress extends Model
+{
+    //
+    public function employee(){
+        return $this->belongsTo(Employee::class);
+    }
+
+    public function country(){
+        return $this->belongsTo(Country::class);
+    }
+
+    public function state(){
+        return $this->belongsTo(State::class);
+    }
+}

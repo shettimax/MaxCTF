@@ -1,0 +1,251 @@
+@extends("layout.staff.master")
+@section("css")
+    <link rel="stylesheet" href="{{ asset('js/datatables/jquery.dataTables.min.css')}}"/>
+    <style>
+        label {
+            width: 100%;
+            color: #0f1824;
+            text-align: left;
+        }
+    </style>
+@endsection
+@section("pageTitle")
+    Manage Configuration
+@endsection
+@section("content")
+    <section>
+        <div class="main-section">
+            <div class="container">
+                <div class="row justify-content-center">
+                    <div class="col-md-12">
+                        <div class="card">
+                            <div class="card-body">
+                                @if (session('status'))
+                                    <div class="alert alert-success" role="alert">
+                                        {{ session('status') }}
+                                    </div>
+                                @endif
+                                @if (isset($errors))
+                                    <ul>
+                                        @foreach($errors as $error)
+                                            <li>{{$error}}</li>
+                                        @endforeach
+                                    </ul>
+                                @endif
+                                @if(Session::has('flash_message'))
+                                    <div class="alert alert-success">
+                                        {{ Session::get('flash_message') }}
+                                    </div>
+                                @endif
+                                {{--                                <ul class="nav nav-tabs">--}}
+                                {{--                                    <li class="nav-item active"><a class="nav-link" href="{{route('faculty')}}">Manage--}}
+                                {{--                                            Faculties</a></li>--}}
+                                {{--                                    <li class="nav-item"><a class="nav-link" href="{{route('department')}}">Manage--}}
+                                {{--                                            Departments</a></li>--}}
+                                {{--                                    <li class="nav-item"><a class="nav-link" href="{{route('programme')}}">Manage--}}
+                                {{--                                            Programmes</a></li>--}}
+                                {{--                                    <li class="nav-item"><a class="nav-link" href="{{route('course')}}">Manage--}}
+                                {{--                                            Courses</a>--}}
+                                {{--                                    </li>--}}
+                                {{--                                </ul>--}}
+                                {{--                                <h3>Manage Faculties</h3>--}}
+
+                                <div class="mb-70 mr-30 mt-30">
+                                    <!-- Button trigger modal -->
+                                    <button type="button" class="btn btn-primary pull-right add" data-toggle="modal"
+                                            data-target="#myModal">
+                                        Add New
+                                    </button>
+
+                                </div>
+
+                                <div class="mb-30 ml-30 mr-30 mt-30">
+                                    <table id="faculties-table" align="center"
+                                           class="table table-bordered table-striped"
+                                           style="width:100%;font-size:16px;font-family: Calibri; margin-top: 2vh; text-align: left; color: #000000">
+                                        <thead>
+                                        <tr>
+                                            <th>S/N</th>
+                                            <th>Position</th>
+                                            <th>Record</th>
+                                            <th>Effective Date</th>
+                                            <th>Unit</th>
+                                            <th>Signature</th>
+                                            <th>Action*</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        @php $i =1; @endphp
+                                        @foreach($configs as $complex)
+                                            <tr>
+                                                <td>{{$i++}}</td>
+                                                <td>{{$complex->name}}</td>
+                                                <td>{{$complex->config}}</td>
+                                                <td>{{$complex->effective_date}}</td>
+                                                <td></td>
+                                                <td>
+                                                    @can('dashboard')
+                                                        <a class="btn btn-primary btn-sm ml-30 edit"
+                                                           href="#" data-toggle="modal"
+                                                           data-target="#myModal" data-id="{{$complex->id}}"
+                                                           data-name="{{$complex->name}}"
+                                                           data-chairman="{{$complex->chairman}}">Edit <span
+                                                                class="icon icon_pencil-edit"></span> </a>
+                                                    @endcan
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+
+
+    <!-- Modal -->
+    <div class="modal fade" id="myModal" tabindex="-1" role="dialog"
+         aria-labelledby="myModalLabel">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal"
+                            aria-label="Close"><span aria-hidden="true">&times;</span>
+                    </button>
+                    <h4 class="modal-title text-left" id="myModalLabel">Add new
+                        Configuration
+                        <div class="double-line-bottom-theme-colored-2"></div>
+                    </h4>
+                </div>
+                @php if(!isset($model))
+                      $model = null
+                @endphp
+                <form class="form" action="{{route('complex.store')}}" enctype="multipart/form-data"
+                      method="POST"
+                      style="width: 100%; margin-top: 3vh;">
+                    @csrf
+                    <div class="modal-body">
+                        {{--                                                        @if( isset($model) && $model !=null)--}}
+                        <input type="hidden" id="complex_id" value="0"
+                               name="faculty_id"/>
+                        {{--                                                        @endif--}}
+                        <div class="row">
+                            <div class="form-group col-md-6">
+                                <label for="faculty">Name:</label>
+                                <select name="name" id="name" class="form-control"  required>
+                                    <option value="Director">Director/Dean</option>
+                                    <option value="Secretary">Secretary</option>
+                                    <option value="HOU">Head of Unit</option>
+                                </select>
+                            </div>
+                            <div class="form-group col-md-6">
+                                <label for="nature">For:</label>
+                                <select name="unit_type" id="unit_type" class="form-control" required>
+                                    <option value="Faculty">Faculty/Institute</option>
+                                    <option value="Department">Unit/Department</option>
+                                </select>
+                            </div>
+                            <div class="form-group col-md-6">
+                                <label for="faculty">Name:</label>
+                                <input type="text" name="config" id="config" class="form-control" placeholder="Name of Individual with Title">
+                            </div>
+                            <div class="form-group col-md-6">
+                                <label for="nature">Effective Date:</label>
+                                <input type="text" class="form-control datepicker">
+                            </div>
+                            <div class="form-group col-md-6">
+                                <label for="nature">Signature:</label>
+                                <input type="file" class="datepicker form-control" >
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <div class="form-group">
+                            <button type="button" class="btn btn-flat btn-danger"
+                                    data-dismiss="modal">
+                                Close
+                            </button>
+                            <button type="submit" id="addbtn"
+                                    class="btn btn-flat btn-success text-right"><span
+                                    class="icon icon-save"> Save </span>
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+@endsection
+
+@section("js")
+    <script src="{{asset('js/datatables/jquery.dataTables.min.js')}}"></script>
+    <script>
+        $(document).on('click', '.add', function () {
+            $(".modal-body #chairman").val('');
+            $(".modal-body #complex").val('');
+            $(".modal-body #complex_id").val(0);
+        });
+
+        $(document).on('click', '.edit', function () {
+            const id = $(this).data('id'),
+                complex = $(this).data('complex'),
+                chairman = $(this).data('chairman');
+
+            $(".modal-body #complex_id").val(id);
+            $(".modal-body #chairman").val(chairman);
+            $(".modal-body #complex").val(complex);
+        });
+
+        $('#faculties-table').DataTable({
+            "lengthMenu": [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+            pageLength: 10,
+            dom: "<'row'<'col-sm-12'B>>" +
+                "<'row'<'col-sm-12 col-md-6'l><'col-sm-12 col-md-6'f>>" +
+                "<'row'<'col-sm-12'tr>>" +
+                "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+            buttons: [
+                {
+                    extend: 'excelHtml5',
+                    exportOptions: {
+                        columns: ':visible'
+                    }
+                },
+                {
+                    extend: 'pdfHtml5',
+                    orientation: 'landscape',
+                    pageSize: 'LEGAL',
+                    exportOptions: {
+                        columns: ':visible'
+                    }
+                },
+                {
+                    extend: 'print',
+                    messageTop: 'Candidates Report',
+                    orientation: 'landscape',
+                    pageSize: 'LEGAL'
+                },
+                {
+                    extend: 'colvis',
+                    columns: ':not(.noVis)',
+                    collectionLayout: 'fixed two-column',
+                    postfixButtons: [{
+                        extend: 'colvisGroup',
+                        text: 'Show all',
+                        show: ':hidden'
+                    }]
+                }
+            ],
+            language: {
+                buttons: {
+                    colvis: 'Show/Hide columns'
+                }
+            }
+        });
+    </script>
+@endsection
+

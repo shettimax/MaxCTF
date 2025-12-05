@@ -1,0 +1,50 @@
+<?php
+
+namespace App\Http\Controllers\Staff;
+
+use App\Models\Employee;
+use App\Models\EmployeeCitation;
+use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+
+class EmployeeCitationController extends Controller
+{
+    public function __construct(){
+        return $this->middleware(['auth:staff']);
+    }
+
+    public function index(){
+        try{
+            $employee = Employee::find(Auth::user()->employee_id);
+            return view('pages.staff.profile.citation', compact('employee'));
+        }catch (\Exception $e){
+            return redirect()->back()->with('error', $e->getMessage());
+        }
+    }
+
+    public function storeCitation(Request $request){
+        try{
+            $this->validate($request,[
+                'achievement'=>'required'
+            ]);
+            $citation = new EmployeeCitation();
+            $citation->employee_id = $request->employee_id;
+            $citation->achievement = $request->achievement;
+            $citation->date = $request->date;
+            $citation->save();
+            return redirect()->back()->with('success', 'Done!');
+        }catch(\Exception $e){
+            return redirect()->back()->with('error', $e->getMessage());
+        }
+    }
+
+    public function deleteCitation(EmployeeCitation $employeeCitation){
+        try{
+            EmployeeCitation::destroy($employeeCitation->id);
+            return redirect()->back()->with('success', 'Done!');
+        }catch(\Exception $e){
+            return redirect()->back()->with('error', $e->getMessage());
+        }
+    }
+}

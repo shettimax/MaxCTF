@@ -1,0 +1,529 @@
+@extends("layout.staff.master")
+
+@section("css")
+    {{--    <link rel="stylesheet" href="{{ asset('js/jqueryui/jquery-ui.min.css')}}" type="text/css" media="all">--}}
+    <link rel="stylesheet" href="{{asset('js/datatables/jquery.dataTables.min.css')}}">
+    <style>
+        label {
+            width: 100%;
+            color: #000000;
+            text-align: left;
+            margin-top: 2vh;
+        }
+    </style>
+@endsection
+
+@section("pageTitle")
+    Manage Degree Plan
+@endsection
+@section("content")
+    <section>
+        <div class="main-section">
+            <div class="container">
+                <div class="row justify-content-center">
+                    <div class="col-md-12">
+                        <div class="card">
+                            <div class="card-body">
+                                @if (session('status'))
+                                    <div class="alert alert-success" role="alert">
+                                        {{ session('status') }}
+                                    </div>
+                                @endif
+                                @if (isset($errors))
+                                    <ul>
+                                        @foreach($errors as $error)
+                                            <li>{{$error}}</li>
+                                        @endforeach
+                                    </ul>
+                                @endif
+                                @if(Session::has('flash_message'))
+                                    <div class="alert alert-success">
+                                        {{ Session::get('flash_message') }}
+                                    </div>
+                                @endif
+                                @php
+                                    $faculties = App\Models\Faculty::where("id",">",0)->orderBy("name")->get();
+                                @endphp
+
+                                {{--                                <h3>Manage Degree Plans</h3>--}}
+                                <div class="row  mb-50 mr-30 ml-10 mt-50">
+                                    <div class="col-md-3">
+                                        <label for="faculty">Faculty: </label>
+                                        <select
+                                            class="form-control" size="" id="faculty" required>
+                                            <option value="-1">Select...</option>
+                                            @foreach($faculties as $faculty)
+                                                <option value="{{$faculty->id}}">{{$faculty->name}}</option>
+                                            @endforeach
+                                        </select>
+                                        <div id="faculty_error" class="invalid-feedback" style="color:red;">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label for="department">Department: </label>
+                                        <select
+                                            class="form-control" size="" id="department" required>
+                                            <option value="-1">Select...</option>
+                                        </select>
+                                        <div id="department_error" class="invalid-feedback"
+                                             style="color:red;">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label for="programme">Programme: </label>
+                                        <select
+                                            class="form-control" size="" id="programme" required>
+                                            <option value="-1">Select...</option>
+                                        </select>
+                                        <div id="department_error" class="invalid-feedback"
+                                             style="color:red;">
+                                        </div>
+                                    </div>
+                                    <button type="button" class="btn btn-primary add pull-right mt-40"
+                                            data-toggle="modal"
+                                            data-target="#add-edit">Add New
+                                    </button>
+                                </div>
+                                <div class="row">
+                                    <div id="add-edit" class="modal fade" tabindex="-1" role="dialog"
+                                         aria-labelledby="myLargeModalLabel">
+                                        <div class="modal-dialog" role="document">
+                                            <div class="modal-content">
+                                                <div class="modal-header">
+                                                    <button type="button" class="close" data-dismiss="modal"
+                                                            aria-label="Close"><span aria-hidden="true">&times;</span>
+                                                    </button>
+                                                    <h4 class="modal-title text-left" id="myModalLabel">Add/Edit Degree
+                                                        Plan
+                                                        <div class="double-line-bottom-theme-colored-2"></div>
+                                                    </h4>
+                                                </div>
+                                                <form class="form" action="{{route('degreeplan.store')}}" method="POST">
+                                                    @csrf
+                                                    <div class="modal-body">
+                                                        <input type="hidden" id="planid" name="planid" value="0"/>
+                                                        <div class="row mb-10">
+                                                            <div class="col-md-6">
+                                                                <label for="faculty">Faculty: </label>
+                                                                <select
+                                                                    class="form-control"
+                                                                    name="faculty" id="form_faculty" required>
+                                                                    <option value="-1">Select...</option>
+                                                                    @foreach($faculties as $faculty)
+                                                                        <option
+                                                                            value="{{$faculty->id}}">{{$faculty->name}}
+                                                                        </option>
+                                                                    @endforeach
+                                                                </select>
+                                                                <div id="faculty_error" class="invalid-feedback"
+                                                                     style="color:red;">
+                                                                </div>
+                                                            </div>
+                                                            <div class="col-md-6">
+                                                                <label for="department">Department: </label>
+                                                                <select
+                                                                    class="form-control"
+                                                                    name="department" id="form_department" required>
+                                                                    <option value="-1">Select...</option>
+                                                                </select>
+                                                                <div id="department_error" class="invalid-feedback"
+                                                                     style="color:red;">
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="row mb-10">
+                                                            <div class="col-md-6">
+                                                                <label for="department">Programme: </label>
+                                                                <select
+                                                                    class="form-control"
+                                                                    name="programme" id="form_programme" required>
+                                                                    <option value="-1">Select...</option>
+                                                                </select>
+                                                                <div id="programme_error" class="invalid-feedback"
+                                                                     style="color:red;">
+                                                                </div>
+                                                            </div>
+                                                            <div class="col-md-6">
+                                                                <label for="department">Level: </label>
+                                                                <select
+                                                                    class="form-control" name="level"
+                                                                    id="form_level" required>
+                                                                    <option value="-1">Select...</option>
+                                                                    @foreach(App\Models\Level::select(['id','name'])->get() as $level)
+                                                                        <option value="{{$level->id}}">
+                                                                            {{$level->name}}</option>
+                                                                    @endforeach
+                                                                </select>
+                                                                <div id="level_error" class="invalid-feedback"
+                                                                     style="color:red;">
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="row mb-10">
+                                                            <div class="col-md-6">
+                                                                <label for="code">Plan Name:</label>
+                                                                <input type="text" class="form-control" id="planname"
+                                                                       name="planname" placeholder="Plane Name"
+                                                                       required>
+                                                                <div id="planname_error" class="invalid-feedback"
+                                                                     style="color:red;">
+                                                                </div>
+                                                            </div>
+                                                            <div class="col-md-6">
+                                                                <label for="plansession">Session :</label>
+                                                                <select id="plansession" class="form-control"
+                                                                        name="plansession" required>
+                                                                    <option value="">Session</option>
+                                                                    @foreach(range(date("Y"),date("Y")-4) as $year)
+                                                                        @php
+                                                                            $y = isset($model)?$model->plansession:old('plansession');
+                                                                                $selected = $year==$y?"selected":"";
+                                                                        @endphp
+                                                                        <option
+                                                                            value="{{$year}}" {{$selected}}>{{$year}}
+                                                                            /{{$year+1}}</option>
+                                                                    @endforeach
+                                                                </select>
+                                                                <div class="invalid-feedback" style="color:red;">
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="row mb-10">
+                                                            <div class="col-md-12">
+                                                                <label for="description">Plan Description:</label>
+                                                                <textarea type="text"
+                                                                          class="form-control" id="description"
+                                                                          name="description" placeholder="Description"
+                                                                          required>{{isset($model)?$model->plandescription : old('description')}}</textarea>
+                                                                @if($errors->has('description'))
+                                                                    <div class="invalid-feedback" style="color:red;">
+                                                                        {{ $errors->first('description')}}
+                                                                    </div>
+                                                                @endif
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <div class="form-group">
+                                                            <button type="button" class="btn btn-flat btn-danger"
+                                                                    data-dismiss="modal">
+                                                                Close
+                                                            </button>
+                                                            <button type="submit" id="addbtn"
+                                                                    class="btn btn-success btn-flat text-right"><span
+                                                                    class="icon icon-save"> Save </span>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div id="view-courses" class="modal fade" tabindex="-1" role="dialog"
+                                         aria-labelledby="myLargeModalLabel">
+                                        <div class="modal-dialog modal-lg" role="document">
+                                            <div class="modal-content">
+                                                <div class="modal-header">
+                                                    <button type="button" class="close" data-dismiss="modal"
+                                                            aria-label="Close"><span aria-hidden="true">&times;</span>
+                                                    </button>
+                                                    <h4 class="modal-title text-left" id="myModalLabel">Mapped Courses
+                                                        <div class="double-line-bottom-theme-colored-2"></div>
+                                                    </h4>
+                                                </div>
+                                                <div class="modal-body">
+                                                    <div id="courses" class="ml-10 mr-10">
+
+                                                    </div>
+                                                </div>
+                                                <div class="modal-footer">
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            <!--<form action="{{route('degreeplan.store')}}" method="POST">
+{{--                                    @csrf--}}
+                            {{--                                    <div class="form-row">--}}
+                            {{--                                        <div class="col-md-4 mb-4">--}}
+                            {{--                                            <label for="faculty">Faculty: </label>--}}
+                            {{--                                            <select--}}
+                            {{--                                                class="form-control  {{ $errors->has('faculty')?'is-invalid':'is-valid' }}"--}}
+                            {{--                                                name="faculty" id="faculty" required>--}}
+                            {{--                                                <option value="">Select...</option>--}}
+                            {{--                                                @foreach(\App\Models\Faculty::where("id",">",0)->orderBy("name")->get()  as $faculty)--}}
+                            {{--                                                    @php--}}
+                            {{--                                                        $selected="";--}}
+                            {{--                                                        if(isset($model) || old('programme') !=null ){--}}
+                            {{--                                                            $programe_id = isset($model)?$model->programme_id:old('programme');--}}
+                            {{--                                                            $facultyid = \App\Models\Programme::find($programe_id)->department()->first()->faculty()->first()->id;--}}
+                            {{--                                                            $selected = $facultyid== $faculty->id?"selected":"";--}}
+                            {{--                                                        }--}}
+                            {{--                                                    @endphp--}}
+                            {{--                                                    <option--}}
+                            {{--                                                        value="{{$faculty->id}}" {{$selected}}>{{$faculty->name}}</option>--}}
+                            {{--                                                @endforeach--}}
+                            {{--                                            </select>--}}
+                            {{--                                            @if($errors->has('faculty'))--}}
+                            {{--                                                <div class="invalid-feedback" style="color:red;">--}}
+                            {{--                                                    {{ $errors->first('faculty')}}--}}
+                            {{--                                                </div>--}}
+                            {{--                                            @endif--}}
+                            {{--                                        </div>--}}
+                            {{--                                        <div class="col-md-4 mb-4">--}}
+                            {{--                                            <label for="department">Department: </label>--}}
+                            {{--                                            <select--}}
+                            {{--                                                class="form-control  {{ $errors->has('department')?'is-invalid':'is-valid' }}"--}}
+                            {{--                                                name="department" id="department" required>--}}
+                            {{--                                                <option value="">Select...</option>--}}
+                            {{--                                                @if(isset($model) || old('programme') !=null ))--}}
+                            {{--                                                @php $programmeid = isset($model)?$model->programme_id:old('programme');--}}
+                            {{--                                            $department = \App\Models\Programme::find($programmeid)->department()->first();--}}
+                            {{--                                                @endphp--}}
+                            {{--                                                <option value="{{$department->id}}"--}}
+                            {{--                                                        selected>{{$department->name}}</option>--}}
+                            {{--                                                @endif--}}
+                            {{--                                            </select>--}}
+                            {{--                                            @if($errors->has('department'))--}}
+                            {{--                                                <div class="invalid-feedback" style="color:red;">--}}
+                            {{--                                                    {{ $errors->first('department')}}--}}
+                            {{--                                                </div>--}}
+                            {{--                                            @endif--}}
+                            {{--                                        </div>--}}
+                            {{--                                        <div class="col-md-4 mb-4">--}}
+                            {{--                                            <label for="programme">Programme: </label>--}}
+                            {{--                                            <select--}}
+                            {{--                                                class="form-control  {{ $errors->has('programme')?'is-invalid':'is-valid' }}"--}}
+                            {{--                                                name="programme" id="programme" required>--}}
+                            {{--                                                <option value="">Select...</option>--}}
+                            {{--                                                @if(isset($model) || old('programme') !=null ))--}}
+                            {{--                                                @php $programmeid = isset($model)?$model->programme_id:old('programme'); @endphp--}}
+                            {{--                                                <option value="{{$programmeid}}"--}}
+                            {{--                                                        selected>{{\App\Models\Programme::find($programmeid)->name}}</option>--}}
+                            {{--                                                @endif--}}
+                            {{--                                            </select>--}}
+                            {{--                                            @if($errors->has('programme'))--}}
+                            {{--                                                <div class="invalid-feedback">--}}
+                            {{--                                                    {{ $errors->first('programme')}}--}}
+                            {{--                                                </div>--}}
+                            {{--                                            @endif--}}
+                            {{--                                        </div>--}}
+                            {{--                                    </div>--}}
+
+                            {{--                                    <div class="form-row">--}}
+                            {{--                                        <div class="col-md-4 mb-4">--}}
+                            {{--                                            <label for="planname">Plan Name:</label>--}}
+                            {{--                                            <input type="text"--}}
+                            {{--                                                   class="form-control {{ $errors->has('planname')?'is-invalid':'is-valid' }}"--}}
+                            {{--                                                   name="planname" placeholder="Plan Name"--}}
+                            {{--                                                   value="{{isset($model)?$model->planname : old('planname')}}"--}}
+                            {{--                                                   required>--}}
+                            {{--                                            @if($errors->has('planname'))--}}
+                            {{--                                                <div class="invalid-feedback" style="color:red;">--}}
+                            {{--                                                    {{ $errors->first('planname')}}--}}
+                            {{--                                                </div>--}}
+                            {{--                                            @endif--}}
+                            {{--                                        </div>--}}
+                            {{--                                        <div class="col-md-4 mb-4">--}}
+
+                            {{--                                        </div>--}}
+                            {{--                                        <div class="col-md-4 mb-4">--}}
+                            {{--                                            <label for="description">Plan Description:</label>--}}
+                            {{--                                            <textarea type="text"--}}
+                            {{--                                                      class="form-control {{ $errors->has('description')?'is-invalid':'is-valid' }}"--}}
+                            {{--                                                      name="description" placeholder="Description"--}}
+                            {{--                                                      required>{{isset($model)?$model->plandescription : old('description')}}</textarea>--}}
+                            {{--                                            @if($errors->has('description'))--}}
+                            {{--                                                <div class="invalid-feedback" style="color:red;">--}}
+                            {{--                                                    {{ $errors->first('description')}}--}}
+                            {{--                                                </div>--}}
+                            {{--                                            @endif--}}
+                            {{--                                        </div>--}}
+                            {{--                                    </div>--}}
+                            {{--                                    <div class="form-row">--}}
+                            {{--                                        <div class="col-md-3 mb-2">&nbsp;</div>--}}
+                            {{--                                        <div class="col-md-3 mb-2 text-right">--}}
+                            {{--                                            <div class="form-group">--}}
+                            {{--                                                <label for="">&nbsp;</label>--}}
+                            {{--                                                @if(isset($model))--}}
+                            {{--                                                    <button type="submit" name="update" id="updatebtn"--}}
+                            {{--                                                            class="btn btn-success text-right"><span--}}
+                            {{--                                                            class="icon icon-edit3"> Update</span></button>--}}
+                            {{--                                                    <a href="{{route('degreeplan')}}" class="btn btn-warning"><span--}}
+                            {{--                                                            class="icon icon-cancel4"> Cancel</span></a>--}}
+                            {{--                                                    <input type="hidden" name="planid" value="{{$model->id}}"/>--}}
+                            {{--                                                @else--}}
+                            {{--                                                    <button type="submit" name="add" id="addbtn"--}}
+                            {{--                                                            class="btn btn-success text-right"><span--}}
+                            {{--                                                            class="icon icon-save"> Save</span>--}}
+                            {{--                                                    </button>--}}
+                            {{--                                                @endif--}}
+                            {{--                                            </div>--}}
+                            {{--                                        </div>--}}
+                            {{--                                    </div>--}}
+                                </form> -->
+                                <div class="container" id="display">
+
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+@endsection
+
+@section("js")
+    <script src="{{asset('js/datatables/jquery.dataTables.min.js')}}"></script>
+    <script src="{{ asset('js/jqueryui/jquery-ui.js')}}"></script>
+    <script>
+        $(function () {
+            function facultyChanged(faculty, department) {
+                var id = $(faculty).val();
+                $(department).empty();
+                $(department).append("<option value=''>Select...</option>");
+                $.getJSON("{{ url('staff/ajax/departments') }}/" + id, function (obj) {
+                    $.each(obj, function (key, value) {
+                        $(department).append("<option value='" + value.id + "'>" + value.name + "</option>");
+                    });
+                });
+            }
+
+            function departmentChanged(department, programme) {
+                var deptid = $(department).val();
+                $(programme).empty();
+                $(programme).append("<option value=''>Select...</option>");
+                $.getJSON("{{ route('staff.ajax.programmes.one','') }}/" + deptid, function (obj) {
+                    $.each(obj, function (key, value) {
+                        $(programme).append("<option value='" + value.id + "'>" + value.name + "</option>");
+                    });
+                });
+            }
+
+            $("body").on("change", "#faculty", function () {
+                facultyChanged("#faculty", "#department")
+            });
+            $("body").on("change", "#form_faculty", function () {
+                facultyChanged("#form_faculty", "#form_department")
+            });
+            $("body").on("change", "#department", function () {
+                departmentChanged("#department", "#programme")
+            });
+            $("body").on("change", "#form_department", function () {
+                departmentChanged("#form_department", "#form_programme")
+            });
+            $("body").on("change", "#programme", function () {
+                var programme = $(this).val();
+                $.ajax({
+                    type: "GET",
+                    url: "{{ route('staff.settings.degreeplan.retrieve','') }}",
+                    data: {
+                        programme_id: programme
+                    }
+                }).done(function (data) {
+                    console.log(data)
+                    var table = "<table id='plans-table' align='center' class='table table-bordered table-striped table-responsive' style='font-size:16px;font-family: Calibri; color: #0b0b0b; text-align: left'>";
+                    table += "<thead><tr><th>S/N</th><th>Plan Session</th><th>Plan Name</th><th>Description</th><th>Action</th></tr></thead><tbody>";
+                    sn = 1;
+                    levels = data.levels
+                    $.each(data.plans, function (key, value) {
+                        l_levels = ""
+                        v_levels = ""
+                        $.each(levels, function (k, v) {
+                            l_levels += "<li><a href='{{ route('course.degree.plan','') }}?xy=" + value.id
+                                + "&xyz=" + v.short_name + "'>" + v.name + "</a></li>"
+                            v_levels += "<li><a href='javascript:;' class='btn-view' data-toggle='modal'"
+                                + " data-target='#view-courses' data-id='" + value.id + "' data-level='"
+                                + v.short_name + "'>" + v.name + "</a></li>"
+                        })
+
+                        table += "<tr><td>" + (sn++) + "</td><td>" + value.plansession + "</td><td>" + value.planname
+                            + "</td><td>" + value.plandescription + "</td><td align='center'>"
+                            + " <a data-toggle='modal'"
+                            + " data-target='#add-edit' data-id='" + value.id + "' data-programme='" + value.programme_id
+                            + "' data-name='" + value.planname + "' data-session='" + value.plansession
+                            + "' data-desc='" + value.plandescription + "' class='btn btn-sm btn-primary edit'"
+                            + " href='javascript:;'><span class='icon icon_pencil-edit'></span> Edit</a>"
+
+                            // + " <a id='btn-view' data-toggle='modal' data-target='#view-courses' data-id='"
+                            // + value.id + "' data-level='" + value.level_id + "' href='javascript:;' class='btn btn-sm btn-info'>"
+                            // + " <span class='icon icon_info_alt'></span>View</a>"
+
+
+                            + " <div role='group' class='btn-group'>"
+                            + "            <button aria-expanded='false' aria-haspopup='true' data-toggle='dropdown'"
+                            + "                    class='btn btn-sm btn-info dropdown-toggle' type='button' id='btnGroupDrop1'>"
+                            + "                View Courses"
+                            + "                <span class='caret'></span></button>"
+                            + "            <ul aria-labelledby='btnGroupDrop1' class='dropdown-menu'>" + v_levels + "</ul>"
+                            + "        </div>"
+                            + " <div role='group' class='btn-group'>"
+                            + "            <button aria-expanded='false' aria-haspopup='true' data-toggle='dropdown'"
+                            + "                    class='btn btn-sm btn-warning dropdown-toggle' type='button' id='btnGroupDrop1'>"
+                            + "                Map Courses"
+                            + "                <span class='caret'></span></button>"
+                            + "            <ul aria-labelledby='btnGroupDrop1' class='dropdown-menu'>" + l_levels + "</ul>"
+                            + "        </div>"
+                            + "</td></tr>";
+                    });
+
+                    table += "</tbody></table>"
+                    $('#display').html(table);
+                    $('#plans-table').DataTable();
+                });
+            });
+            $("#ldate,#cdate,#sdate").datepicker({
+                changeMonth: true,
+                changeYear: true,
+                dateFormat: 'yy-mm-dd',
+                minDate: -1,
+                maxDate: "+3M +1Y"
+            });
+        });
+        $(document).on('click', '.add', function () {
+            $(".modal-body #planid").val(0);
+            $(".modal-body #planname").val('');
+            $(".modal-body #plansession").val(-1);
+            $(".modal-body #form_faculty").val(-1);
+            $(".modal-body #form_programme").val(-1);
+            $(".modal-body #form_department").val(-1);
+            $(".modal-body #description").textContent('');
+        });
+        $(document).on('click', '.edit', function () {
+            $(".modal-body #planid").val($(this).data('id'));
+            $(".modal-body #planname").val($(this).data('name'));
+            $(".modal-body #plansession").val($(this).data('session'));
+            $(".modal-body #form_faculty").val(-1);
+            $(".modal-body #form_programme").val(-1);
+            $(".modal-body #form_department").val(-1);
+            $(".modal-body #description").text($(this).data('desc'));
+        });
+        $(document).on('click', '.btn-view', function () {
+            id = $(this).data('id')
+            level = $(this).data('level')
+            console.log(id, level)
+            $.ajax({
+                type: "GET",
+                url: "{{route('staff.settings.coursedegreeplan.mapped.courses','')}}",
+                data: {
+                    plan_id: id,
+                    level_id: level
+                }
+            }).done(function (data) {
+                console.log(data)
+                table = "<table class='table table-responsive table-bordered table-striped'>"
+                    + "<tr><th>S/N</th><th>Code</th><th>Title</th><th>Unit(s)</th><th>Semester</th></tr>"
+                sn = 1
+                $.each(data, function (key, value) {
+                    table += "<tr><td>" + (sn++) + "</td><td>" + value.coursecode + "</td><td>" + value.coursetitle + "</td><td>" + value.courseunit + "</td><td>" + value.coursesemester + "</td></tr>"
+                })
+                table += "</table>"
+
+                $('#courses').html(table)
+            })
+        })
+    </script>
+@endsection
