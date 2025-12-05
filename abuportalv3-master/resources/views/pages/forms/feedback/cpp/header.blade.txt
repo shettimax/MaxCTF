@@ -1,7 +1,0 @@
-<?php
-/**
- * Created by PhpStorm.
- * User: Galadima
- * Date: 4/12/2019
- * Time: 10:48 AM
- */
